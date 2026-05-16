@@ -1,0 +1,285 @@
+export const dynamic = "force-dynamic";
+
+import { db } from "@/lib/db";
+import {
+  calculatePot,
+  calculateMemberFee,
+  calculateMemberGross,
+  calculateNetPayout,
+  getAvailableWheelEntries,
+  formatCurrency,
+  formatDate,
+  getCurrentWeekNumber,
+  TOTAL_WEEKS,
+} from "@/lib/equb";
+import { SpinWheel } from "@/components/admin/SpinWheel";
+
+export default async function AdminDashboard() {
+  const [members, weeks, recentLogs] = await Promise.all([
+    db.member.findMany({ orderBy: { wheelNumber: "asc" } }),
+    db.week.findMany({ orderBy: { weekNumber: "asc" } }),
+    db.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
+  ]);
+
+  const drawnNumbers = new Set(
+    weeks.filter((w) => w.winnerWheelNumber != null).map((w) => w.winnerWheelNumber!)
+  );
+  const availableNumbers = getAvailableWheelEntries(members, drawnNumbers);
+
+  const wheelEntries = members.flatMap((m) => {
+    const entries = [];
+    if (!drawnNumbers.has(m.wheelNumber))
+      entries.push({ number: m.wheelNumber, name: m.nameAmharic, isExtra: false });
+    if (m.extraWheelNumber !== null && !drawnNumbers.has(m.extraWheelNumber))
+      entries.push({ number: m.extraWheelNumber, name: m.nameAmharic, isExtra: true });
+    return entries;
+  });
+
+  const undrawnWeeks = weeks
+    .filter((w) => w.winnerWheelNumber == null && !w.isSkipped)
+    .map((w) => ({ id: w.id, weekNumber: w.weekNumber, date: formatDate(w.date) }));
+
+  const currentWeekNum = getCurrentWeekNumber();
+  const currentWeek = weeks.find((w) => w.weekNumber === currentWeekNum);
+  const potCents = calculatePot(members);
+
+  let paidThisWeek = 0;
+  let totalExpectedThisWeek = 0;
+  if (currentWeek) {
+    const payments = await db.payment.findMany({ where: { weekId: currentWeek.id } });
+    const memberMap = new Map(members.map((m) => [m.id, m]));
+    for (const p of payments) {
+      const m = memberMap.get(p.memberId);
+      if (m) {
+        totalExpectedThisWeek += m.weeklyAmount;
+        if (p.status === "PAID") paidThisWeek += m.weeklyAmount;
+      }
+    }
+  }
+  const progressPct = totalExpectedThisWeek > 0
+    ? Math.round((paidThisWeek / totalExpectedThisWeek) * 100)
+    : 0;
+
+  const nextPayoutMember = members.find((m) => m.wheelNumber === currentWeekNum);
+  const nextPayoutWeek = weeks.find((w) => w.weekNumber === currentWeekNum);
+
+  const weeksRemaining = currentWeekNum === 0
+    ? TOTAL_WEEKS
+    : Math.max(0, TOTAL_WEEKS - currentWeekNum + 1);
+
+  const weeksCompleted = currentWeekNum === 0 ? 0 : Math.min(currentWeekNum, TOTAL_WEEKS);
+  const collectionsDone = weeks.filter((w) => w.payoutStatus === "COLLECTED").length;
+  const numbersOnWheel = availableNumbers.length;
+
+  const logDotColor = (type: string) =>
+    type === "Payment"
+      ? "bg-emerald-500"
+      : type === "Member"
+      ? "bg-blue-500"
+      : "bg-amber-500";
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white animate-fade-in-up">
+        Dashboard
+      </h1>
+
+      {/* Stats — row 1 */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in-up-1">
+        <StatCard
+          label="Weekly Pot"
+          value={formatCurrency(2_000_000)}
+          sub={`Actual: ${formatCurrency(potCents)}`}
+          valueClass="text-emerald-600 dark:text-emerald-400"
+          accent
+        />
+        <StatCard
+          label="Current Week"
+          value={currentWeekNum > 0 ? `Week ${currentWeekNum}` : "Not started"}
+          sub={currentWeek ? formatDate(currentWeek.date) : "Starts May 17, 2026"}
+        />
+        <StatCard label="Members" value={String(members.length)} />
+        <StatCard
+          label="Weeks Remaining"
+          value={String(weeksRemaining)}
+          sub={`of ${TOTAL_WEEKS} total`}
+        />
+      </div>
+
+      {/* Stats — row 2 */}
+      <div className="grid grid-cols-3 gap-4 animate-fade-in-up-1">
+        <StatCard
+          label="Numbers on Wheel"
+          value={String(numbersOnWheel)}
+          sub="entries still in draw"
+          valueClass="text-blue-600 dark:text-blue-400"
+        />
+        <StatCard
+          label="Collections Done"
+          value={`${collectionsDone} of ${TOTAL_WEEKS}`}
+          sub="payouts collected"
+          valueClass="text-emerald-600 dark:text-emerald-400"
+        />
+        <StatCard
+          label="Weeks Completed"
+          value={`${weeksCompleted} of ${TOTAL_WEEKS}`}
+          sub={weeksCompleted > 0 ? `${TOTAL_WEEKS - weeksCompleted} remaining` : "Starts May 17, 2026"}
+        />
+      </div>
+
+      {/* Summary line */}
+      <p className="text-sm text-gray-500 dark:text-gray-400 animate-fade-in-up-1">
+        <span className="font-semibold text-gray-700 dark:text-gray-300">{numbersOnWheel}</span>{" "}
+        number{numbersOnWheel !== 1 ? "s" : ""} remaining on wheel
+        {" — "}
+        <span className="font-semibold text-gray-700 dark:text-gray-300">{collectionsDone}</span>{" "}
+        member{collectionsDone !== 1 ? "s" : ""} {collectionsDone !== 1 ? "have" : "has"} collected
+      </p>
+
+      {/* Collection Progress */}
+      {currentWeek && (
+        <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-2">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+            Week {currentWeekNum} Collection
+          </h2>
+          <div className="flex items-center justify-between text-sm mb-2">
+            <span className="text-gray-500 dark:text-gray-400">
+              {formatCurrency(paidThisWeek)}{" "}
+              <span className="text-gray-400 dark:text-gray-600">of</span>{" "}
+              {formatCurrency(totalExpectedThisWeek)}
+            </span>
+            <span className="font-bold text-gray-900 dark:text-white">{progressPct}%</span>
+          </div>
+          <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
+            <div
+              className="bg-emerald-500 h-2 rounded-full transition-all duration-700"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Next Payout */}
+      {nextPayoutMember && nextPayoutWeek && (
+        <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-2">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+            Current Week Payout
+          </h2>
+          <div className="flex flex-wrap gap-6">
+            <PayoutItem label="Member" value={nextPayoutMember.nameAmharic} />
+            <PayoutItem label="Gross" value={formatCurrency(calculateMemberGross(nextPayoutMember.weeklyAmount))} />
+            <PayoutItem
+              label="Fee"
+              value={`−${formatCurrency(calculateMemberFee(nextPayoutMember.weeklyAmount))}`}
+              valueClass="text-amber-500"
+            />
+            <PayoutItem
+              label="Net Payout"
+              value={formatCurrency(
+                calculateNetPayout(calculateMemberGross(nextPayoutMember.weeklyAmount), calculateMemberFee(nextPayoutMember.weeklyAmount))
+              )}
+              valueClass="text-emerald-600 dark:text-emerald-400 text-xl font-bold"
+            />
+            <PayoutItem label="Date" value={formatDate(nextPayoutWeek.date)} />
+          </div>
+        </div>
+      )}
+
+      {/* Spin Wheel */}
+      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-3">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-6 text-center">
+          Weekly Draw
+        </h2>
+        <SpinWheel
+          key={availableNumbers.join("-")}
+          availableNumbers={availableNumbers}
+          weekOptions={undrawnWeeks}
+          wheelEntries={wheelEntries}
+        />
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-4">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-5">
+          Recent Activity
+        </h2>
+        {recentLogs.length === 0 ? (
+          <p className="text-sm text-gray-400">No activity yet.</p>
+        ) : (
+          <div className="relative pl-6 border-l-2 border-gray-100 dark:border-gray-800 space-y-5">
+            {recentLogs.map((log) => (
+              <div key={log.id} className="relative">
+                <div
+                  className={`absolute -left-[25px] top-1 w-3 h-3 rounded-full border-2 border-white dark:border-[#141414] ${logDotColor(log.entityType)}`}
+                />
+                <p className="text-sm text-gray-800 dark:text-gray-200 leading-snug">
+                  {log.action}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {new Date(log.createdAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  sub,
+  valueClass,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  valueClass?: string;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+        accent
+          ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900"
+          : "bg-white dark:bg-[#141414] border-gray-100 dark:border-gray-800"
+      }`}
+    >
+      <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        {label}
+      </p>
+      <p
+        className={`text-2xl font-bold mt-1 ${
+          valueClass ?? "text-gray-900 dark:text-white"
+        }`}
+      >
+        {value}
+      </p>
+      {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function PayoutItem({
+  label,
+  value,
+  valueClass,
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide font-semibold mb-0.5">
+        {label}
+      </p>
+      <p className={`font-semibold text-gray-900 dark:text-white ${valueClass ?? "text-base"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}

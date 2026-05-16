@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Member {
+  id                    String            @id @default(cuid())
+  nameAmharic           String
+  nameEnglishFirst      String            @default("")
+  nameEnglishLast       String            @default("")
+  displayPreference     DisplayPreference @default(AMHARIC)
+  phone                 String?
+  weeklyAmount          Int
+  wheelNumber           Int               @unique
+  extraWheelNumber      Int?              @unique
+  wheelSuspended        Boolean           @default(false)
+  token                 String            @unique @default(uuid())
+  confirmedAt           DateTime?
+  confirmedIp           String?
+  collectionConfirmedAt DateTime?
+  collectionConfirmedIp String?
+  createdAt             DateTime          @default(now())
+  payments              Payment[]
+
+  @@map("members")
+}
+
+model Week {
+  id                String           @id @default(cuid())
+  weekNumber        Int              @unique
+  date              DateTime
+  isSkipped         Boolean          @default(false)
+  notes             String?
+  winnerWheelNumber Int?
+  payoutStatus      PayoutStatus?
+  payoutMethod      CollectionMethod?
+  payoutNotes       String?
+  payments          Payment[]
+
+  @@map("weeks")
+}
+
+model Payment {
+  id        String         @id @default(cuid())
+  memberId  String
+  weekId    String
+  status    PaymentStatus  @default(PENDING)
+  method    PaymentMethod?
+  paidAt    DateTime?
+  notes     String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  member    Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  week      Week           @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, weekId])
+  @@map("payments")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+enum DisplayPreference {
+  AMHARIC
+  ENGLISH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  LATE
+}
+
+enum PaymentMethod {
+  CASH
+  ZELLE
+  OTHER
+}
+
+enum PayoutStatus {
+  PENDING
+  COLLECTED
+}
+
+enum CollectionMethod {
+  CASH
+  ZELLE
+  BOTH
+}

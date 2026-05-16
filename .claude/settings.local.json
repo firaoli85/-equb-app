@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Push-Location \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\"; Get-ChildItem -Recurse -Force | Sort-Object FullName | Select-Object @{n='Path'; e={$_.FullName.Replace\\(\\(Get-Location\\), '.'\\)}}, PSIsContainer)",
+      "Bash(dir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\")",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git --yes)",
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(mkdir -p \"c:/Users/firao/Desktop/equb-app/src/lib\" \"c:/Users/firao/Desktop/equb-app/src/actions\" \"c:/Users/firao/Desktop/equb-app/src/components/admin\" \"c:/Users/firao/Desktop/equb-app/src/components/member\" && echo \"done\")",
+      "Bash(mkdir -p \"c:/Users/firao/Desktop/equb-app/src/app/admin/members/new\" \"c:/Users/firao/Desktop/equb-app/src/app/admin/payments\" \"c:/Users/firao/Desktop/equb-app/src/app/admin/weeks\" \"c:/Users/firao/Desktop/equb-app/src/app/admin/audit\" \"c:/Users/firao/Desktop/equb-app/src/app/m/[token]\" && echo \"done\")",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\receipt\\\\[token]\")",
+      "Bash(Out-Null)",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\components\\\\member\")",
+      "Bash(Write-Host \"Directories created\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\context\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\components\\\\ui\")",
+      "Bash(node -e \"const p = require\\('c:/Users/firao/Desktop/equb-app/node_modules/next/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(Remove-Item \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\middleware.ts\" -Force)",
+      "PowerShell(cd \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\"; $env:PRISMA_MIGRATE_SKIP_GENERATE=\"true\"; npx prisma migrate dev --name add_extra_wheel_number --skip-seed 2>&1)",
+      "PowerShell(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process | Where-Object { $_.Name -match \"node|next\" } | Select-Object Id, ProcessName, MainWindowTitle 2>$null)",
+      "PowerShell($processes = Get-Process | Where-Object { $_.Modules -match \"equb\" -or $_.Name -match \"node\" }; $processes | Select-Object Id, ProcessName, Path 2>$null | Format-Table)",
+      "PowerShell(Stop-Process -Id 3932, 20676, 22048, 23024 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(npx --prefix \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\" prisma generate 2>&1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/admin/login)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/admin)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/m/invalid-token)",
+      "Bash(cat /tmp/dev-server.log | grep -E \"\\(error|Error|warn|✓|ready\\)\" | head -30 2>&1)",
+      "Read(//tmp/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\firao\\Desktop\\equb-app\\src",
+      "c:\\Users\\firao\\Desktop\\equb-app\\src\\app\\m"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsx *)",
+      "Bash(curl -v http://localhost:3000/api/receipt/__TRACKED_VAR__)",
+      "Bash(curl -L \"https://github.com/notofonts/ethiopic/releases/download/NotoSansEthiopic-v2.903/NotoSansEthiopic-v2.903.zip\" -o /tmp/noto-ethiopic.zip)",
+      "Bash(curl -L \"https://fonts.gstatic.com/s/notosansethiopic/v45/32-P6JQZE-HFuHHPK5oSeFiQ3G0-EGfA0Ew8BX4ycFdW0LkHgkRpGQkJpH1Bkzz5W2zOhD3Yc.ttf\" -o /tmp/test-noto.ttf)",
+      "Read(//c/Windows/Fonts//**)",
+      "Read(//c/Windows/Fonts/**)",
+      "Bash(xargs -I{} bash -c 'python3 -c \"import sys; d=open\\(\\\\\"{}\\\\\",'rb'\\).read\\(4\\); sys.exit\\(0 if d[:4] in [b\\\\\"true\\\\\",b\\\\\"\\\\x00\\\\x01\\\\x00\\\\x00\\\\\",b\\\\\"OTTO\\\\\"] else 1\\)\" 2>/dev/null && echo \"{}\"; true')",
+      "Bash(cp /c/Windows/Fonts/ebrima.ttf \"/c/Users/firao/Desktop/equb-app/public/fonts/ebrima.ttf\" *)",
+      "PowerShell(Stop-Process -Force)",
+      "Bash(mkdir -p \"/c/Users/firao/Desktop/equb-app/src/app/api/collection-receipt/[token]\")",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /tmp/test.pdf -w '%{http_code}' http://localhost:3000/api/receipt/__TRACKED_VAR__)",
+      "Bash(curl -s -o /dev/null -w \"admin: %{http_code}\\\\n\" http://localhost:3000/admin/login)",
+      "Bash(curl -s -o /dev/null -w \"dashboard redirect: %{http_code}\\\\n\" http://localhost:3000/admin)",
+      "Bash(mkdir -p \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\\\\[id]\\\\edit\" 2>/dev/null; ls \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\\\\\")",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\" -Recurse | ForEach-Object { $_.FullName })",
+      "PowerShell(@\\(\"payments\",\"weeks\",\"collections\",\"activity\"\\) | ForEach-Object { New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\\\\$_\" | Out-Null }; Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\" | Select-Object Name)",
+      "Read(//c/Users/firao/Desktop/equb-app/src/app/m/**)"
+    ],
+    "additionalDirectories": [
+      "C:\\Windows\\Fonts",
+      "C:\\Users\\firao\\Desktop\\equb-app\\src\\app\\api\\collection-receipt",
+      "c:\\Users\\firao\\Desktop\\equb-app\\src\\app\\admin\\(protected)\\members\\[id]"
+    ]
+  }
+}
