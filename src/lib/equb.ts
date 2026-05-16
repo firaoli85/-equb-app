@@ -28,10 +28,10 @@ export function calculatePot(members: { weeklyAmount: number }[]): number {
 }
 
 // Fee per member based on their own total contribution over 20 weeks
-// Formula: (weeklyAmount * 20 / 500_000) * 10_000  (all in cents)
+// Formula: (weeklyAmount * 20 / 5_000_00) * 100_00  →  (total / 500_000) * 10_000 (exact, no rounding)
 export function calculateMemberFee(weeklyAmountCents: number): number {
   const total = weeklyAmountCents * TOTAL_WEEKS;
-  return Math.floor(total / 500_000) * 10_000;
+  return (total / 500_000) * 10_000;
 }
 
 // Gross payout = member's own total contributions (NOT the shared pot)

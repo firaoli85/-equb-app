@@ -12,14 +12,15 @@ export function CopyButton({
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
+    const text = value.startsWith("/") ? window.location.origin + value : value;
     try {
-      await navigator.clipboard.writeText(value);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for older browsers
       const el = document.createElement("textarea");
-      el.value = value;
+      el.value = text;
       document.body.appendChild(el);
       el.select();
       document.execCommand("copy");
