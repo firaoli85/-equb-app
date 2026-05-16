@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomUUID } from "crypto";
 import { headers } from "next/headers";
+import { buildFingerprint, type ClientFingerprint } from "@/lib/fingerprint";
 
 export async function createMember(
   _prevState: { error?: string },
@@ -22,6 +23,7 @@ export async function createMember(
   if (!nameAmharic || isNaN(weeklyDollars) || isNaN(wheelNumber)) {
     return { error: "Amharic name, weekly amount, and wheel number are required." };
   }
+  if (nameAmharic.length < 2) return { error: "Amharic name must be at least 2 characters." };
   if (weeklyDollars < 1) return { error: "Weekly amount must be at least $1." };
   if (wheelNumber < 1) return { error: "Wheel number must be a positive number." };
   if (extraWheelNumber !== null && (isNaN(extraWheelNumber) || extraWheelNumber < 1)) {
@@ -83,6 +85,7 @@ export async function updateMember(
   if (!nameAmharic || isNaN(weeklyDollars) || isNaN(wheelNumber)) {
     return { error: "Amharic name, weekly amount, and wheel number are required." };
   }
+  if (nameAmharic.length < 2) return { error: "Amharic name must be at least 2 characters." };
   if (weeklyDollars < 1) return { error: "Weekly amount must be at least $1." };
   if (wheelNumber < 1) return { error: "Wheel number must be a positive number." };
   if (extraWheelNumber !== null && (isNaN(extraWheelNumber) || extraWheelNumber < 1)) {
@@ -205,27 +208,37 @@ export async function updateDisplayPreference(
   return {};
 }
 
-export async function confirmAgreement(token: string): Promise<void> {
+export async function confirmAgreement(
+  token: string,
+  client: ClientFingerprint
+): Promise<void> {
   const headersList = await headers();
   const ip =
     headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     headersList.get("x-real-ip") ??
     "unknown";
+  const userAgent = headersList.get("user-agent") ?? "";
 
   const member = await db.member.findUnique({ where: { token } });
   if (!member || member.confirmedAt) return;
 
+  const fingerprint = buildFingerprint(userAgent, client, token);
+
   await db.member.update({
     where: { token },
-    data: { confirmedAt: new Date(), confirmedIp: ip },
+    data: {
+      confirmedAt: new Date(),
+      confirmedIp: ip,
+      confirmedFingerprint: fingerprint as object,
+    },
   });
 
   await db.auditLog.create({
     data: {
-      action: `Member confirmed agreement: ${member.nameAmharic} (IP: ${ip})`,
+      action: `Member confirmed agreement: ${member.nameAmharic} (IP: ${ip}, ${fingerprint.browser} on ${fingerprint.os})`,
       entityType: "Member",
       entityId: member.id,
-      after: { confirmedAt: new Date().toISOString(), ip },
+      after: { confirmedAt: new Date().toISOString(), ip, fingerprint },
     },
   });
 
@@ -235,43 +248,55 @@ export async function confirmAgreement(token: string): Promise<void> {
 
 export async function confirmCollectionReceipt(
   token: string,
-  wheelType: "main" | "extra" = "main"
+  wheelType: "main" | "extra" = "main",
+  client: ClientFingerprint = { screen: "unknown", language: "unknown" }
 ): Promise<{ error?: string }> {
   const headersList = await headers();
   const ip =
     headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     headersList.get("x-real-ip") ??
     "unknown";
+  const userAgent = headersList.get("user-agent") ?? "";
 
   const member = await db.member.findUnique({ where: { token } });
   if (!member) return { error: "Member not found" };
+
+  const fingerprint = buildFingerprint(userAgent, client, token);
 
   if (wheelType === "extra") {
     if (member.collectionConfirmedAtExtra) return {};
     await db.member.update({
       where: { token },
-      data: { collectionConfirmedAtExtra: new Date(), collectionConfirmedIpExtra: ip },
+      data: {
+        collectionConfirmedAtExtra: new Date(),
+        collectionConfirmedIpExtra: ip,
+        collectionConfirmedFingerprintExtra: fingerprint as object,
+      },
     });
     await db.auditLog.create({
       data: {
-        action: `Member confirmed extra wheel collection receipt: ${member.nameAmharic} (IP: ${ip})`,
+        action: `Member confirmed extra wheel collection receipt: ${member.nameAmharic} (IP: ${ip}, ${fingerprint.browser} on ${fingerprint.os})`,
         entityType: "Member",
         entityId: member.id,
-        after: { collectionConfirmedAtExtra: new Date().toISOString(), ip },
+        after: { collectionConfirmedAtExtra: new Date().toISOString(), ip, fingerprint },
       },
     });
   } else {
     if (member.collectionConfirmedAt) return {};
     await db.member.update({
       where: { token },
-      data: { collectionConfirmedAt: new Date(), collectionConfirmedIp: ip },
+      data: {
+        collectionConfirmedAt: new Date(),
+        collectionConfirmedIp: ip,
+        collectionConfirmedFingerprint: fingerprint as object,
+      },
     });
     await db.auditLog.create({
       data: {
-        action: `Member confirmed collection receipt: ${member.nameAmharic} (IP: ${ip})`,
+        action: `Member confirmed collection receipt: ${member.nameAmharic} (IP: ${ip}, ${fingerprint.browser} on ${fingerprint.os})`,
         entityType: "Member",
         entityId: member.id,
-        after: { collectionConfirmedAt: new Date().toISOString(), ip },
+        after: { collectionConfirmedAt: new Date().toISOString(), ip, fingerprint },
       },
     });
   }

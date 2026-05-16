@@ -9,6 +9,7 @@ import {
   TOTAL_WEEKS,
 } from "@/lib/equb";
 import { buildCollectionReceiptPDF } from "@/lib/pdf";
+import type { DeviceFingerprint } from "@/lib/fingerprint";
 
 export const runtime = "nodejs";
 
@@ -65,6 +66,9 @@ export async function GET(
   const confirmedIp = isExtra
     ? (member.collectionConfirmedIpExtra ?? "unknown")
     : (member.collectionConfirmedIp ?? "unknown");
+  const fingerprint = (isExtra
+    ? (member.collectionConfirmedFingerprintExtra ?? null)
+    : (member.collectionConfirmedFingerprint ?? null)) as DeviceFingerprint | null;
 
   const pdfBuffer = await buildCollectionReceiptPDF({
     memberNameAmharic: member.nameAmharic,
@@ -78,6 +82,7 @@ export async function GET(
     remainingWeeks,
     collectionConfirmedAt: confirmedAt,
     collectionConfirmedIp: confirmedIp,
+    fingerprint,
   });
 
   const safeName = memberNameEnglish.replace(/\s+/g, "-").trim() || `wheel-${targetWheelNumber}`;

@@ -22,11 +22,14 @@ model Member {
   token                 String            @unique @default(uuid())
   confirmedAt           DateTime?
   confirmedIp           String?
-  collectionConfirmedAt      DateTime?
-  collectionConfirmedIp      String?
-  collectionConfirmedAtExtra DateTime?
-  collectionConfirmedIpExtra String?
-  createdAt                  DateTime          @default(now())
+  collectionConfirmedAt             DateTime?
+  collectionConfirmedIp             String?
+  collectionConfirmedAtExtra        DateTime?
+  collectionConfirmedIpExtra        String?
+  confirmedFingerprint              Json?
+  collectionConfirmedFingerprint    Json?
+  collectionConfirmedFingerprintExtra Json?
+  createdAt                         DateTime          @default(now())
   payments              Payment[]
 
   @@map("members")

@@ -62,10 +62,10 @@ export default function PaymentGrid({ data }: { data: GridData }) {
               {data.members.map((m) => (
                 <th
                   key={m.id}
-                  className="px-2 py-3 text-center font-medium text-gray-700 dark:text-gray-300 border-b-0 min-w-[3rem] whitespace-nowrap"
+                  className="px-2 py-3 text-center font-medium text-gray-700 dark:text-gray-300 border-b-0 min-w-[4rem] whitespace-nowrap"
                   title={`Wheel #${m.wheelNumber}`}
                 >
-                  <div className="text-xs font-semibold">{m.nameEnglishFirst || m.nameAmharic}</div>
+                  <div className="text-sm font-bold text-gray-900 dark:text-white">{m.nameEnglishFirst || m.nameAmharic}</div>
                   <div className="text-gray-400 dark:text-gray-500 font-normal text-xs">#{m.wheelNumber}</div>
                 </th>
               ))}

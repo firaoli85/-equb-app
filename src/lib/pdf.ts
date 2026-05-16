@@ -2,6 +2,7 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 import { formatCurrency, formatDate, TOTAL_WEEKS } from "./equb";
+import type { DeviceFingerprint } from "./fingerprint";
 
 // Ebrima supports Latin + Ethiopic (Amharic). Loaded once, cached in module scope.
 let _fontBuf: Buffer | null = null;
@@ -52,6 +53,15 @@ function rowBold(doc: PDFKit.PDFDocument, label: string, value: string) {
   const y = doc.y;
   doc.fontSize(9).font("Helvetica").fillColor("#6b7280").text(label, 50, y, { width: 220 });
   doc.font("Helvetica-Bold").fillColor("#065f46").text(value, 280, y, { width: 282 });
+  doc.moveDown(0.2);
+}
+
+// Row where the VALUE is Ethiopic/Amharic — value column uses Ebrima so glyphs render correctly.
+function amharicRow(doc: PDFKit.PDFDocument, label: string, value: string) {
+  const font = getFont();
+  const y = doc.y;
+  doc.fontSize(9).font("Helvetica").fillColor("#6b7280").text(label, 50, y, { width: 220 });
+  doc.fontSize(9).font(font).fillColor("#111827").text(value, 280, y, { width: 282 });
   doc.moveDown(0.2);
 }
 
@@ -124,6 +134,7 @@ export interface ParticipationAgreementData {
   weeklyAmountCents: number;
   confirmedAt: Date;
   confirmedIp: string;
+  fingerprint?: DeviceFingerprint | null;
 }
 
 export function buildParticipationAgreementPDF(
@@ -138,12 +149,14 @@ export function buildParticipationAgreementPDF(
     doc.on("error", reject);
 
     const weekly = formatCurrency(data.weeklyAmountCents);
+    const amharicName = data.memberNameAmharic.length >= 2 ? data.memberNameAmharic : data.memberNameEnglish;
+    const englishNameForPara = data.memberNameEnglish || data.memberNameAmharic;
 
     header(doc, "Participation Agreement", "20-Week Rotating Savings Group — Equb");
 
     // Member info
     sectionTitle(doc, "Member Information");
-    row(doc, "Name (Amharic)", data.memberNameAmharic);
+    amharicRow(doc, "Name (Amharic)", amharicName);
     if (data.memberNameEnglish) row(doc, "Name (English)", data.memberNameEnglish);
     row(doc, "Wheel Number", `#${data.wheelNumber}${data.extraWheelNumber ? ` + #${data.extraWheelNumber}` : ""}`);
     row(doc, "Weekly Contribution", weekly);
@@ -154,7 +167,7 @@ export function buildParticipationAgreementPDF(
     sectionTitle(doc, "Agreement (English)");
     englishPara(
       doc,
-      `I, ${data.memberNameEnglish || data.memberNameAmharic}, agree to contribute ${weekly} every week for all 20 weeks of this ` +
+      `I, ${englishNameForPara}, agree to contribute ${weekly} every week for all 20 weeks of this ` +
         `Equb cycle starting May 17, 2026. I understand that if I choose to leave before receiving ` +
         `my collection, I must wait until the Equb ends (September 27, 2026) to receive a refund ` +
         `of my contributions. The management fee will be deducted from any refund. I agree not to ` +
@@ -167,7 +180,7 @@ export function buildParticipationAgreementPDF(
     sectionTitle(doc, "ስምምነት (አማርኛ)", true);
     amharicPara(
       doc,
-      `እኔ ${data.memberNameAmharic} በዚህ የዕቁብ ዑደት ውስጥ ለ20 ሳምንታት በሙሉ ${weekly} በየሳምንቱ ` +
+      `እኔ ${amharicName} በዚህ የዕቁብ ዑደት ውስጥ ለ20 ሳምንታት በሙሉ ${weekly} በየሳምንቱ ` +
         `ለመክፈል እስማማለሁ። ከዕቁብ ስብስቤ በፊት ለመውጣት ከፈለግሁ፣ ለተመላሽ ` +
         `ገንዘቤ እስከ መስከረም 27 ቀን 2026 ዓ.ም ድረስ መጠበቅ እንዳለብኝ ተረድቻለሁ። ` +
         `የአስተዳደር ክፍያ ከተመላሹ ላይ ይቀነሳል።`
@@ -177,10 +190,16 @@ export function buildParticipationAgreementPDF(
 
     // Digital confirmation
     sectionTitle(doc, "Digital Confirmation");
-    row(doc, "Confirmed by (Amharic)", data.memberNameAmharic);
+    amharicRow(doc, "Confirmed by (Amharic)", amharicName);
     if (data.memberNameEnglish) row(doc, "Confirmed by (English)", data.memberNameEnglish);
     row(doc, "Date & Time (UTC)", data.confirmedAt.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC");
     row(doc, "IP Address", data.confirmedIp);
+    if (data.fingerprint) {
+      row(doc, "Device", `${data.fingerprint.browser} on ${data.fingerprint.os} — ${data.fingerprint.deviceType}`);
+      row(doc, "Screen", data.fingerprint.screen);
+      row(doc, "Browser Language", data.fingerprint.language);
+      row(doc, "Access Token", data.fingerprint.tokenHint);
+    }
 
     footerNote(doc);
     doc.end();
@@ -201,6 +220,7 @@ export interface CollectionReceiptData {
   remainingWeeks: number;
   collectionConfirmedAt: Date;
   collectionConfirmedIp: string;
+  fingerprint?: DeviceFingerprint | null;
 }
 
 export function buildCollectionReceiptPDF(
@@ -217,12 +237,14 @@ export function buildCollectionReceiptPDF(
     const weekly = formatCurrency(data.weeklyAmountCents);
     const net = formatCurrency(data.netCents);
     const fee = formatCurrency(data.feeCents);
+    const amharicName = data.memberNameAmharic.length >= 2 ? data.memberNameAmharic : data.memberNameEnglish;
+    const englishNameForPara = data.memberNameEnglish || data.memberNameAmharic;
 
     header(doc, "Collection Receipt Agreement", "20-Week Rotating Savings Group — Equb");
 
     // Details
     sectionTitle(doc, "Collection Details");
-    row(doc, "Name (Amharic)", data.memberNameAmharic);
+    amharicRow(doc, "Name (Amharic)", amharicName);
     if (data.memberNameEnglish) row(doc, "Name (English)", data.memberNameEnglish);
     row(doc, "Wheel Number", `#${data.winnerWheelNumber}`);
     row(doc, "Payout Week", `Week ${data.winnerWheelNumber}`);
@@ -237,7 +259,7 @@ export function buildCollectionReceiptPDF(
     sectionTitle(doc, "Agreement (English)");
     englishPara(
       doc,
-      `I, ${data.memberNameEnglish || data.memberNameAmharic}, confirm that I received ${net} on ${data.payoutDate} as my Equb ` +
+      `I, ${englishNameForPara}, confirm that I received ${net} on ${data.payoutDate} as my Equb ` +
         `collection for Week ${data.winnerWheelNumber}. A management fee of ${fee} was deducted. ` +
         `I agree to continue making my weekly contribution of ${weekly} for the remaining ` +
         `${data.remainingWeeks} weeks until Week 20 (September 27, 2026), regardless of having ` +
@@ -250,7 +272,7 @@ export function buildCollectionReceiptPDF(
     sectionTitle(doc, "ስምምነት (አማርኛ)", true);
     amharicPara(
       doc,
-      `እኔ ${data.memberNameAmharic} በሳምንት ${data.winnerWheelNumber} ላይ ${net} እንደተቀበልኩ ` +
+      `እኔ ${amharicName} በሳምንት ${data.winnerWheelNumber} ላይ ${net} እንደተቀበልኩ ` +
         `አረጋግጣለሁ። ${fee} የአስተዳደር ክፍያ ተቀንሷል። ለቀሪዎቹ ${data.remainingWeeks} ሳምንታት ` +
         `እስከ ሳምንት 20 ድረስ ${weekly} የሳምንታዊ ክፍያዬን መክፈሌን እንደምቀጥል እስማማለሁ።`
     );
@@ -259,10 +281,16 @@ export function buildCollectionReceiptPDF(
 
     // Digital confirmation
     sectionTitle(doc, "Digital Confirmation");
-    row(doc, "Confirmed by (Amharic)", data.memberNameAmharic);
+    amharicRow(doc, "Confirmed by (Amharic)", amharicName);
     if (data.memberNameEnglish) row(doc, "Confirmed by (English)", data.memberNameEnglish);
     row(doc, "Date & Time (UTC)", data.collectionConfirmedAt.toLocaleString("en-US", { timeZone: "UTC" }) + " UTC");
     row(doc, "IP Address", data.collectionConfirmedIp);
+    if (data.fingerprint) {
+      row(doc, "Device", `${data.fingerprint.browser} on ${data.fingerprint.os} — ${data.fingerprint.deviceType}`);
+      row(doc, "Screen", data.fingerprint.screen);
+      row(doc, "Browser Language", data.fingerprint.language);
+      row(doc, "Access Token", data.fingerprint.tokenHint);
+    }
 
     footerNote(doc);
     doc.end();

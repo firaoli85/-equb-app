@@ -143,7 +143,7 @@ export default async function MembersPage() {
                         </div>
                         {m.nameEnglishFirst && (
                           <div className="text-xs text-gray-400 dark:text-gray-500 font-normal mt-0.5">
-                            {[m.nameEnglishFirst, m.nameEnglishLast].filter(Boolean).join(" ")}
+                            {m.nameEnglishFirst}
                           </div>
                         )}
                       </td>

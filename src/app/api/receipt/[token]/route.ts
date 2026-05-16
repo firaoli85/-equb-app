@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { buildParticipationAgreementPDF } from "@/lib/pdf";
+import type { DeviceFingerprint } from "@/lib/fingerprint";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,7 @@ export async function GET(
     return new Response("Agreement not yet confirmed", { status: 400 });
 
   const memberNameEnglish = [member.nameEnglishFirst, member.nameEnglishLast].filter(Boolean).join(" ");
+  const fingerprint = (member.confirmedFingerprint ?? null) as DeviceFingerprint | null;
 
   const pdfBuffer = await buildParticipationAgreementPDF({
     memberNameAmharic: member.nameAmharic,
@@ -25,6 +27,7 @@ export async function GET(
     weeklyAmountCents: member.weeklyAmount,
     confirmedAt: member.confirmedAt,
     confirmedIp: member.confirmedIp ?? "unknown",
+    fingerprint,
   });
 
   const safeName = memberNameEnglish.replace(/\s+/g, "-").trim() || `wheel-${member.wheelNumber}`;

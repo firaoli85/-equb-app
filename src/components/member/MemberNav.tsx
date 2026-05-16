@@ -16,7 +16,10 @@ export function MemberNav({ token }: { token: string }) {
   const base = `/m/${token}`;
 
   return (
-    <nav className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+    <nav
+      className="flex items-center gap-2 overflow-x-auto"
+      style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+    >
       {TABS.map((tab) => {
         const href = `${base}${tab.suffix}`;
         const isActive =
@@ -27,13 +30,17 @@ export function MemberNav({ token }: { token: string }) {
           <Link
             key={tab.suffix}
             href={href}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`relative flex items-center justify-center px-5 rounded-xl text-[15px] font-bold whitespace-nowrap transition-colors select-none ${
               isActive
                 ? "bg-emerald-600 text-white shadow-sm"
-                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
             }`}
+            style={{ minHeight: "48px", touchAction: "manipulation" }}
           >
             {tab.label}
+            {isActive && (
+              <span className="absolute bottom-1.5 left-4 right-4 h-[2px] bg-white/50 rounded-full" />
+            )}
           </Link>
         );
       })}

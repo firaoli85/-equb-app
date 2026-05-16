@@ -6,7 +6,8 @@ import { confirmCollectionReceipt } from "@/actions/members";
 
 export function ConfirmCollectionReceipt({
   token,
-  memberName,
+  memberNameEnglish,
+  memberNameAmharic,
   weeklyAmountFormatted,
   netFormatted,
   feeFormatted,
@@ -16,7 +17,8 @@ export function ConfirmCollectionReceipt({
   wheelType = "main",
 }: {
   token: string;
-  memberName: string;
+  memberNameEnglish: string;
+  memberNameAmharic: string;
   weeklyAmountFormatted: string;
   netFormatted: string;
   feeFormatted: string;
@@ -31,8 +33,12 @@ export function ConfirmCollectionReceipt({
 
   function handleConfirm() {
     if (!checked) return;
+    const client = {
+      screen: `${window.screen.width}x${window.screen.height}`,
+      language: navigator.language,
+    };
     startTransition(async () => {
-      await confirmCollectionReceipt(token, wheelType);
+      await confirmCollectionReceipt(token, wheelType, client);
       router.refresh();
     });
   }
@@ -59,7 +65,7 @@ export function ConfirmCollectionReceipt({
       <div className="bg-white dark:bg-[#141414] rounded-xl border border-blue-100 dark:border-blue-900 p-4">
         <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">English</p>
         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-          I, <strong className="text-gray-900 dark:text-white">{memberName}</strong>, confirm that I received{" "}
+          I, <strong className="text-gray-900 dark:text-white">{memberNameEnglish}</strong>, confirm that I received{" "}
           <strong className="text-emerald-600 dark:text-emerald-400">{netFormatted}</strong> on{" "}
           <strong>{payoutDate}</strong> as my Equb collection for Wheel{" "}
           <strong>#{winnerWheelNumber}</strong>. A management fee of{" "}
@@ -75,7 +81,7 @@ export function ConfirmCollectionReceipt({
       <div className="bg-white dark:bg-[#141414] rounded-xl border border-blue-100 dark:border-blue-900 p-4">
         <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">አማርኛ</p>
         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed" lang="am">
-          እኔ <strong className="text-gray-900 dark:text-white">{memberName}</strong> ቁጥር{" "}
+          እኔ <strong className="text-gray-900 dark:text-white">{memberNameAmharic}</strong> ቁጥር{" "}
           <strong>#{winnerWheelNumber}</strong> ዪዬ ጎማ ሲወጣ{" "}
           <strong className="text-emerald-600 dark:text-emerald-400">{netFormatted}</strong> እንደተቀበልኩ አረጋግጣለሁ።{" "}
           <strong className="text-amber-600 dark:text-amber-400">{feeFormatted}</strong> የአስተዳደር ክፍያ ተቀንሷል። ለቀሪዎቹ{" "}

@@ -53,9 +53,9 @@ export function MemberPaymentGrid({ members, weeks, payments }: Props) {
               {members.map((m) => (
                 <th
                   key={m.id}
-                  className="px-2 py-3 text-center font-medium text-gray-700 dark:text-gray-300 min-w-[3.5rem] whitespace-nowrap"
+                  className="px-2 py-3 text-center font-medium text-gray-700 dark:text-gray-300 min-w-[4rem] whitespace-nowrap"
                 >
-                  <div className="text-xs font-semibold">
+                  <div className="text-sm font-bold text-gray-900 dark:text-white">
                     {getDisplayName(m)}
                   </div>
                 </th>

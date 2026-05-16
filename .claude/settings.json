@@ -18,7 +18,20 @@
       "Bash(mkdir -p \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\\\\[id]\\\\edit\" 2>/dev/null; ls \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\\\\\")",
       "PowerShell(Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\" -Recurse | ForEach-Object { $_.FullName })",
       "PowerShell(@\\(\"payments\",\"weeks\",\"collections\",\"activity\"\\) | ForEach-Object { New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\\\\$_\" | Out-Null }; Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\" | Select-Object Name)",
-      "Read(//c/Users/firao/Desktop/equb-app/src/app/m/**)"
+      "Read(//c/Users/firao/Desktop/equb-app/src/app/m/**)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\" -Recurse -Include \"*.tsx\",\"*.ts\")",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\" | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\" -Recurse | ForEach-Object { $_.FullName })",
+      "PowerShell(cmd /c \"dir /s /b C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\")",
+      "PowerShell(Test-Path \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\.vercel\"; if \\(Test-Path \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\.vercel\"\\) { Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\.vercel\" | ForEach-Object { $_.Name } })",
+      "PowerShell($env:VERCEL_TOKEN)",
+      "PowerShell(cmd /c \"dir /s /b C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\" 2>nul)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\" -Recurse | ForEach-Object { $_.FullName })",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\cron\\\\telegram\")",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\payments\" -Recurse | ForEach-Object { $_.FullName })",
+      "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\prisma\\\\migrations\\\\20260517010000_add_device_fingerprint\")",
+      "PowerShell(Stop-Process -Name \"node\" -Force -ErrorAction SilentlyContinue)"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",
