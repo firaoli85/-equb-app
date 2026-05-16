@@ -195,9 +195,9 @@ export async function reinstateToWheel(memberId: string): Promise<void> {
 export async function updateDisplayPreference(
   token: string,
   preference: "AMHARIC" | "ENGLISH"
-): Promise<{ error?: string }> {
+): Promise<void> {
   const member = await db.member.findUnique({ where: { token } });
-  if (!member) return { error: "Member not found" };
+  if (!member) return;
 
   await db.member.update({
     where: { token },
@@ -205,7 +205,6 @@ export async function updateDisplayPreference(
   });
 
   revalidatePath(`/m/${token}`);
-  return {};
 }
 
 export async function confirmAgreement(
