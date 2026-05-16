@@ -13,6 +13,7 @@ export function ConfirmCollectionReceipt({
   payoutDate,
   winnerWheelNumber,
   remainingWeeks,
+  wheelType = "main",
 }: {
   token: string;
   memberName: string;
@@ -22,6 +23,7 @@ export function ConfirmCollectionReceipt({
   payoutDate: string;
   winnerWheelNumber: number;
   remainingWeeks: number;
+  wheelType?: "main" | "extra";
 }) {
   const [checked, setChecked] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -30,10 +32,12 @@ export function ConfirmCollectionReceipt({
   function handleConfirm() {
     if (!checked) return;
     startTransition(async () => {
-      await confirmCollectionReceipt(token);
+      await confirmCollectionReceipt(token, wheelType);
       router.refresh();
     });
   }
+
+  const label = wheelType === "extra" ? "Extra Wheel Collection Receipt" : "Collection Receipt Agreement";
 
   return (
     <div className="bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-2xl p-6 space-y-4 shadow-sm">
@@ -44,8 +48,10 @@ export function ConfirmCollectionReceipt({
           </svg>
         </div>
         <div>
-          <h3 className="text-sm font-bold text-blue-900 dark:text-blue-200">Collection Receipt Agreement</h3>
-          <p className="text-xs text-blue-600 dark:text-blue-400">Please acknowledge receipt of your payout</p>
+          <h3 className="text-sm font-bold text-blue-900 dark:text-blue-200">{label}</h3>
+          <p className="text-xs text-blue-600 dark:text-blue-400">
+            Wheel #{winnerWheelNumber} · Please acknowledge receipt of your payout
+          </p>
         </div>
       </div>
 
@@ -55,8 +61,8 @@ export function ConfirmCollectionReceipt({
         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
           I, <strong className="text-gray-900 dark:text-white">{memberName}</strong>, confirm that I received{" "}
           <strong className="text-emerald-600 dark:text-emerald-400">{netFormatted}</strong> on{" "}
-          <strong>{payoutDate}</strong> as my Equb collection for Week{" "}
-          <strong>{winnerWheelNumber}</strong>. A management fee of{" "}
+          <strong>{payoutDate}</strong> as my Equb collection for Wheel{" "}
+          <strong>#{winnerWheelNumber}</strong>. A management fee of{" "}
           <strong className="text-amber-600 dark:text-amber-400">{feeFormatted}</strong> was deducted. I agree to
           continue making my weekly contribution of{" "}
           <strong className="text-emerald-600 dark:text-emerald-400">{weeklyAmountFormatted}</strong> for the remaining{" "}
@@ -69,8 +75,8 @@ export function ConfirmCollectionReceipt({
       <div className="bg-white dark:bg-[#141414] rounded-xl border border-blue-100 dark:border-blue-900 p-4">
         <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">አማርኛ</p>
         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed" lang="am">
-          እኔ <strong className="text-gray-900 dark:text-white">{memberName}</strong> በሳምንት{" "}
-          <strong>{winnerWheelNumber}</strong> ላይ{" "}
+          እኔ <strong className="text-gray-900 dark:text-white">{memberName}</strong> ቁጥር{" "}
+          <strong>#{winnerWheelNumber}</strong> ዪዬ ጎማ ሲወጣ{" "}
           <strong className="text-emerald-600 dark:text-emerald-400">{netFormatted}</strong> እንደተቀበልኩ አረጋግጣለሁ።{" "}
           <strong className="text-amber-600 dark:text-amber-400">{feeFormatted}</strong> የአስተዳደር ክፍያ ተቀንሷል። ለቀሪዎቹ{" "}
           <strong>{remainingWeeks}</strong> ሳምንታት እስከ ሳምንት 20 ድረስ{" "}

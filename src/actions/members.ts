@@ -233,7 +233,10 @@ export async function confirmAgreement(token: string): Promise<void> {
   revalidatePath("/admin/members");
 }
 
-export async function confirmCollectionReceipt(token: string): Promise<{ error?: string }> {
+export async function confirmCollectionReceipt(
+  token: string,
+  wheelType: "main" | "extra" = "main"
+): Promise<{ error?: string }> {
   const headersList = await headers();
   const ip =
     headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -242,21 +245,36 @@ export async function confirmCollectionReceipt(token: string): Promise<{ error?:
 
   const member = await db.member.findUnique({ where: { token } });
   if (!member) return { error: "Member not found" };
-  if (member.collectionConfirmedAt) return {};
 
-  await db.member.update({
-    where: { token },
-    data: { collectionConfirmedAt: new Date(), collectionConfirmedIp: ip },
-  });
-
-  await db.auditLog.create({
-    data: {
-      action: `Member confirmed collection receipt: ${member.nameAmharic} (IP: ${ip})`,
-      entityType: "Member",
-      entityId: member.id,
-      after: { collectionConfirmedAt: new Date().toISOString(), ip },
-    },
-  });
+  if (wheelType === "extra") {
+    if (member.collectionConfirmedAtExtra) return {};
+    await db.member.update({
+      where: { token },
+      data: { collectionConfirmedAtExtra: new Date(), collectionConfirmedIpExtra: ip },
+    });
+    await db.auditLog.create({
+      data: {
+        action: `Member confirmed extra wheel collection receipt: ${member.nameAmharic} (IP: ${ip})`,
+        entityType: "Member",
+        entityId: member.id,
+        after: { collectionConfirmedAtExtra: new Date().toISOString(), ip },
+      },
+    });
+  } else {
+    if (member.collectionConfirmedAt) return {};
+    await db.member.update({
+      where: { token },
+      data: { collectionConfirmedAt: new Date(), collectionConfirmedIp: ip },
+    });
+    await db.auditLog.create({
+      data: {
+        action: `Member confirmed collection receipt: ${member.nameAmharic} (IP: ${ip})`,
+        entityType: "Member",
+        entityId: member.id,
+        after: { collectionConfirmedAt: new Date().toISOString(), ip },
+      },
+    });
+  }
 
   revalidatePath(`/m/${token}`);
   revalidatePath("/admin/members");

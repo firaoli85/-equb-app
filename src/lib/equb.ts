@@ -3,6 +3,18 @@ import { db } from "./db";
 export const EQUB_START = new Date("2026-05-17T00:00:00.000Z");
 export const TOTAL_WEEKS = 20;
 
+// Members contributing > $1,000/week get two independent wheel entries.
+// The main entry always represents the first $1,000; the extra represents the remainder.
+export const MAIN_WHEEL_CAP_CENTS = 100_000; // $1,000/week
+
+export function mainWheelWeekly(weeklyAmountCents: number, hasExtraWheel: boolean): number {
+  return hasExtraWheel ? MAIN_WHEEL_CAP_CENTS : weeklyAmountCents;
+}
+
+export function extraWheelWeekly(weeklyAmountCents: number): number {
+  return Math.max(0, weeklyAmountCents - MAIN_WHEEL_CAP_CENTS);
+}
+
 export function generateWeekDates(): Date[] {
   return Array.from({ length: TOTAL_WEEKS }, (_, i) => {
     const d = new Date(EQUB_START);
