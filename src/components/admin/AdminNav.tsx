@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: "/admin/collection", label: "Collection" },
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/audit", label: "Audit" },
+  { href: "/admin/archive", label: "Archive" },
 ];
 
 export function AdminNav({ pendingReviews = 0 }: { pendingReviews?: number }) {

@@ -13,12 +13,14 @@ import {
   TOTAL_WEEKS,
 } from "@/lib/equb";
 import { SpinWheel } from "@/components/admin/SpinWheel";
+import { EndEqubButton } from "@/components/admin/EndEqubButton";
 
 export default async function AdminDashboard() {
-  const [members, weeks, recentLogs] = await Promise.all([
+  const [members, weeks, recentLogs, archiveCount] = await Promise.all([
     db.member.findMany({ orderBy: { wheelNumber: "asc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
     db.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
+    db.equbArchive.count(),
   ]);
 
   const drawnNumbers = new Set(
@@ -39,7 +41,8 @@ export default async function AdminDashboard() {
     .filter((w) => w.winnerWheelNumber == null && !w.isSkipped)
     .map((w) => ({ id: w.id, weekNumber: w.weekNumber, date: formatDate(w.date) }));
 
-  const currentWeekNum = getCurrentWeekNumber();
+  const week1Date = weeks.find((w) => w.weekNumber === 1)?.date;
+  const currentWeekNum = getCurrentWeekNumber(week1Date ?? undefined);
   const currentWeek = weeks.find((w) => w.weekNumber === currentWeekNum);
   const potCents = calculatePot(members);
 
@@ -197,6 +200,23 @@ export default async function AdminDashboard() {
           wheelEntries={wheelEntries}
         />
       </div>
+
+      {/* End of Equb */}
+      {collectionsDone >= TOTAL_WEEKS && (
+        <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-200 dark:border-red-800/60 p-6 shadow-sm animate-fade-in-up-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-sm font-bold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1">
+                All {TOTAL_WEEKS} Collections Complete
+              </h2>
+              <p className="text-sm text-red-600 dark:text-red-400 max-w-md">
+                Every member has collected their payout. Archive this cycle and begin a new one.
+              </p>
+            </div>
+            <EndEqubButton cycleNumber={archiveCount + 1} />
+          </div>
+        </div>
+      )}
 
       {/* Recent Activity */}
       <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-4">

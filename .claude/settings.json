@@ -40,7 +40,9 @@
       "Bash(Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\" -Recurse -Name)",
       "Bash(node -e \"require\\('bcryptjs'\\).hash\\('1234', 10, \\(e,h\\) => console.log\\(h ? 'OK' : e\\)\\)\")",
       "Bash(mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\payment-history\" && mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\payment-history\\\\[token]\")",
-      "Bash(mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\\\\documents\")"
+      "Bash(mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\\\\documents\")",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\prisma\\\\migrations\\\\20260517070000_add_equb_archive\")",
+      "Bash(Write-Output \"done\")"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",

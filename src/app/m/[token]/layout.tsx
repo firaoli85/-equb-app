@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { getDisplayName, getCurrentWeekNumber, TOTAL_WEEKS } from "@/lib/equb";
+import { getDisplayName, getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
@@ -22,15 +22,17 @@ export default async function MemberLayout({
 
   const displayName = getDisplayName(member);
 
-  const currentWeek = getCurrentWeekNumber();
-  const minWeek = Math.max(1, currentWeek - 2);
-  const maxWeek = Math.min(TOTAL_WEEKS, currentWeek + 2);
-  const rawWeeks = await db.week.findMany({
-    where: { weekNumber: { gte: minWeek, lte: maxWeek } },
+  const allWeeks = await db.week.findMany({
     orderBy: { weekNumber: "asc" },
     select: { id: true, weekNumber: true, date: true },
   });
-  const eligibleWeeks = rawWeeks.map((w) => ({ ...w, date: w.date.toISOString() }));
+  const week1Date = allWeeks.find((w) => w.weekNumber === 1)?.date ?? EQUB_START;
+  const currentWeek = getCurrentWeekNumber(week1Date);
+  const minWeek = Math.max(1, currentWeek - 2);
+  const maxWeek = Math.min(TOTAL_WEEKS, currentWeek + 2);
+  const eligibleWeeks = allWeeks
+    .filter((w) => w.weekNumber >= minWeek && w.weekNumber <= maxWeek)
+    .map((w) => ({ ...w, date: w.date.toISOString() }));
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] dark:bg-[#0a0a0b]">

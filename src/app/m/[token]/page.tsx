@@ -12,7 +12,7 @@ import {
   mainWheelWeekly,
   extraWheelWeekly,
   TOTAL_WEEKS,
-  EQUB_START,
+  EQUB_START,  // fallback for week1Date when no payments loaded yet
 } from "@/lib/equb";
 import { statusColor, paymentMethodLabel } from "@/lib/utils";
 import { notFound } from "next/navigation";
@@ -99,7 +99,8 @@ export default async function MemberView({
     if (m.extraWheelNumber !== null && !drawnSet.has(m.extraWheelNumber)) wheelEntriesRemaining++;
   }
 
-  const currentWeekNum = getCurrentWeekNumber();
+  const week1Date = member.payments.find((p) => p.week.weekNumber === 1)?.week.date ?? EQUB_START;
+  const currentWeekNum = getCurrentWeekNumber(week1Date);
   const currentWeekPayment = member.payments.find((p) => p.week.weekNumber === currentWeekNum);
   const currentWeekDate = currentWeekPayment ? formatDate(currentWeekPayment.week.date) : null;
   const weeksRemaining = Math.max(0, TOTAL_WEEKS - currentWeekNum);
@@ -154,7 +155,7 @@ export default async function MemberView({
           {/* Starts */}
           <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
             <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Starts</p>
-            <p className="text-base font-black text-gray-900 dark:text-white leading-snug">{formatDate(EQUB_START)}</p>
+            <p className="text-base font-black text-gray-900 dark:text-white leading-snug">{formatDate(week1Date)}</p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
               {currentWeekNum === 0 ? "Not yet started" : `Week ${currentWeekNum} active`}
             </p>

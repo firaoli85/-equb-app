@@ -89,6 +89,17 @@ model PaymentReviewRequest {
   @@map("payment_review_requests")
 }
 
+model EqubArchive {
+  id          String   @id @default(cuid())
+  cycleNumber Int
+  startDate   DateTime
+  endDate     DateTime
+  archivedAt  DateTime @default(now())
+  snapshot    Json
+
+  @@map("equb_archives")
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   action     String

@@ -1,4 +1,4 @@
-import { getCurrentWeekNumber, TOTAL_WEEKS } from "@/lib/equb";
+import { getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -20,7 +20,8 @@ export async function GET(req: Request) {
     return new Response("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not configured", { status: 500 });
   }
 
-  const weekNumber = getCurrentWeekNumber();
+  const week1 = await db.week.findFirst({ where: { weekNumber: 1 }, select: { date: true } });
+  const weekNumber = getCurrentWeekNumber(week1?.date ?? EQUB_START);
   if (weekNumber < 1 || weekNumber > TOTAL_WEEKS) {
     return new Response("Equb not active", { status: 200 });
   }

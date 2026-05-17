@@ -15,9 +15,9 @@ export function extraWheelWeekly(weeklyAmountCents: number): number {
   return Math.max(0, weeklyAmountCents - MAIN_WHEEL_CAP_CENTS);
 }
 
-export function generateWeekDates(): Date[] {
+export function generateWeekDates(startDate: Date = EQUB_START): Date[] {
   return Array.from({ length: TOTAL_WEEKS }, (_, i) => {
-    const d = new Date(EQUB_START);
+    const d = new Date(startDate);
     d.setUTCDate(d.getUTCDate() + i * 7);
     return d;
   });
@@ -102,10 +102,10 @@ export async function ensureWeeksExist(): Promise<void> {
   }
 }
 
-export function getCurrentWeekNumber(): number {
+export function getCurrentWeekNumber(startDate: Date = EQUB_START): number {
   const now = new Date();
   const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-  const diff = now.getTime() - EQUB_START.getTime();
+  const diff = now.getTime() - startDate.getTime();
   if (diff < 0) return 0;
   const week = Math.floor(diff / msPerWeek) + 1;
   return Math.min(week, TOTAL_WEEKS);

@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
-import { formatDate, getCurrentWeekNumber, TOTAL_WEEKS } from "@/lib/equb";
+import { formatDate, getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { notFound, redirect } from "next/navigation";
 
 export default async function MemberWeeksPage({
@@ -33,7 +33,8 @@ export default async function MemberWeeksPage({
     }
   }
 
-  const currentWeekNum = getCurrentWeekNumber();
+  const week1Date = weeks.find((w) => w.weekNumber === 1)?.date ?? EQUB_START;
+  const currentWeekNum = getCurrentWeekNumber(week1Date);
 
   function weekStatus(week: { weekNumber: number; isSkipped: boolean; winnerWheelNumber: number | null }) {
     if (week.isSkipped) return { label: "Skipped", cls: "bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800" };
