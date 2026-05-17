@@ -11,6 +11,7 @@ import {
 } from "@/lib/equb";
 import { MemberActions } from "@/components/admin/MemberActions";
 import { DeleteArchivedMemberButton } from "@/components/admin/DeleteArchivedMemberButton";
+import { DeleteAllMembersButton } from "@/components/admin/DeleteAllMembersButton";
 import { CopyButton } from "@/components/ui/CopyButton";
 import Link from "next/link";
 
@@ -50,17 +51,20 @@ export default async function MembersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Members</h1>
-        <Link
-          href="/admin/members/new"
-          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Add Member
-        </Link>
+        <div className="flex items-center gap-2">
+          <DeleteAllMembersButton />
+          <Link
+            href="/admin/members/new"
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Member
+          </Link>
+        </div>
       </div>
 
       {/* Status legend */}

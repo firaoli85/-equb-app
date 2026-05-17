@@ -435,6 +435,19 @@ export async function replaceMember(
   return { success: true };
 }
 
+export async function deleteAllMembers(): Promise<void> {
+  // Audit logs have no FK to members — clear them manually first
+  await db.auditLog.deleteMany({});
+  // Cascade on Member → Payment and Member → PaymentReviewRequest handles the rest
+  await db.member.deleteMany({});
+
+  revalidatePath("/admin/members");
+  revalidatePath("/admin");
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin/collection");
+  redirect("/admin/members");
+}
+
 export async function permanentlyDeleteArchivedMember(memberId: string): Promise<{ error?: string }> {
   const member = await db.member.findUnique({ where: { id: memberId } });
   if (!member) return { error: "Member not found." };
