@@ -130,7 +130,7 @@ export default async function MemberView({
   const extraStatus = hasExtra ? wheelStatusBadge(extraWinnerWeek, !!member.collectionConfirmedAtExtra) : null;
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-lg mx-auto px-4 pt-8 pb-8 space-y-5">
 
       {/* ── Stats section ──────────────────────────────────────────────────── */}
       <div className="space-y-3">
@@ -138,9 +138,9 @@ export default async function MemberView({
         {/* Hero card: Target Pot */}
         <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-5 py-5 shadow-sm flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Target Pot</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Target Pot</p>
             <p className="text-4xl font-black text-emerald-600 dark:text-emerald-400 leading-none">$20,000</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">20-week rotating savings group</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">20-week rotating savings group</p>
           </div>
           <div className="shrink-0 w-14 h-14 bg-emerald-50 dark:bg-emerald-950/60 rounded-2xl flex items-center justify-center border border-emerald-100 dark:border-emerald-900">
             <svg className="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -154,38 +154,38 @@ export default async function MemberView({
 
           {/* Starts */}
           <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Starts</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Starts</p>
             <p className="text-base font-black text-gray-900 dark:text-white leading-snug">{formatDate(week1Date)}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {currentWeekNum === 0 ? "Not yet started" : `Week ${currentWeekNum} active`}
             </p>
           </div>
 
           {/* Weeks Remaining */}
           <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Weeks Left</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Weeks Left</p>
             <div className="flex items-baseline gap-1">
               <p className="text-3xl font-black text-gray-900 dark:text-white leading-none">{weeksRemaining}</p>
-              <p className="text-sm font-bold text-gray-400 dark:text-gray-500">of {TOTAL_WEEKS}</p>
+              <p className="text-sm font-bold text-gray-500 dark:text-gray-400">of {TOTAL_WEEKS}</p>
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">remaining</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">remaining</p>
           </div>
 
           {/* Collected */}
           <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Collected</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Collected</p>
             <div className="flex items-baseline gap-1">
               <p className="text-3xl font-black text-gray-900 dark:text-white leading-none">{collectionsCount}</p>
-              <p className="text-sm font-bold text-gray-400 dark:text-gray-500">of {TOTAL_WEEKS}</p>
+              <p className="text-sm font-bold text-gray-500 dark:text-gray-400">of {TOTAL_WEEKS}</p>
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">payouts issued</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">payouts issued</p>
           </div>
 
           {/* On Wheel */}
           <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">On Wheel</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">On Wheel</p>
             <p className="text-3xl font-black text-gray-900 dark:text-white leading-none">{wheelEntriesRemaining}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">entries remaining</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">entries remaining</p>
           </div>
 
         </div>
@@ -199,7 +199,7 @@ export default async function MemberView({
           </svg>
         </div>
         <h1 className="text-lg font-bold text-gray-900 dark:text-white">Your Equb Summary</h1>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">20-Week Rotating Savings</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">20-Week Rotating Savings</p>
       </div>
 
       {/* ── Collection receipt confirmations (shown when a wheel wins) ─────── */}
@@ -330,7 +330,7 @@ export default async function MemberView({
         <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 mb-1.5 overflow-hidden">
           <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-700" style={{ width: `${progressPct}%` }} />
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500 text-right">{progressPct}% complete</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-right">{progressPct}% complete</p>
       </div>
 
       {/* ── Documents ──────────────────────────────────────────────────────── */}
@@ -345,7 +345,7 @@ export default async function MemberView({
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Participation Agreement Signed</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {new Date(member.confirmedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC
               </p>
             </div>
@@ -368,7 +368,7 @@ export default async function MemberView({
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   Collection Receipt Signed — Wheel #{member.wheelNumber}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {new Date(member.collectionConfirmedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC
                 </p>
               </div>
@@ -392,7 +392,7 @@ export default async function MemberView({
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   Extra Wheel Receipt Signed — Wheel #{member.extraWheelNumber}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {new Date(member.collectionConfirmedAtExtra).toLocaleString("en-US", { timeZone: "UTC" })} UTC
                 </p>
               </div>
@@ -424,7 +424,7 @@ export default async function MemberView({
                   isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30" : ""
                 }`}
               >
-                <div className="w-7 text-xs text-gray-400 dark:text-gray-500 text-center font-mono shrink-0">
+                <div className="w-7 text-xs text-gray-500 dark:text-gray-400 text-center font-mono shrink-0">
                   {p.week.weekNumber}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -443,7 +443,7 @@ export default async function MemberView({
                     />
                   )}
                   {p.method && (
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
                   )}
                   <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${statusColor(p.status as "PENDING" | "PAID" | "LATE")}`}>
                     {p.status === "PAID" ? "Paid" : p.status === "LATE" ? "Late" : "Pending"}

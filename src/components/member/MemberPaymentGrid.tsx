@@ -56,7 +56,7 @@ export function MemberPaymentGrid({ members, weeks, payments }: Props) {
         <table className="text-xs border-collapse" style={{ minWidth: "max-content" }}>
           <thead>
             <tr className="border-b border-gray-100 dark:border-gray-800">
-              <th className="sticky left-0 z-20 bg-white dark:bg-[#141414] text-left px-3 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-r-2 border-gray-200 dark:border-gray-700 min-w-[5.5rem] shadow-[2px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.4)]">
+              <th className="sticky left-0 z-20 bg-white dark:bg-[#141414] text-left px-3 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-r-2 border-gray-200 dark:border-gray-700 min-w-[5.5rem] shadow-[2px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.4)]">
                 Week
               </th>
               {members.map((m) => (
@@ -83,7 +83,7 @@ export function MemberPaymentGrid({ members, weeks, payments }: Props) {
               >
                 <td className="sticky left-0 z-10 bg-white dark:bg-[#141414] px-3 py-2 border-r-2 border-gray-200 dark:border-gray-700 whitespace-nowrap shadow-[2px_0_6px_-2px_rgba(0,0,0,0.08)] dark:shadow-[2px_0_6px_-2px_rgba(0,0,0,0.4)]">
                   <div className="font-semibold text-gray-900 dark:text-white text-xs">Wk {week.weekNumber}</div>
-                  <div className="text-gray-400 dark:text-gray-500 text-xs">{week.date}</div>
+                  <div className="text-gray-500 dark:text-gray-400 text-xs">{week.date}</div>
                   {week.isSkipped && <span className="text-red-400 text-xs font-semibold">SKIP</span>}
                 </td>
 

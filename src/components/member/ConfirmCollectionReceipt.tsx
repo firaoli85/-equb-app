@@ -63,7 +63,7 @@ export function ConfirmCollectionReceipt({
 
       {/* English */}
       <div className="bg-white dark:bg-[#141414] rounded-xl border border-blue-100 dark:border-blue-900 p-4">
-        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">English</p>
+        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">English</p>
         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
           I, <strong className="text-gray-900 dark:text-white">{memberNameEnglish}</strong>, confirm that I received{" "}
           <strong className="text-emerald-600 dark:text-emerald-400">{netFormatted}</strong> on{" "}
@@ -79,7 +79,7 @@ export function ConfirmCollectionReceipt({
 
       {/* Amharic */}
       <div className="bg-white dark:bg-[#141414] rounded-xl border border-blue-100 dark:border-blue-900 p-4">
-        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">አማርኛ</p>
+        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">አማርኛ</p>
         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed" lang="am">
           እኔ <strong className="text-gray-900 dark:text-white">{memberNameAmharic}</strong> ቁጥር{" "}
           <strong>#{winnerWheelNumber}</strong> ዪዬ ጎማ ሲወጣ{" "}

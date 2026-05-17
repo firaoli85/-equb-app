@@ -87,7 +87,7 @@ export function ReviewRequestButton({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-gray-900 dark:text-white">Request Payment Review</h3>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   Week {weekNumber} · {weekDate}
                 </p>
               </div>

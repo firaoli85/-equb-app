@@ -155,7 +155,7 @@ export function MemberDrawer({
             style={{ animation: "slideInLeft 200ms ease" }}
           >
             {/* Drawer header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800" style={{ minHeight: "56px" }}>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-950 rounded-lg flex items-center justify-center">
                   <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -244,7 +244,7 @@ export function MemberDrawer({
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
               <div>
                 <h3 className="text-base font-bold text-gray-900 dark:text-white">Request Payment Review</h3>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Admin will review and update your record</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Admin will review and update your record</p>
               </div>
               <button
                 onClick={closeReview}

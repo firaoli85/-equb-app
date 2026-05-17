@@ -49,7 +49,7 @@ export function ConfirmAgreement({
 
         {/* English */}
         <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-          <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">English</p>
+          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3">English</p>
           <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
             I, <strong className="text-gray-900 dark:text-white">{memberNameEnglish}</strong>, agree to contribute{" "}
             <strong className="text-emerald-600 dark:text-emerald-400">{weeklyAmountFormatted}</strong> every week for
@@ -62,7 +62,7 @@ export function ConfirmAgreement({
 
         {/* Amharic */}
         <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-          <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">አማርኛ</p>
+          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-3">አማርኛ</p>
           <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed" lang="am">
             እኔ <strong className="text-gray-900 dark:text-white">{memberNameAmharic}</strong> በዚህ የዕቁብ ዑደት ውስጥ ለ20 ሳምንታት
             በሙሉ <strong className="text-emerald-600 dark:text-emerald-400">{weeklyAmountFormatted}</strong> በየሳምንቱ
@@ -94,7 +94,7 @@ export function ConfirmAgreement({
             {isPending ? "Signing…" : "Sign Agreement & Access My Profile"}
           </button>
 
-          <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
             Your timestamp and IP address are recorded as proof of agreement.
           </p>
         </div>
