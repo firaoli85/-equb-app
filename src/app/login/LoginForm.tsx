@@ -57,12 +57,13 @@ export function LoginForm() {
   }
 
   function handleVerify() {
-    if (isSubmitting) return; // hard guard — state flag prevents double-tap
+    console.log("[LoginForm] handleVerify — isSubmitting:", isSubmitting, "isVerifying:", isVerifying, "code:", JSON.stringify(code), "codeExpired:", codeExpired, "secondsLeft:", secondsLeft);
+    if (isSubmitting) return;
     setOtpError(null);
     setCodeExpired(false);
     const trimmed = code.trim();
     if (!trimmed) { setOtpError("Please enter the 6-digit code."); return; }
-    console.log("[LoginForm] handleVerify — phone:", phone, "code:", trimmed);
+    if (codeExpired || secondsLeft === 0) return;
     setIsSubmitting(true);
     startVerify(async () => {
       try {
@@ -212,10 +213,17 @@ export function LoginForm() {
 
           <button
             type="button"
-            onClick={handleVerify}
-            disabled={isSubmitting || isVerifying || codeExpired || secondsLeft === 0 || code.length !== 6}
-            style={{ touchAction: "manipulation" }}
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors text-base shadow-sm"
+            onClick={() => {
+              console.log("[LoginForm] button clicked — code.length:", code.length, "disabled states:", { isSubmitting, isVerifying, codeExpired, secondsLeft });
+              handleVerify();
+            }}
+            disabled={isSubmitting}
+            style={{ touchAction: "manipulation", position: "relative", zIndex: 10 }}
+            className={`w-full py-3.5 font-bold rounded-xl transition-colors text-base shadow-sm text-white ${
+              isSubmitting || isVerifying || codeExpired || secondsLeft === 0 || code.length !== 6
+                ? "bg-emerald-400 opacity-60 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
           >
             {(isSubmitting || isVerifying) ? "Verifying…" : "Verify & Login"}
           </button>
