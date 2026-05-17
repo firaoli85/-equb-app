@@ -377,20 +377,44 @@ export async function replaceMember(
     },
   });
 
-  // Copy payment statuses from old member to new member for all weeks
-  const allWeeks = await db.week.findMany({ select: { id: true } });
+  // Copy payment statuses from old member to new member for all weeks,
+  // but reset weeks where the old member won the pot to PENDING for the new member.
+  // "Won" weeks are identified two ways:
+  //   1. week.winnerWheelNumber matches old member's primary or extra wheel number
+  //   2. An approved WON review request exists for the old member on that week
+  const [allWeeks, wonReviews] = await Promise.all([
+    db.week.findMany({ select: { id: true, winnerWheelNumber: true } }),
+    db.paymentReviewRequest.findMany({
+      where: { memberId: oldMemberId, claimedStatus: "WON", status: "APPROVED" },
+      select: { weekId: true },
+    }),
+  ]);
+
+  const wonWeekIds = new Set<string>(wonReviews.map((r) => r.weekId));
+  for (const w of allWeeks) {
+    if (
+      w.winnerWheelNumber === oldMember.wheelNumber ||
+      (oldMember.extraWheelNumber !== null && w.winnerWheelNumber === oldMember.extraWheelNumber)
+    ) {
+      wonWeekIds.add(w.id);
+    }
+  }
+
   const oldPaymentMap = new Map(oldMember.payments.map((p) => [p.weekId, p]));
 
   await db.payment.createMany({
     data: allWeeks.map((w) => {
       const prev = oldPaymentMap.get(w.id);
+      const isWonWeek = wonWeekIds.has(w.id);
+      // Won weeks stay PENDING — the new member still owes those contributions
+      // and has not received the payout, so don't inherit the old member's status.
       return {
         memberId: newMember.id,
         weekId: w.id,
-        status: prev?.status ?? "PENDING",
-        method: prev?.method ?? null,
-        paidAt: prev?.paidAt ?? null,
-        notes: prev?.notes ?? null,
+        status: isWonWeek ? "PENDING" : (prev?.status ?? "PENDING"),
+        method: isWonWeek ? null : (prev?.method ?? null),
+        paidAt: isWonWeek ? null : (prev?.paidAt ?? null),
+        notes: isWonWeek ? null : (prev?.notes ?? null),
       };
     }),
   });
