@@ -386,7 +386,7 @@ export function MemberDrawer({
         @keyframes slideInLeft { from { transform: translateX(-100%) } to { transform: translateX(0) } }
         @keyframes slideInUp   { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
         .equb-desktop-nav { display: none; }
-        @media (min-width: 768px) { .equb-desktop-nav { display: block; } }
+        @media (min-width: 768px) { .equb-desktop-nav { display: flex; align-items: center; gap: 4px; } }
         .equb-mobile-ham { display: flex; align-items: center; }
         @media (min-width: 768px) { .equb-mobile-ham { display: none; } }
       `}</style>
