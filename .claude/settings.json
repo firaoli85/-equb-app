@@ -42,7 +42,8 @@
       "Bash(mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\payment-history\" && mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\payment-history\\\\[token]\")",
       "Bash(mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\\\\documents\")",
       "Bash(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\prisma\\\\migrations\\\\20260517070000_add_equb_archive\")",
-      "Bash(Write-Output \"done\")"
+      "Bash(Write-Output \"done\")",
+      "Bash(Remove-Item \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\components\\\\member\\\\MobileSignOut.tsx\")"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",
