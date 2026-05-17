@@ -1,38 +1,55 @@
+const BASE = "https://verify.twilio.com/v2/Services";
+
 function auth(): string {
   const sid = process.env.TWILIO_ACCOUNT_SID!.trim();
   const token = process.env.TWILIO_AUTH_TOKEN!.trim();
   return `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`;
 }
 
-export async function sendSms(to: string, body: string): Promise<void> {
-  const sid = process.env.TWILIO_ACCOUNT_SID!.trim();
-  const from = process.env.TWILIO_PHONE_NUMBER!.trim();
+function serviceSid(): string {
+  return process.env.TWILIO_VERIFY_SERVICE_SID!.trim();
+}
 
-  console.log(`[sendSms] POST Messages.json — from: ${from} to: ${to}`);
-
-  const res = await fetch(
-    `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: auth(),
-      },
-      body: new URLSearchParams({ To: to, From: from, Body: body }).toString(),
-    }
-  );
-
-  const bodyText = await res.text();
-  console.log(`[sendSms] HTTP ${res.status} | body: ${bodyText}`);
+export async function sendVerification(to: string): Promise<void> {
+  const res = await fetch(`${BASE}/${serviceSid()}/Verifications`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: auth(),
+    },
+    body: new URLSearchParams({ To: to, Channel: "sms" }).toString(),
+  });
 
   if (!res.ok) {
-    throw new Error(`Twilio SMS error ${res.status}: ${bodyText}`);
+    const text = await res.text();
+    throw new Error(`Twilio Verify send error ${res.status}: ${text}`);
   }
+}
 
-  try {
-    const parsed = JSON.parse(bodyText) as { sid?: string; status?: string };
-    console.log(`[sendSms] message SID: ${parsed.sid} status: ${parsed.status}`);
-  } catch {
-    // non-JSON success body — already logged above
-  }
+// "approved"  — code is correct
+// "expired"   — 404: verification not found, already used, or timed out
+// "invalid"   — wrong code, still pending
+export type VerifyCheckResult = "approved" | "expired" | "invalid";
+
+export async function checkVerification(to: string, code: string): Promise<VerifyCheckResult> {
+  const res = await fetch(`${BASE}/${serviceSid()}/VerificationChecks`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: auth(),
+    },
+    body: new URLSearchParams({ To: to, Code: code }).toString(),
+  });
+
+  const bodyText = await res.text();
+  console.log(`[checkVerification] HTTP ${res.status} | body: ${bodyText}`);
+
+  if (res.status === 404) return "expired";
+  if (!res.ok) return "invalid";
+
+  let parsed: { status?: string };
+  try { parsed = JSON.parse(bodyText); } catch { return "invalid"; }
+
+  console.log("[checkVerification] Twilio status:", parsed.status);
+  return parsed.status === "approved" ? "approved" : "invalid";
 }

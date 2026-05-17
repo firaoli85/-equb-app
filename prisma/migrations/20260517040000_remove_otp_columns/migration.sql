@@ -1,0 +1,2 @@
+ALTER TABLE "members" DROP COLUMN IF EXISTS "otpCode";
+ALTER TABLE "members" DROP COLUMN IF EXISTS "otpExpiresAt";
