@@ -17,11 +17,19 @@ export default async function MemberActivityPage({
   if (!viewer) notFound();
   if (!viewer.confirmedAt) redirect(`/m/${token}`);
 
-  // Show only public events: payment updates and week events
-  // Excludes: member edits, suspensions, token regeneration, admin operations
+  // Show only public events: payment updates and week events.
+  // Explicitly excludes PaymentReviewRequest entity type AND any action
+  // strings that relate to review submissions, approvals, or rejections —
+  // those are admin-only records members must never see.
   const logs = await db.auditLog.findMany({
     where: {
       entityType: { in: ["Payment", "Week"] },
+      NOT: [
+        { entityType: "PaymentReviewRequest" },
+        { action: { startsWith: "REVIEW_" } },
+        { action: { startsWith: "Review approved" } },
+        { action: { contains: "review request", mode: "insensitive" } },
+      ],
     },
     orderBy: { createdAt: "desc" },
     take: 150,
