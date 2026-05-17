@@ -19,9 +19,11 @@ interface Defaults {
 
 export function EditMemberForm({
   memberId,
+  hasPinSet,
   defaults,
 }: {
   memberId: string;
+  hasPinSet: boolean;
   defaults: Defaults;
 }) {
   const boundAction = updateMember.bind(null, memberId);
@@ -179,6 +181,34 @@ export function EditMemberForm({
               </label>
             ))}
           </div>
+        </div>
+
+        {/* PIN */}
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-5">
+          <label htmlFor="pin" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+            Member PIN{" "}
+            <span className="font-normal text-gray-400">
+              ({hasPinSet ? "set — enter new 4-digit number to change" : "not set — enter 4 digits to set"})
+            </span>
+          </label>
+          <input
+            id="pin"
+            name="pin"
+            type="password"
+            maxLength={4}
+            placeholder={hasPinSet ? "••••" : "Set 4-digit PIN"}
+            autoComplete="off"
+            inputMode="numeric"
+            className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow font-mono tracking-widest"
+          />
+          {!hasPinSet && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1">
+              ⚠ No PIN set — member cannot log in until you set one
+            </p>
+          )}
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            Leave blank to keep the existing PIN unchanged.
+          </p>
         </div>
 
         {state?.error && (

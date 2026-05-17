@@ -1,0 +1,3 @@
+ALTER TABLE "members" ADD COLUMN "pin" TEXT;
+ALTER TABLE "members" ADD COLUMN "pinAttempts" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "members" ADD COLUMN "pinLockedUntil" TIMESTAMP(3);

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { randomUUID } from "crypto";
 import { headers } from "next/headers";
 import { buildFingerprint, type ClientFingerprint } from "@/lib/fingerprint";
+import { hashPin } from "@/lib/pin";
 
 export async function createMember(
   _prevState: { error?: string },
@@ -81,6 +82,7 @@ export async function updateMember(
   const extraWheelRaw = (formData.get("extraWheelNumber") as string)?.trim();
   const extraWheelNumber = extraWheelRaw ? parseInt(extraWheelRaw, 10) : null;
   const displayPreference = (formData.get("displayPreference") as string) === "ENGLISH" ? "ENGLISH" : "AMHARIC";
+  const pinRaw = (formData.get("pin") as string)?.trim();
 
   if (!nameAmharic || isNaN(weeklyDollars) || isNaN(wheelNumber)) {
     return { error: "Amharic name, weekly amount, and wheel number are required." };
@@ -91,16 +93,25 @@ export async function updateMember(
   if (extraWheelNumber !== null && (isNaN(extraWheelNumber) || extraWheelNumber < 1)) {
     return { error: "Extra wheel number must be a positive number." };
   }
+  if (pinRaw && !/^\d{4}$/.test(pinRaw)) {
+    return { error: "PIN must be exactly 4 digits." };
+  }
 
   const weeklyAmount = Math.round(weeklyDollars * 100);
 
   const before = await db.member.findUnique({ where: { id: memberId } });
   if (!before) return { error: "Member not found." };
 
+  const pinHash = pinRaw ? await hashPin(pinRaw) : undefined;
+
   try {
     await db.member.update({
       where: { id: memberId },
-      data: { nameAmharic, nameEnglishFirst, nameEnglishLast, phone, weeklyAmount, wheelNumber, extraWheelNumber, displayPreference },
+      data: {
+        nameAmharic, nameEnglishFirst, nameEnglishLast, phone,
+        weeklyAmount, wheelNumber, extraWheelNumber, displayPreference,
+        ...(pinHash !== undefined ? { pin: pinHash, pinAttempts: 0, pinLockedUntil: null } : {}),
+      },
     });
 
     await db.auditLog.create({

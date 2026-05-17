@@ -29,6 +29,9 @@ model Member {
   confirmedFingerprint              Json?
   collectionConfirmedFingerprint    Json?
   collectionConfirmedFingerprintExtra Json?
+  pin                               String?   // bcrypt hash of 4-digit PIN
+  pinAttempts                       Int       @default(0)
+  pinLockedUntil                    DateTime?
   createdAt                         DateTime          @default(now())
   payments              Payment[]
   reviewRequests        PaymentReviewRequest[]

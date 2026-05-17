@@ -1,3 +1,5 @@
+// SMS OTP disabled pending A2P Campaign approval — re-enable when approved.
+// PIN-based login is active instead (see src/actions/pin-login.ts).
 "use server";
 
 import { db } from "@/lib/db";

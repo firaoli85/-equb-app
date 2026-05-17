@@ -28,6 +28,7 @@ export default async function EditMemberPage({
 
       <EditMemberForm
         memberId={member.id}
+        hasPinSet={!!member.pin}
         defaults={{
           nameAmharic: member.nameAmharic,
           nameEnglishFirst: member.nameEnglishFirst,
