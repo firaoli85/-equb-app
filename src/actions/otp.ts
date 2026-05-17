@@ -55,45 +55,27 @@ export async function requestOtp(
 }
 
 export async function verifyOtp(
-  _prev: { error?: string },
-  formData: FormData
+  phone: string,
+  code: string
 ): Promise<{ error?: string }> {
-  // Log first — before any guard — so we can see if the action is invoked at all
-  console.log("[verifyOtp] action invoked");
+  console.log("[verifyOtp] invoked — phone:", JSON.stringify(phone), "code:", JSON.stringify(code));
 
   let redirectToken: string | null = null;
 
   try {
-    const phone = (formData.get("phone") as string | null)?.trim() ?? "";
-    const code  = (formData.get("code")  as string | null)?.trim() ?? "";
-
-    console.log("[verifyOtp] phone:", JSON.stringify(phone));
-    console.log("[verifyOtp] code: ", JSON.stringify(code));
-
-    if (!phone) {
-      console.log("[verifyOtp] FAIL — phone is empty");
-      return { error: "Session error: phone not found. Please go back and re-enter your number." };
-    }
-    if (!code) {
-      console.log("[verifyOtp] FAIL — code is empty");
-      return { error: "Please enter the 6-digit code." };
-    }
-    if (!/^\d{6}$/.test(code)) {
-      console.log("[verifyOtp] FAIL — code is not 6 digits, got:", JSON.stringify(code));
-      return { error: "The code must be exactly 6 digits." };
-    }
+    if (!phone) return { error: "Session error: phone missing. Please go back and re-enter your number." };
+    if (!code)  return { error: "Please enter the 6-digit code." };
+    if (!/^\d{6}$/.test(code)) return { error: "Code must be exactly 6 digits." };
 
     console.log("[verifyOtp] calling Twilio checkVerification");
     const approved = await checkVerification(phone, code);
     console.log("[verifyOtp] Twilio result:", approved ? "APPROVED" : "NOT APPROVED");
 
-    if (!approved) {
-      return { error: "Invalid or expired code. Please request a new one." };
-    }
+    if (!approved) return { error: "Invalid or expired code. Please request a new one." };
 
     const member = await findMemberByPhone(phone);
     if (!member) {
-      console.log("[verifyOtp] FAIL — member not found for phone:", phone);
+      console.log("[verifyOtp] member not found for phone:", phone);
       return { error: "Phone number not found." };
     }
 
@@ -104,7 +86,7 @@ export async function verifyOtp(
     return { error: "An unexpected error occurred. Please try again." };
   }
 
-  // redirect() must be called outside try/catch — it throws NEXT_REDIRECT internally
+  // redirect() throws NEXT_REDIRECT internally — must be outside try/catch
   if (redirectToken) redirect(`/m/${redirectToken}`);
   return {};
 }

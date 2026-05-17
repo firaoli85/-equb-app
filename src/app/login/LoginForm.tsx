@@ -3,12 +3,14 @@
 import { useActionState, useState, useEffect, useTransition } from "react";
 import { requestOtp, verifyOtp } from "@/actions/otp";
 
-const initialPhoneState = { error: undefined as string | undefined, sent: false, phone: undefined as string | undefined };
-const initialOtpState   = { error: undefined as string | undefined };
+const initialPhoneState = {
+  error: undefined as string | undefined,
+  sent: false,
+  phone: undefined as string | undefined,
+};
 
-const OTP_TTL = 600; // Twilio Verify codes expire after 10 minutes
+const OTP_TTL = 600;
 
-// "+13015416005" → "(301) 541-6005"
 function friendlyPhone(e164: string): string {
   const digits = e164.replace(/\D/g, "");
   const local = digits.slice(-10);
@@ -24,25 +26,40 @@ function formatSeconds(s: number): string {
 
 export function LoginForm() {
   const [phoneState, phoneAction, phonePending] = useActionState(requestOtp, initialPhoneState);
-  const [otpState, otpAction, otpPending]       = useActionState(verifyOtp, initialOtpState);
 
-  const [resentMsg, setResentMsg]   = useState<string | null>(null);
-  const [isResending, startResend]  = useTransition();
+  // OTP step state — fully controlled, no form
+  const [code, setCode]               = useState("");
+  const [otpError, setOtpError]       = useState<string | null>(null);
+  const [isVerifying, startVerify]    = useTransition();
+  const [resentMsg, setResentMsg]     = useState<string | null>(null);
+  const [isResending, startResend]    = useTransition();
   const [secondsLeft, setSecondsLeft] = useState(OTP_TTL);
 
   const step  = phoneState.sent ? 2 : 1;
   const phone = phoneState.phone ?? "";
 
-  // Start/reset countdown when we enter step 2
+  // Countdown timer — resets whenever we enter step 2 or phone changes (resend)
   useEffect(() => {
     if (step !== 2) return;
     setSecondsLeft(OTP_TTL);
     const id = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
-  }, [step, phone]); // re-start when phone changes (resend)
+  }, [step, phone]);
+
+  function handleVerify() {
+    setOtpError(null);
+    const trimmed = code.trim();
+    if (!trimmed) { setOtpError("Please enter the 6-digit code."); return; }
+    startVerify(async () => {
+      const result = await verifyOtp(phone, trimmed);
+      if (result?.error) setOtpError(result.error);
+      // on success, verifyOtp calls redirect() server-side — page navigates automatically
+    });
+  }
 
   function handleResend() {
     setResentMsg(null);
+    setOtpError(null);
     const fd = new FormData();
     fd.set("phone", phone);
     startResend(async () => {
@@ -50,6 +67,7 @@ export function LoginForm() {
       if (result.error) {
         setResentMsg(`Error: ${result.error}`);
       } else {
+        setCode("");
         setSecondsLeft(OTP_TTL);
         setResentMsg("New code sent!");
         setTimeout(() => setResentMsg(null), 5000);
@@ -60,7 +78,7 @@ export function LoginForm() {
   return (
     <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
       {step === 1 ? (
-        /* ── Step 1: Phone number ───────────────────────── */
+        /* ── Step 1: Phone number (form action is fine here) ── */
         <form action={phoneAction} className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -93,10 +111,8 @@ export function LoginForm() {
           </button>
         </form>
       ) : (
-        /* ── Step 2: OTP code ───────────────────────────── */
-        <form action={otpAction} className="space-y-4">
-          <input type="hidden" name="phone" value={phone} />
-
+        /* ── Step 2: OTP — no form, direct onClick ── */
+        <div className="space-y-4">
           {/* Confirmation chip */}
           <div className="text-center">
             <div className="inline-flex items-center gap-1.5 text-xs bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800">
@@ -113,15 +129,19 @@ export function LoginForm() {
               6-Digit Code
             </label>
             <input
-              name="code"
               type="text"
               inputMode="numeric"
               pattern="[0-9]{6}"
               maxLength={6}
-              required
               autoComplete="one-time-code"
               placeholder="000000"
               autoFocus
+              value={code}
+              onChange={(e) => {
+                setOtpError(null);
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+              }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleVerify(); }}
               style={{ fontSize: "24px", letterSpacing: "0.25em", textAlign: "center" }}
               className="w-full px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition font-mono font-bold"
             />
@@ -134,22 +154,23 @@ export function LoginForm() {
             </p>
           </div>
 
-          {otpState.error && (
+          {otpError && (
             <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900">
-              {otpState.error}
+              {otpError}
             </p>
           )}
 
           <button
-            type="submit"
-            disabled={otpPending || secondsLeft === 0}
-            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors text-base shadow-sm"
+            type="button"
+            onClick={handleVerify}
+            disabled={isVerifying || secondsLeft === 0 || code.length !== 6}
             style={{ touchAction: "manipulation" }}
+            className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors text-base shadow-sm"
           >
-            {otpPending ? "Verifying…" : "Verify & Login"}
+            {isVerifying ? "Verifying…" : "Verify & Login"}
           </button>
 
-          {/* Resend */}
+          {/* Resend / back */}
           <div className="text-center space-y-2">
             {resentMsg ? (
               <span className={`text-xs font-medium ${resentMsg.startsWith("Error") ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
@@ -166,7 +187,6 @@ export function LoginForm() {
                 {isResending ? "Sending…" : "Didn't receive it? Resend code"}
               </button>
             )}
-
             <div>
               <button
                 type="button"
@@ -177,7 +197,7 @@ export function LoginForm() {
               </button>
             </div>
           </div>
-        </form>
+        </div>
       )}
     </div>
   );
