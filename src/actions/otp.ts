@@ -45,6 +45,7 @@ export async function requestOtp(
   }
 
   const e164 = toE164(raw);
+  console.log("[requestOtp] sending verification to:", e164);
 
   try {
     await sendVerification(e164);
@@ -66,7 +67,9 @@ export async function verifyOtp(
 
   if (!phone || !code) return { error: "Phone and code are required." };
 
+  console.log("[verifyOtp] checking verification for:", phone, "code:", code);
   const approved = await checkVerification(phone, code);
+  console.log("[verifyOtp] Twilio result:", approved ? "approved" : "not approved");
   if (!approved) {
     return { error: "Invalid or expired code. Please request a new one." };
   }
