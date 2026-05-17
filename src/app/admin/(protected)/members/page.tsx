@@ -33,6 +33,19 @@ export default async function MembersPage() {
   const weekByNumber = new Map(weeks.map((w) => [w.weekNumber, w]));
   const drawnNumbers = new Set(winningWeeks.map((w) => w.winnerWheelNumber!));
 
+  // ── Fee earnings summary ──────────────────────────────────────────────────
+  let totalFeesCents = 0;
+  let collectedFeesCents = 0;
+  for (const m of members) {
+    const fee = calculateMemberFee(m.weeklyAmount);
+    totalFeesCents += fee;
+    const won =
+      drawnNumbers.has(m.wheelNumber) ||
+      (m.extraWheelNumber !== null && drawnNumbers.has(m.extraWheelNumber));
+    if (won) collectedFeesCents += fee;
+  }
+  const pendingFeesCents = totalFeesCents - collectedFeesCents;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -62,6 +75,64 @@ export default async function MembersPage() {
           <span className="w-2.5 h-2.5 rounded-full bg-gray-400 dark:bg-gray-600 inline-block" />
           Collected
         </span>
+      </div>
+
+      {/* ── Fee earnings summary card ────────────────────────────────────── */}
+      <div className="bg-emerald-600 dark:bg-emerald-700 rounded-2xl p-6 shadow-sm text-white">
+        <p className="text-xs font-bold text-emerald-100/70 uppercase tracking-widest mb-4">
+          Management Fee Earnings — All Members
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {/* Total expected */}
+          <div>
+            <p className="text-xs text-emerald-100/60 mb-1">Total Expected</p>
+            <p className="text-3xl font-black">{formatCurrency(totalFeesCents)}</p>
+            <p className="text-xs text-emerald-100/60 mt-1">
+              across {members.length} member{members.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          {/* Collected */}
+          <div>
+            <p className="text-xs text-emerald-100/60 mb-1">Collected</p>
+            <p className="text-3xl font-black">{formatCurrency(collectedFeesCents)}</p>
+            <p className="text-xs text-emerald-100/60 mt-1">
+              {drawnNumbers.size} payout{drawnNumbers.size !== 1 ? "s" : ""} completed
+            </p>
+          </div>
+          {/* Pending */}
+          <div>
+            <p className="text-xs text-emerald-100/60 mb-1">Pending</p>
+            <p className="text-3xl font-black">{formatCurrency(pendingFeesCents)}</p>
+            <p className="text-xs text-emerald-100/60 mt-1">
+              {members.length - drawnNumbers.size} member{members.length - drawnNumbers.size !== 1 ? "s" : ""} yet to win
+            </p>
+          </div>
+        </div>
+        {/* Per-member breakdown */}
+        {members.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-emerald-500/40">
+            <p className="text-xs text-emerald-100/60 mb-2">Breakdown by contribution</p>
+            <div className="flex flex-wrap gap-2">
+              {Array.from(
+                members.reduce((acc, m) => {
+                  const fee = calculateMemberFee(m.weeklyAmount);
+                  const key = m.weeklyAmount;
+                  acc.set(key, { fee, count: (acc.get(key)?.count ?? 0) + 1 });
+                  return acc;
+                }, new Map<number, { fee: number; count: number }>())
+              )
+                .sort(([a], [b]) => a - b)
+                .map(([weekly, { fee, count }]) => (
+                  <span
+                    key={weekly}
+                    className="text-xs bg-emerald-500/30 text-emerald-100 px-2.5 py-1 rounded-full"
+                  >
+                    {count}× {formatCurrency(weekly)}/wk → {formatCurrency(fee)} fee
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {members.length === 0 ? (
