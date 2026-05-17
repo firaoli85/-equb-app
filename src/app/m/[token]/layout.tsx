@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { getDisplayName, getCurrentWeekNumber, TOTAL_WEEKS } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
+import { MobileSignOut } from "@/components/member/MobileSignOut";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default async function MemberLayout({
@@ -44,6 +45,7 @@ export default async function MemberLayout({
               <span className="text-base font-bold text-gray-800 dark:text-gray-100 hidden sm:block">
                 {displayName}
               </span>
+              <MobileSignOut />
             </div>
           </div>
         </div>

@@ -134,16 +134,18 @@ export function MemberDrawer({
       </nav>
 
       {/* ── Mobile: hamburger button ── */}
-      <button
-        className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        onClick={() => setDrawerOpen(true)}
-        style={{ touchAction: "manipulation" }}
-        aria-label="Open menu"
-      >
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      <div className="block md:hidden">
+        <button
+          className="flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          onClick={() => setDrawerOpen(true)}
+          style={{ touchAction: "manipulation" }}
+          aria-label="Open menu"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
 
       {/* ── Mobile slide-in drawer ── */}
       {drawerOpen && (
