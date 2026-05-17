@@ -36,7 +36,7 @@ export function NameToggle({
           style={{ minHeight: "44px", minWidth: "44px", touchAction: "manipulation" }}
           className={`px-4 text-sm font-bold rounded-full transition-colors select-none ${
             current === pref
-              ? "bg-emerald-600 text-white shadow-sm"
+              ? "bg-emerald-600 text-white ring-1 ring-emerald-700/50 dark:ring-emerald-500/40"
               : "text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700"
           }`}
         >
