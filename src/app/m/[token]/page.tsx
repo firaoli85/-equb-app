@@ -19,6 +19,7 @@ import { notFound } from "next/navigation";
 import { ConfirmAgreement } from "@/components/member/ConfirmAgreement";
 import { ConfirmCollectionReceipt } from "@/components/member/ConfirmCollectionReceipt";
 import { NameToggle } from "@/components/member/NameToggle";
+import { AutoRefresh } from "@/components/member/AutoRefresh";
 
 export default async function MemberView({
   params,
@@ -429,6 +430,7 @@ export default async function MemberView({
             );
           })}
         </div>
+        <AutoRefresh />
       </div>
 
     </div>
