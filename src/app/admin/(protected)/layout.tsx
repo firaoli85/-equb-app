@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { validateSessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { ensureWeeksExist } from "@/lib/equb";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { db } from "@/lib/db";
 
 export default async function ProtectedAdminLayout({
   children,
@@ -20,9 +21,13 @@ export default async function ProtectedAdminLayout({
 
   await ensureWeeksExist();
 
+  const pendingReviews = await db.paymentReviewRequest.count({
+    where: { status: "PENDING" },
+  });
+
   return (
     <div className="min-h-screen bg-[#F7F8FA] dark:bg-[#0a0a0b]">
-      <AdminNav />
+      <AdminNav pendingReviews={pendingReviews} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">{children}</main>
     </div>
   );

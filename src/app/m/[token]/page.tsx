@@ -20,6 +20,7 @@ import { ConfirmAgreement } from "@/components/member/ConfirmAgreement";
 import { ConfirmCollectionReceipt } from "@/components/member/ConfirmCollectionReceipt";
 import { NameToggle } from "@/components/member/NameToggle";
 import { AutoRefresh } from "@/components/member/AutoRefresh";
+import { ReviewRequestButton } from "@/components/member/ReviewRequestButton";
 
 export default async function MemberView({
   params,
@@ -68,8 +69,8 @@ export default async function MemberView({
   const extraFee   = hasExtra ? calculateMemberFee(extraWeekly) : 0;
   const extraNet   = hasExtra ? calculateNetPayout(extraGross, extraFee) : 0;
 
-  // ── Stats queries ─────────────────────────────────────────────────────────
-  const [drawnWeeks, allMembersWheels] = await Promise.all([
+  // ── Stats queries + review requests ──────────────────────────────────────
+  const [drawnWeeks, allMembersWheels, reviewRequests] = await Promise.all([
     db.week.findMany({
       where: { winnerWheelNumber: { not: null } },
       select: { winnerWheelNumber: true, weekNumber: true, date: true, payoutStatus: true, payoutMethod: true },
@@ -77,10 +78,19 @@ export default async function MemberView({
     db.member.findMany({
       select: { wheelNumber: true, extraWheelNumber: true, wheelSuspended: true },
     }),
+    db.paymentReviewRequest.findMany({
+      where: { memberId: member.id },
+      select: { weekId: true, status: true },
+    }),
   ]);
 
   const drawnSet = new Set(drawnWeeks.map((w) => w.winnerWheelNumber!));
   const collectionsCount = drawnSet.size;
+
+  // Map weekId → review status for quick lookup in the payment table
+  const reviewByWeekId = new Map(
+    reviewRequests.map((r) => [r.weekId, r.status as "PENDING" | "APPROVED" | "REJECTED"])
+  );
 
   let wheelEntriesRemaining = 0;
   for (const m of allMembersWheels) {
@@ -402,6 +412,9 @@ export default async function MemberView({
           {member.payments.map((p) => {
             const isMainWeek  = p.week.weekNumber === member.wheelNumber;
             const isExtraWeek = hasExtra && p.week.weekNumber === member.extraWheelNumber;
+            const diff = p.week.weekNumber - currentWeekNum;
+            const reviewEligible = diff >= -2 && diff <= 2;
+            const existingReview = reviewByWeekId.get(p.weekId) ?? null;
             return (
               <div
                 key={p.id}
@@ -419,6 +432,15 @@ export default async function MemberView({
                   {isExtraWeek && <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">★ Extra wheel payout week</p>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {reviewEligible && (
+                    <ReviewRequestButton
+                      token={member.token}
+                      weekId={p.weekId}
+                      weekNumber={p.week.weekNumber}
+                      weekDate={formatDate(p.week.date)}
+                      existingStatus={existingReview}
+                    />
+                  )}
                   {p.method && (
                     <span className="text-xs text-gray-400 dark:text-gray-500">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
                   )}

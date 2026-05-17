@@ -29,8 +29,11 @@ model Member {
   confirmedFingerprint              Json?
   collectionConfirmedFingerprint    Json?
   collectionConfirmedFingerprintExtra Json?
+  otpCode               String?
+  otpExpiresAt          DateTime?
   createdAt                         DateTime          @default(now())
   payments              Payment[]
+  reviewRequests        PaymentReviewRequest[]
 
   @@map("members")
 }
@@ -46,6 +49,7 @@ model Week {
   payoutMethod      CollectionMethod?
   payoutNotes       String?
   payments          Payment[]
+  reviewRequests    PaymentReviewRequest[]
 
   @@map("weeks")
 }
@@ -65,6 +69,23 @@ model Payment {
 
   @@unique([memberId, weekId])
   @@map("payments")
+}
+
+model PaymentReviewRequest {
+  id            String       @id @default(cuid())
+  memberId      String
+  weekId        String
+  claimedStatus String
+  claimedDate   DateTime
+  notes         String?
+  adminNote     String?
+  status        ReviewStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  member        Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  week          Week         @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@map("payment_review_requests")
 }
 
 model AuditLog {
@@ -105,4 +126,10 @@ enum CollectionMethod {
   CASH
   ZELLE
   BOTH
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
