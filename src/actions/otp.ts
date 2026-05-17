@@ -9,17 +9,14 @@ function digitsOnly(s: string): string {
   return s.replace(/\D/g, "");
 }
 
-// Last 10 digits — the locally significant part of a US number
 function last10(s: string): string {
   return digitsOnly(s).slice(-10);
 }
 
-// Canonical E.164 for US numbers: +1 + last 10 digits
 function toE164(phone: string): string {
   return `+1${last10(phone)}`;
 }
 
-// Find a member whose stored phone matches the entered phone by digit comparison
 async function findMemberByPhone(entered: string) {
   const enteredLast10 = last10(entered);
   if (enteredLast10.length < 10) return null;
@@ -50,11 +47,10 @@ export async function requestOtp(
   try {
     await sendVerification(e164);
   } catch (err) {
-    console.error("Twilio Verify error:", err);
+    console.error("[requestOtp] Twilio Verify error:", err);
     return { error: "Failed to send SMS. Please try again." };
   }
 
-  // Return the E.164 number so verifyOtp uses the exact same To= value
   return { sent: true, phone: e164 };
 }
 
@@ -62,21 +58,53 @@ export async function verifyOtp(
   _prev: { error?: string },
   formData: FormData
 ): Promise<{ error?: string }> {
-  const phone = (formData.get("phone") as string)?.trim();
-  const code = (formData.get("code") as string)?.trim();
+  // Log first — before any guard — so we can see if the action is invoked at all
+  console.log("[verifyOtp] action invoked");
 
-  if (!phone || !code) return { error: "Phone and code are required." };
+  let redirectToken: string | null = null;
 
-  console.log("[verifyOtp] checking verification for:", phone, "code:", code);
-  const approved = await checkVerification(phone, code);
-  console.log("[verifyOtp] Twilio result:", approved ? "approved" : "not approved");
-  if (!approved) {
-    return { error: "Invalid or expired code. Please request a new one." };
+  try {
+    const phone = (formData.get("phone") as string | null)?.trim() ?? "";
+    const code  = (formData.get("code")  as string | null)?.trim() ?? "";
+
+    console.log("[verifyOtp] phone:", JSON.stringify(phone));
+    console.log("[verifyOtp] code: ", JSON.stringify(code));
+
+    if (!phone) {
+      console.log("[verifyOtp] FAIL — phone is empty");
+      return { error: "Session error: phone not found. Please go back and re-enter your number." };
+    }
+    if (!code) {
+      console.log("[verifyOtp] FAIL — code is empty");
+      return { error: "Please enter the 6-digit code." };
+    }
+    if (!/^\d{6}$/.test(code)) {
+      console.log("[verifyOtp] FAIL — code is not 6 digits, got:", JSON.stringify(code));
+      return { error: "The code must be exactly 6 digits." };
+    }
+
+    console.log("[verifyOtp] calling Twilio checkVerification");
+    const approved = await checkVerification(phone, code);
+    console.log("[verifyOtp] Twilio result:", approved ? "APPROVED" : "NOT APPROVED");
+
+    if (!approved) {
+      return { error: "Invalid or expired code. Please request a new one." };
+    }
+
+    const member = await findMemberByPhone(phone);
+    if (!member) {
+      console.log("[verifyOtp] FAIL — member not found for phone:", phone);
+      return { error: "Phone number not found." };
+    }
+
+    await setMemberSessionCookie(member.token);
+    redirectToken = member.token;
+  } catch (err) {
+    console.error("[verifyOtp] unexpected error:", err);
+    return { error: "An unexpected error occurred. Please try again." };
   }
 
-  const member = await findMemberByPhone(phone);
-  if (!member) return { error: "Phone number not found." };
-
-  await setMemberSessionCookie(member.token);
-  redirect(`/m/${member.token}`);
+  // redirect() must be called outside try/catch — it throws NEXT_REDIRECT internally
+  if (redirectToken) redirect(`/m/${redirectToken}`);
+  return {};
 }
