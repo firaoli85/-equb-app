@@ -46,6 +46,17 @@ export function MemberDrawer({
   const pathname = usePathname();
   const base = `/m/${token}`;
 
+  // JS-based breakpoint detection — avoids Tailwind v4 CSS cascade issues on real phones
+  const [isMobile, setIsMobile] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsMobile(!mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const [drawerOpen, setDrawerOpen]     = useState(false);
   const [reviewOpen, setReviewOpen]     = useState(false);
   const [reviewKey, setReviewKey]       = useState(0);
@@ -81,7 +92,7 @@ export function MemberDrawer({
     startSignOut(async () => { await memberSignOut(); });
   }
 
-  function handleReviewSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleReviewSubmit(e: { preventDefault(): void; currentTarget: HTMLFormElement }) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startSubmit(async () => {
@@ -93,43 +104,42 @@ export function MemberDrawer({
   return (
     <>
       {/* ── Desktop: horizontal tab row ── */}
-      <div className="equb-desktop-nav">
-      <nav
-        className="flex items-center gap-1 overflow-x-auto"
-        style={{ scrollbarWidth: "none" } as React.CSSProperties}
-      >
-        {NAV_TABS.map((tab) => {
-          const active = isActive(tab.suffix);
-          return (
-            <Link
-              key={tab.suffix}
-              href={`${base}${tab.suffix}`}
-              style={{ minHeight: "40px" }}
-              className={`flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors select-none ${
-                active
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-              }`}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-
-        <button
-          type="button"
-          onClick={openReview}
-          style={{ minHeight: "40px", touchAction: "manipulation" }}
-          className="flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      {!isMobile && (
+        <nav
+          className="flex items-center gap-1 overflow-x-auto"
+          style={{ scrollbarWidth: "none" } as React.CSSProperties}
         >
-          Request Review
-        </button>
+          {NAV_TABS.map((tab) => {
+            const active = isActive(tab.suffix);
+            return (
+              <Link
+                key={tab.suffix}
+                href={`${base}${tab.suffix}`}
+                style={{ minHeight: "40px" }}
+                className={`flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors select-none ${
+                  active
+                    ? "bg-emerald-600 text-white"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
 
-      </nav>
-      </div>
+          <button
+            type="button"
+            onClick={openReview}
+            style={{ minHeight: "40px", touchAction: "manipulation" }}
+            className="flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            Request Review
+          </button>
+        </nav>
+      )}
 
       {/* ── Mobile: hamburger button ── */}
-      <div className="equb-mobile-ham">
+      {isMobile && (
         <button
           className="flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           onClick={() => setDrawerOpen(true)}
@@ -140,7 +150,7 @@ export function MemberDrawer({
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-      </div>
+      )}
 
       {/* ── Mobile slide-in drawer ── */}
       {drawerOpen && (
@@ -214,7 +224,7 @@ export function MemberDrawer({
               </button>
             </nav>
 
-            {/* Sign Out at the bottom */}
+            {/* Sign Out at the bottom — only inside the drawer */}
             <div className="px-3 pb-8 pt-2 border-t border-gray-100 dark:border-gray-800">
               <button
                 type="button"
@@ -385,10 +395,6 @@ export function MemberDrawer({
         @keyframes fadeIn      { from { opacity: 0 } to { opacity: 1 } }
         @keyframes slideInLeft { from { transform: translateX(-100%) } to { transform: translateX(0) } }
         @keyframes slideInUp   { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
-        .equb-desktop-nav { display: none; }
-        @media (min-width: 768px) { .equb-desktop-nav { display: flex; align-items: center; gap: 4px; } }
-        .equb-mobile-ham { display: flex; align-items: center; }
-        @media (min-width: 768px) { .equb-mobile-ham { display: none; } }
       `}</style>
     </>
   );
