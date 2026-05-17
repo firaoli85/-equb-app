@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { getDisplayName } from "@/lib/equb";
 import { MemberNav } from "@/components/member/MemberNav";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default async function MemberLayout({
   children,
@@ -27,11 +28,14 @@ export default async function MemberLayout({
       {/* Sticky nav bar */}
       <div className="sticky top-0 z-10 bg-[#F7F8FA]/90 dark:bg-[#0a0a0b]/90 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800/60">
         <div className="max-w-5xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-2">
             <MemberNav token={token} />
-            <span className="shrink-0 text-base font-bold text-gray-800 dark:text-gray-100 hidden sm:block">
-              {displayName}
-            </span>
+            <div className="flex items-center gap-1 shrink-0">
+              <ThemeToggle />
+              <span className="text-base font-bold text-gray-800 dark:text-gray-100 hidden sm:block">
+                {displayName}
+              </span>
+            </div>
           </div>
         </div>
       </div>
