@@ -31,7 +31,10 @@
       "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\cron\\\\telegram\")",
       "PowerShell(Get-ChildItem \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\payments\" -Recurse | ForEach-Object { $_.FullName })",
       "PowerShell(New-Item -ItemType Directory -Force \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\prisma\\\\migrations\\\\20260517010000_add_device_fingerprint\")",
-      "PowerShell(Stop-Process -Name \"node\" -Force -ErrorAction SilentlyContinue)"
+      "PowerShell(Stop-Process -Name \"node\" -Force -ErrorAction SilentlyContinue)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",

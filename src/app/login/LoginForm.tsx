@@ -28,14 +28,18 @@ export function LoginForm() {
   const [phoneState, phoneAction, phonePending] = useActionState(requestOtp, initialPhoneState);
 
   // OTP step state — fully controlled, no form
-  const [code, setCode]               = useState("");
-  const [otpError, setOtpError]       = useState<string | null>(null);
-  const [isVerifying, startVerify]    = useTransition();
-  const [resentMsg, setResentMsg]     = useState<string | null>(null);
-  const [isResending, startResend]    = useTransition();
-  const [secondsLeft, setSecondsLeft] = useState(OTP_TTL);
+  const [code, setCode]                 = useState("");
+  const [otpError, setOtpError]         = useState<string | null>(null);
+  const [codeExpired, setCodeExpired]   = useState(false);
+  const [isVerifying, startVerify]      = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resentMsg, setResentMsg]       = useState<string | null>(null);
+  const [isResending, startResend]      = useTransition();
+  const [secondsLeft, setSecondsLeft]   = useState(OTP_TTL);
+  // True when we force the user back to phone-entry (e.g. expired/used code)
+  const [overrideStep1, setOverrideStep1] = useState(false);
 
-  const step  = phoneState.sent ? 2 : 1;
+  const step  = (phoneState.sent && !overrideStep1) ? 2 : 1;
   const phone = phoneState.phone ?? "";
 
   // Countdown timer — resets whenever we enter step 2 or phone changes (resend)
@@ -46,20 +50,43 @@ export function LoginForm() {
     return () => clearInterval(id);
   }, [step, phone]);
 
+  // Wrap phoneAction so submitting the form always clears the override
+  function handlePhoneFormAction(formData: FormData) {
+    setOverrideStep1(false);
+    phoneAction(formData);
+  }
+
   function handleVerify() {
+    if (isSubmitting) return; // hard guard — state flag prevents double-tap
     setOtpError(null);
+    setCodeExpired(false);
     const trimmed = code.trim();
     if (!trimmed) { setOtpError("Please enter the 6-digit code."); return; }
+    console.log("[LoginForm] handleVerify — phone:", phone, "code:", trimmed);
+    setIsSubmitting(true);
     startVerify(async () => {
-      const result = await verifyOtp(phone, trimmed);
-      if (result?.error) setOtpError(result.error);
-      // on success, verifyOtp calls redirect() server-side — page navigates automatically
+      try {
+        const result = await verifyOtp(phone, trimmed);
+        if (result?.expired) {
+          setCodeExpired(true);
+          // Return user to phone step — they must request a fresh code
+          setOverrideStep1(true);
+          setOtpError(result.error ?? "Code already used or expired — please request a new code.");
+        } else if (result?.error) {
+          setOtpError(result.error);
+        }
+        // on success, verifyOtp calls redirect() server-side — page navigates automatically
+      } finally {
+        setIsSubmitting(false);
+      }
     });
   }
 
   function handleResend() {
     setResentMsg(null);
     setOtpError(null);
+    setCodeExpired(false);
+    setOverrideStep1(false);
     const fd = new FormData();
     fd.set("phone", phone);
     startResend(async () => {
@@ -78,8 +105,15 @@ export function LoginForm() {
   return (
     <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
       {step === 1 ? (
-        /* ── Step 1: Phone number (form action is fine here) ── */
-        <form action={phoneAction} className="space-y-4">
+        /* ── Step 1: Phone number ── */
+        <form action={handlePhoneFormAction} className="space-y-4">
+          {/* Amber notice when code expired — prompts re-entry */}
+          {overrideStep1 && phone && (
+            <div className="px-3 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-sm">
+              Your previous code expired or was already used. Enter your number below to get a new one.
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Phone Number
@@ -90,12 +124,13 @@ export function LoginForm() {
               required
               autoComplete="tel"
               placeholder="(301) 541-6005"
+              defaultValue={overrideStep1 && phone ? friendlyPhone(phone) : undefined}
               style={{ fontSize: "16px" }}
               className="w-full px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
             />
           </div>
 
-          {phoneState.error && (
+          {phoneState.error && !overrideStep1 && (
             <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900">
               {phoneState.error}
             </p>
@@ -155,19 +190,34 @@ export function LoginForm() {
           </div>
 
           {otpError && (
-            <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900">
-              {otpError}
-            </p>
+            <div className={`px-3 py-2.5 rounded-lg border text-sm ${
+              codeExpired
+                ? "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400"
+                : "bg-red-50 dark:bg-red-950/40 border-red-100 dark:border-red-900 text-red-600 dark:text-red-400"
+            }`}>
+              <p>{otpError}</p>
+              {codeExpired && (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={isResending}
+                  style={{ touchAction: "manipulation" }}
+                  className="mt-2 w-full py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold rounded-lg text-sm transition-colors"
+                >
+                  {isResending ? "Sending…" : "Send a new code"}
+                </button>
+              )}
+            </div>
           )}
 
           <button
             type="button"
             onClick={handleVerify}
-            disabled={isVerifying || secondsLeft === 0 || code.length !== 6}
+            disabled={isSubmitting || isVerifying || codeExpired || secondsLeft === 0 || code.length !== 6}
             style={{ touchAction: "manipulation" }}
             className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold rounded-xl transition-colors text-base shadow-sm"
           >
-            {isVerifying ? "Verifying…" : "Verify & Login"}
+            {(isSubmitting || isVerifying) ? "Verifying…" : "Verify & Login"}
           </button>
 
           {/* Resend / back */}
@@ -190,7 +240,12 @@ export function LoginForm() {
             <div>
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  setOverrideStep1(true);
+                  setOtpError(null);
+                  setCodeExpired(false);
+                  setCode("");
+                }}
                 className="text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
               >
                 ← Use a different phone number

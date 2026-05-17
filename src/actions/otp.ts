@@ -57,7 +57,7 @@ export async function requestOtp(
 export async function verifyOtp(
   phone: string,
   code: string
-): Promise<{ error?: string }> {
+): Promise<{ error?: string; expired?: true }> {
   console.log("[verifyOtp] invoked — phone:", JSON.stringify(phone), "code:", JSON.stringify(code));
 
   let redirectToken: string | null = null;
@@ -68,11 +68,17 @@ export async function verifyOtp(
     if (!/^\d{6}$/.test(code)) return { error: "Code must be exactly 6 digits." };
 
     console.log("[verifyOtp] calling Twilio checkVerification");
-    const approved = await checkVerification(phone, code);
-    console.log("[verifyOtp] Twilio result:", approved ? "APPROVED" : "NOT APPROVED");
+    const result = await checkVerification(phone, code);
+    console.log("[verifyOtp] Twilio result:", result);
 
-    if (!approved) return { error: "Invalid or expired code. Please request a new one." };
+    if (result === "expired") {
+      return { error: "This code has expired or was already used. Request a new one.", expired: true };
+    }
+    if (result === "invalid") {
+      return { error: "Incorrect code. Please check and try again." };
+    }
 
+    // result === "approved"
     const member = await findMemberByPhone(phone);
     if (!member) {
       console.log("[verifyOtp] member not found for phone:", phone);
