@@ -3,20 +3,25 @@
 import { useTransition } from "react";
 import Link from "next/link";
 import { deleteMember, regenerateToken, suspendFromWheel, reinstateToWheel } from "@/actions/members";
+import { ReplaceMemberModal } from "@/components/admin/ReplaceMemberModal";
 
 export function MemberActions({
   memberId,
   memberName,
+  wheelNumber,
+  weeklyAmountFormatted,
   wheelSuspended,
 }: {
   memberId: string;
   memberName: string;
+  wheelNumber: number;
+  weeklyAmountFormatted: string;
   wheelSuspended: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
 
   function handleDelete() {
-    if (!confirm(`Remove ${memberName} from the Equb?`)) return;
+    if (!confirm(`Remove ${memberName} from the Equb? This permanently deletes their record.`)) return;
     startTransition(() => deleteMember(memberId));
   }
 
@@ -41,6 +46,12 @@ export function MemberActions({
       >
         Edit
       </Link>
+      <ReplaceMemberModal
+        memberId={memberId}
+        memberName={memberName}
+        wheelNumber={wheelNumber}
+        weeklyAmountFormatted={weeklyAmountFormatted}
+      />
       <button
         onClick={handleRegenerate}
         disabled={isPending}

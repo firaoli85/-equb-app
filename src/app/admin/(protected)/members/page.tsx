@@ -10,21 +10,23 @@ import {
   formatDate,
 } from "@/lib/equb";
 import { MemberActions } from "@/components/admin/MemberActions";
+import { DeleteArchivedMemberButton } from "@/components/admin/DeleteArchivedMemberButton";
 import { CopyButton } from "@/components/ui/CopyButton";
 import Link from "next/link";
 
 export default async function MembersPage() {
-  const [members, weeks, payments, winningWeeks] = await Promise.all([
-    db.member.findMany({ orderBy: { wheelNumber: "asc" } }),
+  const [activeMembers, archivedMembers, weeks, payments, winningWeeks] = await Promise.all([
+    db.member.findMany({ where: { isArchived: false }, orderBy: { wheelNumber: "asc" } }),
+    db.member.findMany({ where: { isArchived: true }, orderBy: { archivedAt: "desc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
-    db.payment.findMany(),
+    db.payment.findMany({ where: { member: { isArchived: false } } }),
     db.week.findMany({
       where: { winnerWheelNumber: { not: null } },
       select: { winnerWheelNumber: true },
     }),
   ]);
 
-  const potCents = calculatePot(members);
+  const potCents = calculatePot(activeMembers);
   const paidCountByMember = new Map<string, number>();
   for (const p of payments) {
     if (p.status === "PAID")
@@ -33,10 +35,10 @@ export default async function MembersPage() {
   const weekByNumber = new Map(weeks.map((w) => [w.weekNumber, w]));
   const drawnNumbers = new Set(winningWeeks.map((w) => w.winnerWheelNumber!));
 
-  // ── Fee earnings summary ──────────────────────────────────────────────────
+  // ── Fee earnings summary (active members only) ────────────────────────────
   let totalFeesCents = 0;
   let collectedFeesCents = 0;
-  for (const m of members) {
+  for (const m of activeMembers) {
     const fee = calculateMemberFee(m.weeklyAmount);
     totalFeesCents += fee;
     const won =
@@ -77,21 +79,19 @@ export default async function MembersPage() {
         </span>
       </div>
 
-      {/* ── Fee earnings summary card ────────────────────────────────────── */}
+      {/* ── Fee earnings summary card ──────────────────────────────────────── */}
       <div className="bg-emerald-600 dark:bg-emerald-700 rounded-2xl p-6 shadow-sm text-white">
         <p className="text-xs font-bold text-emerald-100/70 uppercase tracking-widest mb-4">
-          Management Fee Earnings — All Members
+          Management Fee Earnings — Active Members
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {/* Total expected */}
           <div>
             <p className="text-xs text-emerald-100/60 mb-1">Total Expected</p>
             <p className="text-3xl font-black">{formatCurrency(totalFeesCents)}</p>
             <p className="text-xs text-emerald-100/60 mt-1">
-              across {members.length} member{members.length !== 1 ? "s" : ""}
+              across {activeMembers.length} member{activeMembers.length !== 1 ? "s" : ""}
             </p>
           </div>
-          {/* Collected */}
           <div>
             <p className="text-xs text-emerald-100/60 mb-1">Collected</p>
             <p className="text-3xl font-black">{formatCurrency(collectedFeesCents)}</p>
@@ -99,22 +99,20 @@ export default async function MembersPage() {
               {drawnNumbers.size} payout{drawnNumbers.size !== 1 ? "s" : ""} completed
             </p>
           </div>
-          {/* Pending */}
           <div>
             <p className="text-xs text-emerald-100/60 mb-1">Pending</p>
             <p className="text-3xl font-black">{formatCurrency(pendingFeesCents)}</p>
             <p className="text-xs text-emerald-100/60 mt-1">
-              {members.length - drawnNumbers.size} member{members.length - drawnNumbers.size !== 1 ? "s" : ""} yet to win
+              {activeMembers.length - drawnNumbers.size} member{activeMembers.length - drawnNumbers.size !== 1 ? "s" : ""} yet to win
             </p>
           </div>
         </div>
-        {/* Per-member breakdown */}
-        {members.length > 0 && (
+        {activeMembers.length > 0 && (
           <div className="mt-5 pt-4 border-t border-emerald-500/40">
             <p className="text-xs text-emerald-100/60 mb-2">Breakdown by contribution</p>
             <div className="flex flex-wrap gap-2">
               {Array.from(
-                members.reduce((acc, m) => {
+                activeMembers.reduce((acc, m) => {
                   const fee = calculateMemberFee(m.weeklyAmount);
                   const key = m.weeklyAmount;
                   acc.set(key, { fee, count: (acc.get(key)?.count ?? 0) + 1 });
@@ -135,9 +133,10 @@ export default async function MembersPage() {
         )}
       </div>
 
-      {members.length === 0 ? (
+      {/* ── Active members table ───────────────────────────────────────────── */}
+      {activeMembers.length === 0 ? (
         <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-16 text-center">
-          <p className="text-gray-400 mb-4">No members yet.</p>
+          <p className="text-gray-400 mb-4">No active members.</p>
           <Link
             href="/admin/members/new"
             className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
@@ -166,14 +165,13 @@ export default async function MembersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-800/60">
-                {members.map((m, i) => {
+                {activeMembers.map((m, i) => {
                   const fee = calculateMemberFee(m.weeklyAmount);
                   const net = calculateNetPayout(calculateMemberGross(m.weeklyAmount), fee);
                   const payoutWeek = weekByNumber.get(m.wheelNumber);
                   const paidCount = paidCountByMember.get(m.id) ?? 0;
                   const allPaid = paidCount === 20;
 
-                  // Status: collected → gray, suspended → red, active → green
                   const hasCollected =
                     drawnNumbers.has(m.wheelNumber) ||
                     (m.extraWheelNumber !== null && drawnNumbers.has(m.extraWheelNumber));
@@ -246,7 +244,6 @@ export default async function MembersPage() {
                           {paidCount}/20
                         </span>
                       </td>
-                      {/* Doc 1: Participation Agreement */}
                       <td className="px-4 py-3">
                         {m.confirmedAt ? (
                           <div className="space-y-1">
@@ -266,7 +263,6 @@ export default async function MembersPage() {
                           </span>
                         )}
                       </td>
-                      {/* Doc 2: Collection Receipt */}
                       <td className="px-4 py-3">
                         {m.collectionConfirmedAt ? (
                           <div className="space-y-1">
@@ -303,6 +299,8 @@ export default async function MembersPage() {
                         <MemberActions
                           memberId={m.id}
                           memberName={m.nameAmharic}
+                          wheelNumber={m.wheelNumber}
+                          weeklyAmountFormatted={formatCurrency(m.weeklyAmount)}
                           wheelSuspended={m.wheelSuspended}
                         />
                       </td>
@@ -319,8 +317,71 @@ export default async function MembersPage() {
         <span className="font-semibold text-gray-700 dark:text-gray-300">
           {formatCurrency(potCents)}
         </span>{" "}
-        weekly pot across {members.length} member slots
+        weekly pot across {activeMembers.length} active member slot{activeMembers.length !== 1 ? "s" : ""}
       </div>
+
+      {/* ── Archived members ──────────────────────────────────────────────── */}
+      {archivedMembers.length > 0 && (
+        <details className="group">
+          <summary className="flex items-center gap-2 text-sm font-semibold text-gray-500 dark:text-gray-400 cursor-pointer select-none list-none hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <svg
+              className="w-4 h-4 transition-transform group-open:rotate-90"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+            Archived Members ({archivedMembers.length})
+          </summary>
+
+          <div className="mt-4 bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-800">
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Wheel</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Weekly</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Archived</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Reason</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800/60">
+                  {archivedMembers.map((m) => (
+                    <tr key={m.id} className="opacity-75 hover:opacity-100 transition-opacity">
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-gray-700 dark:text-gray-300">{m.nameAmharic}</p>
+                        {m.nameEnglishFirst && (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{m.nameEnglishFirst}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 font-mono">
+                        #{m.wheelNumber}
+                        {m.extraWheelNumber && <span className="ml-1 text-blue-400">+#{m.extraWheelNumber}</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-gray-500 dark:text-gray-400">
+                        {formatCurrency(m.weeklyAmount)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500">
+                        {m.archivedAt ? formatDate(m.archivedAt) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 max-w-xs">
+                        {m.archivedReason ?? "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <DeleteArchivedMemberButton memberId={m.id} memberName={m.nameAmharic} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+      )}
     </div>
   );
 }

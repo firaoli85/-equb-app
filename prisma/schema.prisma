@@ -16,8 +16,11 @@ model Member {
   displayPreference     DisplayPreference @default(AMHARIC)
   phone                 String?
   weeklyAmount          Int
-  wheelNumber           Int               @unique
-  extraWheelNumber      Int?              @unique
+  wheelNumber           Int
+  extraWheelNumber      Int?
+  isArchived            Boolean           @default(false)
+  archivedAt            DateTime?
+  archivedReason        String?
   wheelSuspended        Boolean           @default(false)
   token                 String            @unique @default(uuid())
   confirmedAt           DateTime?

@@ -12,7 +12,7 @@ const METHOD_LABEL: Record<string, string> = {
 
 export default async function CollectionPage() {
   const [members, weeks] = await Promise.all([
-    db.member.findMany({ orderBy: { wheelNumber: "asc" } }),
+    db.member.findMany({ where: { isArchived: false }, orderBy: { wheelNumber: "asc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
   ]);
 

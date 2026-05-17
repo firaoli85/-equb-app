@@ -14,7 +14,7 @@ export default async function MemberLayout({
   const { token } = await params;
 
   const member = await db.member.findUnique({ where: { token } });
-  if (!member) notFound();
+  if (!member || member.isArchived) notFound();
 
   if (!member.confirmedAt) {
     return <>{children}</>;

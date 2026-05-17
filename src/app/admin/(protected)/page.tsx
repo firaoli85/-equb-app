@@ -17,7 +17,7 @@ import { EndEqubButton } from "@/components/admin/EndEqubButton";
 
 export default async function AdminDashboard() {
   const [members, weeks, recentLogs, archiveCount] = await Promise.all([
-    db.member.findMany({ orderBy: { wheelNumber: "asc" } }),
+    db.member.findMany({ where: { isArchived: false }, orderBy: { wheelNumber: "asc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
     db.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
     db.equbArchive.count(),

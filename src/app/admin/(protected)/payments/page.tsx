@@ -6,9 +6,9 @@ import PaymentGrid from "@/components/admin/PaymentGrid";
 
 export default async function PaymentsPage() {
   const [members, weeks, payments] = await Promise.all([
-    db.member.findMany({ orderBy: { wheelNumber: "asc" } }),
+    db.member.findMany({ where: { isArchived: false }, orderBy: { wheelNumber: "asc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
-    db.payment.findMany(),
+    db.payment.findMany({ where: { member: { isArchived: false } } }),
   ]);
 
   const gridData = {

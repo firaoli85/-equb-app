@@ -33,6 +33,14 @@ export async function createMember(
 
   const weeklyAmount = Math.round(weeklyDollars * 100);
 
+  // Check uniqueness against active members only (partial DB index)
+  const wheelTaken = await db.member.findFirst({ where: { wheelNumber, isArchived: false } });
+  if (wheelTaken) return { error: `Wheel #${wheelNumber} is already taken.` };
+  if (extraWheelNumber !== null) {
+    const extraTaken = await db.member.findFirst({ where: { extraWheelNumber, isArchived: false } });
+    if (extraTaken) return { error: `Extra wheel #${extraWheelNumber} is already taken.` };
+  }
+
   try {
     const weeks = await db.week.findMany({ orderBy: { weekNumber: "asc" } });
     if (weeks.length === 0) return { error: "Weeks not initialized. Reload the page and try again." };
@@ -102,6 +110,18 @@ export async function updateMember(
   const before = await db.member.findUnique({ where: { id: memberId } });
   if (!before) return { error: "Member not found." };
 
+  // Check uniqueness — exclude this member itself and archived members
+  const wheelTakenByOther = await db.member.findFirst({
+    where: { wheelNumber, isArchived: false, id: { not: memberId } },
+  });
+  if (wheelTakenByOther) return { error: "That wheel number is already taken by another active member." };
+  if (extraWheelNumber !== null) {
+    const extraTakenByOther = await db.member.findFirst({
+      where: { extraWheelNumber, isArchived: false, id: { not: memberId } },
+    });
+    if (extraTakenByOther) return { error: "That extra wheel number is already taken by another active member." };
+  }
+
   const pinHash = pinRaw ? await hashPin(pinRaw) : undefined;
 
   try {
@@ -129,9 +149,7 @@ export async function updateMember(
         after: { nameAmharic, nameEnglishFirst, weeklyAmount, wheelNumber, displayPreference },
       },
     });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes("Unique constraint")) return { error: "That wheel number is already taken by another member." };
+  } catch {
     return { error: "Failed to update member." };
   }
 
@@ -312,6 +330,103 @@ export async function confirmCollectionReceipt(
   }
 
   revalidatePath(`/m/${token}`);
+  revalidatePath("/admin/members");
+  return {};
+}
+
+export async function replaceMember(
+  oldMemberId: string,
+  _prevState: { error?: string; success?: boolean },
+  formData: FormData
+): Promise<{ error?: string; success?: boolean }> {
+  const nameAmharic = (formData.get("nameAmharic") as string)?.trim();
+  const nameEnglishFirst = (formData.get("nameEnglishFirst") as string)?.trim() ?? "";
+  const nameEnglishLast = (formData.get("nameEnglishLast") as string)?.trim() ?? "";
+  const phone = (formData.get("phone") as string)?.trim() || null;
+
+  if (!nameAmharic || nameAmharic.length < 2) {
+    return { error: "Amharic name is required (min 2 characters)." };
+  }
+
+  const oldMember = await db.member.findUnique({
+    where: { id: oldMemberId },
+    include: { payments: true },
+  });
+  if (!oldMember || oldMember.isArchived) return { error: "Member not found." };
+
+  // Archive old member
+  await db.member.update({
+    where: { id: oldMemberId },
+    data: {
+      isArchived: true,
+      archivedAt: new Date(),
+      archivedReason: `Replaced by ${nameAmharic}${nameEnglishFirst ? ` (${nameEnglishFirst})` : ""}`,
+    },
+  });
+
+  // Create replacement member
+  const newMember = await db.member.create({
+    data: {
+      nameAmharic,
+      nameEnglishFirst,
+      nameEnglishLast,
+      phone,
+      weeklyAmount: oldMember.weeklyAmount,
+      wheelNumber: oldMember.wheelNumber,
+      extraWheelNumber: oldMember.extraWheelNumber,
+    },
+  });
+
+  // Copy payment statuses from old member to new member for all weeks
+  const allWeeks = await db.week.findMany({ select: { id: true } });
+  const oldPaymentMap = new Map(oldMember.payments.map((p) => [p.weekId, p]));
+
+  await db.payment.createMany({
+    data: allWeeks.map((w) => {
+      const prev = oldPaymentMap.get(w.id);
+      return {
+        memberId: newMember.id,
+        weekId: w.id,
+        status: prev?.status ?? "PENDING",
+        method: prev?.method ?? null,
+        paidAt: prev?.paidAt ?? null,
+        notes: prev?.notes ?? null,
+      };
+    }),
+  });
+
+  await db.auditLog.create({
+    data: {
+      action: `Member replaced: ${oldMember.nameAmharic} → ${nameAmharic} (Wheel #${oldMember.wheelNumber})`,
+      entityType: "Member",
+      entityId: newMember.id,
+      before: { nameAmharic: oldMember.nameAmharic, wheelNumber: oldMember.wheelNumber },
+      after: { nameAmharic, wheelNumber: oldMember.wheelNumber },
+    },
+  });
+
+  revalidatePath("/admin/members");
+  revalidatePath("/admin");
+  revalidatePath("/admin/payments");
+  return { success: true };
+}
+
+export async function permanentlyDeleteArchivedMember(memberId: string): Promise<{ error?: string }> {
+  const member = await db.member.findUnique({ where: { id: memberId } });
+  if (!member) return { error: "Member not found." };
+  if (!member.isArchived) return { error: "Only archived members can be permanently deleted." };
+
+  await db.member.delete({ where: { id: memberId } });
+
+  await db.auditLog.create({
+    data: {
+      action: `Archived member permanently deleted: ${member.nameAmharic} (Wheel #${member.wheelNumber})`,
+      entityType: "Member",
+      entityId: memberId,
+      before: { nameAmharic: member.nameAmharic, wheelNumber: member.wheelNumber },
+    },
+  });
+
   revalidatePath("/admin/members");
   return {};
 }

@@ -53,24 +53,32 @@ async function main() {
   if (deletedCount > 0) console.log(`Removed ${deletedCount} stale member(s).`);
 
   for (const m of SEED_MEMBERS) {
-    const member = await db.member.upsert({
-      where: { wheelNumber: m.wheelNumber },
-      update: {
-        nameAmharic: m.nameAmharic,
-        nameEnglishFirst: m.nameEnglishFirst,
-        nameEnglishLast: m.nameEnglishLast,
-        weeklyAmount: m.weeklyAmount,
-        extraWheelNumber: m.extraWheelNumber,
-      },
-      create: {
-        nameAmharic: m.nameAmharic,
-        nameEnglishFirst: m.nameEnglishFirst,
-        nameEnglishLast: m.nameEnglishLast,
-        weeklyAmount: m.weeklyAmount,
-        wheelNumber: m.wheelNumber,
-        extraWheelNumber: m.extraWheelNumber,
-      },
+    // wheelNumber is no longer globally unique (partial index for active members only)
+    // so we look up by wheelNumber + isArchived:false for upsert logic
+    const existing = await db.member.findFirst({
+      where: { wheelNumber: m.wheelNumber, isArchived: false },
     });
+    const member = existing
+      ? await db.member.update({
+          where: { id: existing.id },
+          data: {
+            nameAmharic: m.nameAmharic,
+            nameEnglishFirst: m.nameEnglishFirst,
+            nameEnglishLast: m.nameEnglishLast,
+            weeklyAmount: m.weeklyAmount,
+            extraWheelNumber: m.extraWheelNumber,
+          },
+        })
+      : await db.member.create({
+          data: {
+            nameAmharic: m.nameAmharic,
+            nameEnglishFirst: m.nameEnglishFirst,
+            nameEnglishLast: m.nameEnglishLast,
+            weeklyAmount: m.weeklyAmount,
+            wheelNumber: m.wheelNumber,
+            extraWheelNumber: m.extraWheelNumber,
+          },
+        });
 
     const { count: created } = await db.payment.createMany({
       data: weeks.map((w) => ({
