@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { updatePaymentStatus } from "@/actions/payments";
 import { statusColor, paymentMethodLabel } from "@/lib/utils";
 
-type Status = "PENDING" | "PAID" | "LATE";
+type Status = "PENDING" | "PAID" | "LATE" | "DEFERRED";
 type Method = "CASH" | "ZELLE" | "OTHER" | null;
 
 interface GridMember {
@@ -36,10 +36,22 @@ interface GridData {
   payments: GridPayment[];
 }
 
-const STATUS_ICON: Record<Status, string> = {
-  PAID: "✓",
-  LATE: "!",
-  PENDING: "−",
+const STATUS_ICON: Record<Status, React.ReactNode> = {
+  PAID:     "✓",
+  LATE:     "!",
+  PENDING:  "−",
+  DEFERRED: (
+    <svg className="w-3.5 h-3.5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6" />
+    </svg>
+  ),
+};
+
+const STATUS_LABELS: Record<Status, string> = {
+  PENDING:  "Pending",
+  PAID:     "Paid",
+  LATE:     "Late",
+  DEFERRED: "Deferred",
 };
 
 export default function PaymentGrid({ data }: { data: GridData }) {
@@ -118,7 +130,7 @@ export default function PaymentGrid({ data }: { data: GridData }) {
           </tbody>
         </table>
       </div>
-      <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex gap-5 text-xs text-gray-500 dark:text-gray-400">
+      <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex gap-5 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm bg-emerald-100 dark:bg-emerald-950 inline-block border border-emerald-200 dark:border-emerald-800" />
           Paid
@@ -126,6 +138,10 @@ export default function PaymentGrid({ data }: { data: GridData }) {
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm bg-amber-100 dark:bg-amber-950 inline-block border border-amber-200 dark:border-amber-800" />
           Late
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-orange-100 dark:bg-orange-950 inline-block border border-orange-200 dark:border-orange-800" />
+          Deferred
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800 inline-block border border-gray-200 dark:border-gray-700" />
@@ -178,8 +194,8 @@ function PaymentCell({
     <div className="relative inline-block">
       <button
         onClick={onOpen}
-        className={`w-10 h-10 rounded-xl text-xs font-bold transition-all hover:scale-105 hover:shadow-sm active:scale-95 touch-manipulation ${statusColor(payment.status)}`}
-        title={payment.method ? paymentMethodLabel(payment.method) : undefined}
+        className={`w-10 h-10 rounded-xl text-xs font-bold transition-all hover:scale-105 hover:shadow-sm active:scale-95 touch-manipulation flex items-center justify-center ${statusColor(payment.status)}`}
+        title={`${STATUS_LABELS[payment.status]}${payment.method ? ` · ${paymentMethodLabel(payment.method)}` : ""}`}
       >
         {STATUS_ICON[payment.status]}
       </button>
@@ -187,25 +203,25 @@ function PaymentCell({
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute z-50 bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 w-56 left-1/2 -translate-x-1/2 top-full mt-2"
+          className="absolute z-50 bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 w-60 left-1/2 -translate-x-1/2 top-full mt-2"
         >
           <div className="space-y-3">
             <div>
               <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
                 Status
               </p>
-              <div className="flex gap-1">
-                {(["PENDING", "PAID", "LATE"] as Status[]).map((s) => (
+              <div className="grid grid-cols-2 gap-1">
+                {(["PENDING", "PAID", "LATE", "DEFERRED"] as Status[]).map((s) => (
                   <button
                     key={s}
                     onClick={() => setStatus(s)}
-                    className={`flex-1 py-1.5 text-xs rounded-lg font-semibold border transition-colors ${
+                    className={`py-1.5 text-xs rounded-lg font-semibold border transition-colors ${
                       status === s
                         ? statusColor(s) + " border-transparent"
                         : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 bg-transparent"
                     }`}
                   >
-                    {s === "PENDING" ? "Pending" : s === "PAID" ? "Paid" : "Late"}
+                    {STATUS_LABELS[s]}
                   </button>
                 ))}
               </div>

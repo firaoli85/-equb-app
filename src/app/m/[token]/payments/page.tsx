@@ -52,7 +52,7 @@ export default async function MemberPaymentsPage({
   const gridPayments = payments.map((p) => ({
     memberId: p.memberId,
     weekId: p.weekId,
-    status: p.status as "PENDING" | "PAID" | "LATE",
+    status: p.status as "PENDING" | "PAID" | "LATE" | "DEFERRED",
   }));
 
   return (

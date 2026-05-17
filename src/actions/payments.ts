@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-type PaymentStatus = "PENDING" | "PAID" | "LATE";
+type PaymentStatus = "PENDING" | "PAID" | "LATE" | "DEFERRED";
 type PaymentMethod = "CASH" | "ZELLE" | "OTHER";
 
 export async function updatePaymentStatus(data: {
@@ -33,9 +33,14 @@ export async function updatePaymentStatus(data: {
 
   const displayName = `${payment.member.nameAmharic} (${payment.member.nameEnglishFirst})`;
 
+  const actionLabel =
+    data.status === "DEFERRED"
+      ? `Payment deferred — skip request approved for ${displayName}, Week ${payment.week.weekNumber}`
+      : `Payment ${data.status.toLowerCase()} — ${displayName}, Week ${payment.week.weekNumber}${data.method ? ` via ${data.method}` : ""}`;
+
   await db.auditLog.create({
     data: {
-      action: `Payment ${data.status.toLowerCase()} — ${displayName}, Week ${payment.week.weekNumber}${data.method ? ` via ${data.method}` : ""}`,
+      action: actionLabel,
       entityType: "Payment",
       entityId: data.paymentId,
       before,
@@ -43,7 +48,7 @@ export async function updatePaymentStatus(data: {
     },
   });
 
-  // Auto-suspension: check for 2+ consecutive LATE weeks
+  // Auto-suspension: only LATE payments count; DEFERRED never triggers this
   if (data.status === "LATE" && !payment.member.wheelSuspended) {
     await checkAndAutoSuspend(payment.member.id, payment.week.weekNumber);
   }
@@ -56,7 +61,6 @@ export async function updatePaymentStatus(data: {
 async function checkAndAutoSuspend(memberId: string, currentWeekNumber: number): Promise<void> {
   if (currentWeekNumber < 2) return;
 
-  // Get the two most recent weeks including this one, ordered by week number desc
   const recentPayments = await db.payment.findMany({
     where: { memberId },
     include: { week: true },

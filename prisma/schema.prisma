@@ -110,6 +110,7 @@ enum PaymentStatus {
   PENDING
   PAID
   LATE
+  DEFERRED
 }
 
 enum PaymentMethod {

@@ -12,6 +12,7 @@ const NAV_TABS = [
   { label: "Weeks",       suffix: "/weeks" },
   { label: "Collections", suffix: "/collections" },
   { label: "Activity",    suffix: "/activity" },
+  { label: "Documents",   suffix: "/documents" },
 ];
 
 const CLAIMED_OPTIONS = [
@@ -20,6 +21,7 @@ const CLAIMED_OPTIONS = [
   { value: "WON",    label: "I won that week (deduct from winnings)" },
   { value: "DOUBLE", label: "I paid two weeks at once" },
   { value: "OTHER",  label: "Other" },
+  { value: "SKIP",   label: "I need to skip this week — financial hardship" },
 ];
 
 export interface EligibleWeek {

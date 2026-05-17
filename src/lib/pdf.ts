@@ -296,3 +296,128 @@ export function buildCollectionReceiptPDF(
     doc.end();
   });
 }
+
+// ─── Payment History PDF ──────────────────────────────────────────────────────
+
+export interface PaymentHistoryEntry {
+  weekNumber: number;
+  weekDate: Date;
+  status: "PENDING" | "PAID" | "LATE" | "DEFERRED";
+  method: "CASH" | "ZELLE" | "OTHER" | null;
+  paidAt: Date | null;
+  notes: string | null;
+}
+
+export interface PaymentHistoryData {
+  memberNameAmharic: string;
+  memberNameEnglish: string;
+  weeklyAmountCents: number;
+  wheelNumber: number;
+  extraWheelNumber: number | null;
+  payments: PaymentHistoryEntry[];
+  generatedAt: Date;
+}
+
+export function buildPaymentHistoryPDF(data: PaymentHistoryData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: "LETTER", margin: 50 });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    // Header
+    doc
+      .fontSize(18)
+      .font("Helvetica-Bold")
+      .fillColor("#064e3b")
+      .text("Equb Payment History", 50, 50, { align: "center" });
+    doc.moveDown(0.3);
+    doc
+      .fontSize(9)
+      .font("Helvetica")
+      .fillColor("#6b7280")
+      .text(`Generated ${data.generatedAt.toLocaleDateString("en-US", { timeZone: "UTC" })} · All times UTC`, { align: "center" });
+    doc.moveDown(1.2);
+
+    divider(doc);
+
+    // Member info
+    sectionTitle(doc, "Member Information");
+    if (data.memberNameEnglish) row(doc, "English Name", data.memberNameEnglish);
+    const font = getFont();
+    const y = doc.y;
+    doc.fontSize(9).font("Helvetica").fillColor("#6b7280").text("Amharic Name", 50, y, { width: 220 });
+    doc.font(font).fillColor("#111827").text(data.memberNameAmharic, 280, y, { width: 282 });
+    doc.moveDown(0.2);
+    row(doc, "Wheel Number", `#${data.wheelNumber}${data.extraWheelNumber ? ` (extra: #${data.extraWheelNumber})` : ""}`);
+    row(doc, "Weekly Contribution", formatCurrency(data.weeklyAmountCents));
+    doc.moveDown(0.4);
+    divider(doc);
+
+    // Summary counts
+    const paid     = data.payments.filter((p) => p.status === "PAID").length;
+    const late     = data.payments.filter((p) => p.status === "LATE").length;
+    const deferred = data.payments.filter((p) => p.status === "DEFERRED").length;
+    const pending  = data.payments.filter((p) => p.status === "PENDING").length;
+
+    sectionTitle(doc, "Summary");
+    row(doc, "Total Weeks",    String(TOTAL_WEEKS));
+    row(doc, "Paid",           String(paid),     "#059669");
+    row(doc, "Late",           String(late),     "#d97706");
+    row(doc, "Deferred",       String(deferred), "#ea580c");
+    row(doc, "Pending",        String(pending),  "#6b7280");
+    doc.moveDown(0.4);
+    divider(doc);
+
+    // Payment table header
+    sectionTitle(doc, "Week-by-Week Detail");
+
+    const COL = { week: 50, date: 95, status: 180, method: 270, paid: 340, notes: 400 };
+    const headerY = doc.y;
+    doc.fontSize(8).font("Helvetica-Bold").fillColor("#374151");
+    doc.text("Wk",     COL.week,   headerY, { width: 40 });
+    doc.text("Date",   COL.date,   headerY, { width: 80 });
+    doc.text("Status", COL.status, headerY, { width: 85 });
+    doc.text("Method", COL.method, headerY, { width: 65 });
+    doc.text("Paid On", COL.paid,  headerY, { width: 55 });
+    doc.text("Notes",  COL.notes,  headerY, { width: 150 });
+    doc.moveDown(0.5);
+
+    const statusLabel: Record<string, string> = {
+      PAID:     "Paid",
+      LATE:     "Late",
+      PENDING:  "Pending",
+      DEFERRED: "Deferred (skip)",
+    };
+    const statusColor: Record<string, string> = {
+      PAID:     "#059669",
+      LATE:     "#d97706",
+      PENDING:  "#9ca3af",
+      DEFERRED: "#ea580c",
+    };
+
+    for (const p of data.payments) {
+      const rowY = doc.y;
+      const color = statusColor[p.status] ?? "#111827";
+      doc.fontSize(8).font("Helvetica").fillColor("#111827");
+      doc.text(String(p.weekNumber), COL.week,   rowY, { width: 40 });
+      doc.text(formatDate(p.weekDate),            COL.date, rowY, { width: 80 });
+      doc.fillColor(color).text(statusLabel[p.status] ?? p.status, COL.status, rowY, { width: 85 });
+      doc.fillColor("#111827");
+      doc.text(p.method ?? "—",                  COL.method, rowY, { width: 65 });
+      doc.text(p.paidAt ? formatDate(p.paidAt) : "—", COL.paid, rowY, { width: 55 });
+      doc.text(p.notes ?? "",                    COL.notes,  rowY, { width: 150 });
+      doc.moveDown(0.35);
+
+      // Page break guard
+      if (doc.y > 710) {
+        doc.addPage();
+        doc.moveDown(0.5);
+      }
+    }
+
+    footerNote(doc);
+    doc.end();
+  });
+}

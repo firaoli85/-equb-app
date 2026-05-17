@@ -58,20 +58,24 @@ export async function approveReview(
   });
   if (!req) return { error: "Request not found." };
 
-  // Map claimedStatus → PaymentStatus
-  const statusMap: Record<string, "PAID" | "LATE" | "PENDING"> = {
-    CASH: "PAID",
-    ZELLE: "PAID",
-    WON: "PAID",
-    DOUBLE: "PAID",
-    OTHER: "PAID",
+  const isSkip = req.claimedStatus === "SKIP";
+
+  // SKIP → DEFERRED; all payment claims → PAID
+  const statusMap: Record<string, "PAID" | "DEFERRED"> = {
+    CASH:     "PAID",
+    ZELLE:    "PAID",
+    WON:      "PAID",
+    DOUBLE:   "PAID",
+    OTHER:    "PAID",
+    SKIP:     "DEFERRED",
   };
-  const methodMap: Record<string, "CASH" | "ZELLE" | "OTHER"> = {
-    CASH: "CASH",
-    ZELLE: "ZELLE",
-    WON: "OTHER",
+  const methodMap: Record<string, "CASH" | "ZELLE" | "OTHER" | null> = {
+    CASH:   "CASH",
+    ZELLE:  "ZELLE",
+    WON:    "OTHER",
     DOUBLE: "OTHER",
-    OTHER: "OTHER",
+    OTHER:  "OTHER",
+    SKIP:   null,
   };
 
   const newStatus = statusMap[req.claimedStatus] ?? "PAID";
@@ -84,7 +88,12 @@ export async function approveReview(
   if (payment) {
     await db.payment.update({
       where: { id: payment.id },
-      data: { status: newStatus, method: newMethod, paidAt: req.claimedDate },
+      data: {
+        status: newStatus,
+        method: newMethod,
+        paidAt: isSkip ? null : req.claimedDate,
+        notes: isSkip ? "Skip approved by admin" : null,
+      },
     });
   }
 
@@ -93,12 +102,17 @@ export async function approveReview(
     data: { status: "APPROVED", adminNote: adminNote || null },
   });
 
+  const memberDisplay = `${req.member.nameAmharic} (${req.member.nameEnglishFirst})`;
+  const auditAction = isSkip
+    ? `Payment deferred — skip request approved for ${memberDisplay}, Week ${req.week.weekNumber}`
+    : `Review approved: ${req.claimedStatus} — ${memberDisplay}, Week ${req.week.weekNumber}`;
+
   await db.auditLog.create({
     data: {
-      action: "REVIEW_APPROVED",
+      action: auditAction,
       entityType: "PaymentReviewRequest",
       entityId: requestId,
-      after: { claimedStatus: req.claimedStatus, adminNote },
+      after: { claimedStatus: req.claimedStatus, newStatus, adminNote },
     },
   });
 

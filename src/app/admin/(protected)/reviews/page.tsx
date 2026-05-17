@@ -16,6 +16,7 @@ const CLAIMED_LABELS: Record<string, string> = {
   WON:    "Won that week",
   DOUBLE: "Paid two weeks at once",
   OTHER:  "Other",
+  SKIP:   "Skip request — financial hardship",
 };
 
 export default async function ReviewsPage() {
