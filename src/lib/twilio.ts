@@ -8,6 +8,8 @@ export async function sendSms(to: string, body: string): Promise<void> {
   const sid = process.env.TWILIO_ACCOUNT_SID!.trim();
   const from = process.env.TWILIO_PHONE_NUMBER!.trim();
 
+  console.log(`[sendSms] POST Messages.json — from: ${from} to: ${to}`);
+
   const res = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
     {
@@ -20,8 +22,17 @@ export async function sendSms(to: string, body: string): Promise<void> {
     }
   );
 
+  const bodyText = await res.text();
+  console.log(`[sendSms] HTTP ${res.status} | body: ${bodyText}`);
+
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Twilio SMS error ${res.status}: ${text}`);
+    throw new Error(`Twilio SMS error ${res.status}: ${bodyText}`);
+  }
+
+  try {
+    const parsed = JSON.parse(bodyText) as { sid?: string; status?: string };
+    console.log(`[sendSms] message SID: ${parsed.sid} status: ${parsed.status}`);
+  } catch {
+    // non-JSON success body — already logged above
   }
 }
