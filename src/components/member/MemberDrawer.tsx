@@ -93,7 +93,7 @@ export function MemberDrawer({
   return (
     <>
       {/* ── Desktop: horizontal tab row ── */}
-      <div className="hidden md:block">
+      <div className="equb-desktop-nav">
       <nav
         className="flex items-center gap-1 overflow-x-auto"
         style={{ scrollbarWidth: "none" } as React.CSSProperties}
@@ -125,24 +125,15 @@ export function MemberDrawer({
           Request Review
         </button>
 
-        <button
-          type="button"
-          onClick={handleSignOut}
-          disabled={isSigningOut}
-          style={{ minHeight: "40px", touchAction: "manipulation" }}
-          className="flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors disabled:opacity-50"
-        >
-          {isSigningOut ? "…" : "Sign Out"}
-        </button>
       </nav>
       </div>
 
       {/* ── Mobile: hamburger button ── */}
-      <div className="block md:hidden">
+      <div className="equb-mobile-ham">
         <button
-          className="flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           onClick={() => setDrawerOpen(true)}
-          style={{ touchAction: "manipulation" }}
+          style={{ minWidth: "44px", minHeight: "44px", touchAction: "manipulation" }}
           aria-label="Open menu"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -153,7 +144,7 @@ export function MemberDrawer({
 
       {/* ── Mobile slide-in drawer ── */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0" style={{ zIndex: 100 }}>
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => setDrawerOpen(false)}
@@ -175,8 +166,8 @@ export function MemberDrawer({
               </div>
               <button
                 onClick={() => setDrawerOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                style={{ touchAction: "manipulation" }}
+                className="flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                style={{ minWidth: "44px", minHeight: "44px", touchAction: "manipulation" }}
                 aria-label="Close"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -394,6 +385,10 @@ export function MemberDrawer({
         @keyframes fadeIn      { from { opacity: 0 } to { opacity: 1 } }
         @keyframes slideInLeft { from { transform: translateX(-100%) } to { transform: translateX(0) } }
         @keyframes slideInUp   { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+        .equb-desktop-nav { display: none; }
+        @media (min-width: 768px) { .equb-desktop-nav { display: block; } }
+        .equb-mobile-ham { display: flex; align-items: center; }
+        @media (min-width: 768px) { .equb-mobile-ham { display: none; } }
       `}</style>
     </>
   );

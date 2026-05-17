@@ -22,7 +22,6 @@ export default async function MemberLayout({
 
   const displayName = getDisplayName(member);
 
-  // Weeks within ±2 of the current week for the review request modal
   const currentWeek = getCurrentWeekNumber();
   const minWeek = Math.max(1, currentWeek - 2);
   const maxWeek = Math.min(TOTAL_WEEKS, currentWeek + 2);
@@ -35,25 +34,29 @@ export default async function MemberLayout({
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] dark:bg-[#0a0a0b]">
-      {/* z-50 ensures nav bar always renders above page content */}
-      <div className="sticky top-0 z-50 bg-[#F7F8FA]/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800/60">
-        <div className="max-w-5xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-2">
-            <MemberDrawer token={token} eligibleWeeks={eligibleWeeks} />
-            <div className="flex items-center gap-1 shrink-0">
-              <ThemeToggle />
-              <span className="text-base font-bold text-gray-800 dark:text-gray-100 hidden sm:block">
-                {displayName}
-              </span>
-            </div>
+      {/*
+        Fixed header — exactly 64px tall (h-16), z-50 on top of all content.
+        No Sign Out here. Sign Out lives only inside the hamburger drawer.
+      */}
+      <header
+        className="h-16 bg-[#F7F8FA]/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800/60"
+        style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}
+      >
+        <div className="h-full max-w-5xl mx-auto px-4 flex items-center justify-between gap-2">
+          <MemberDrawer token={token} eligibleWeeks={eligibleWeeks} />
+          <div className="flex items-center gap-1 shrink-0">
+            <ThemeToggle />
+            <span className="text-base font-bold text-gray-800 dark:text-gray-100 hidden sm:block">
+              {displayName}
+            </span>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* pt-2 adds breathing room below the sticky bar */}
-      <div className="pt-2">
+      {/* pt-16 = 64px, exactly the fixed header height — content starts below the header */}
+      <main className="pt-16">
         {children}
-      </div>
+      </main>
     </div>
   );
 }
