@@ -370,25 +370,26 @@ export function buildPaymentHistoryPDF(data: PaymentHistoryData): Promise<Buffer
     doc.moveDown(0.4);
     divider(doc);
 
-    // Payment table header
+    // Payment table
     sectionTitle(doc, "Week-by-Week Detail");
 
-    const COL = { week: 50, date: 95, status: 180, method: 270, paid: 340, notes: 400 };
-    const headerY = doc.y;
-    doc.fontSize(8).font("Helvetica-Bold").fillColor("#374151");
-    doc.text("Wk",     COL.week,   headerY, { width: 40 });
-    doc.text("Date",   COL.date,   headerY, { width: 80 });
-    doc.text("Status", COL.status, headerY, { width: 85 });
-    doc.text("Method", COL.method, headerY, { width: 65 });
-    doc.text("Paid On", COL.paid,  headerY, { width: 55 });
-    doc.text("Notes",  COL.notes,  headerY, { width: 150 });
-    doc.moveDown(0.5);
+    // Column x positions and widths
+    const COL = {
+      week:   { x: 50,  w: 30  },
+      date:   { x: 88,  w: 82  },
+      status: { x: 178, w: 88  },
+      method: { x: 274, w: 60  },
+      paid:   { x: 342, w: 72  },
+      notes:  { x: 422, w: 140 },
+    };
+    // Fixed row height — never rely on doc.y advancing between columns
+    const ROW_H = 14;
 
     const statusLabel: Record<string, string> = {
       PAID:     "Paid",
       LATE:     "Late",
       PENDING:  "Pending",
-      DEFERRED: "Deferred (skip)",
+      DEFERRED: "Deferred",
     };
     const statusColor: Record<string, string> = {
       PAID:     "#059669",
@@ -397,26 +398,56 @@ export function buildPaymentHistoryPDF(data: PaymentHistoryData): Promise<Buffer
       DEFERRED: "#ea580c",
     };
 
-    for (const p of data.payments) {
-      const rowY = doc.y;
-      const color = statusColor[p.status] ?? "#111827";
-      doc.fontSize(8).font("Helvetica").fillColor("#111827");
-      doc.text(String(p.weekNumber), COL.week,   rowY, { width: 40 });
-      doc.text(formatDate(p.weekDate),            COL.date, rowY, { width: 80 });
-      doc.fillColor(color).text(statusLabel[p.status] ?? p.status, COL.status, rowY, { width: 85 });
-      doc.fillColor("#111827");
-      doc.text(p.method ?? "—",                  COL.method, rowY, { width: 65 });
-      doc.text(p.paidAt ? formatDate(p.paidAt) : "—", COL.paid, rowY, { width: 55 });
-      doc.text(p.notes ?? "",                    COL.notes,  rowY, { width: 150 });
-      doc.moveDown(0.35);
-
-      // Page break guard
-      if (doc.y > 710) {
-        doc.addPage();
-        doc.moveDown(0.5);
-      }
+    // Draw column headers at an explicit y, return the y for the first data row
+    function drawTableHeader(y: number): void {
+      doc.fontSize(8).font("Helvetica-Bold").fillColor("#374151");
+      doc.text("Wk",      COL.week.x,   y, { width: COL.week.w,   lineBreak: false });
+      doc.text("Date",    COL.date.x,   y, { width: COL.date.w,   lineBreak: false });
+      doc.text("Status",  COL.status.x, y, { width: COL.status.w, lineBreak: false });
+      doc.text("Method",  COL.method.x, y, { width: COL.method.w, lineBreak: false });
+      doc.text("Paid On", COL.paid.x,   y, { width: COL.paid.w,   lineBreak: false });
+      doc.text("Notes",   COL.notes.x,  y, { width: COL.notes.w,  lineBreak: false });
+      // Underline below header
+      doc
+        .moveTo(50, y + ROW_H - 3)
+        .lineTo(562, y + ROW_H - 3)
+        .strokeColor("#d1d5db")
+        .lineWidth(0.5)
+        .stroke();
     }
 
+    // tableY is the sole y-position counter — never touched by doc.y after this point
+    let tableY = doc.y;
+    drawTableHeader(tableY);
+    tableY += ROW_H;
+
+    for (const p of data.payments) {
+      // Page break: add new page and re-draw the column header
+      if (tableY > 700) {
+        doc.addPage();
+        tableY = 60;
+        drawTableHeader(tableY);
+        tableY += ROW_H;
+      }
+
+      const color = statusColor[p.status] ?? "#111827";
+
+      doc.fontSize(8).font("Helvetica").fillColor("#111827");
+      doc.text(String(p.weekNumber),                   COL.week.x,   tableY, { width: COL.week.w,   lineBreak: false });
+      doc.text(formatDate(p.weekDate),                 COL.date.x,   tableY, { width: COL.date.w,   lineBreak: false });
+      doc.fillColor(color);
+      doc.text(statusLabel[p.status] ?? p.status,      COL.status.x, tableY, { width: COL.status.w, lineBreak: false });
+      doc.fillColor("#111827");
+      doc.text(p.method ?? "—",                       COL.method.x, tableY, { width: COL.method.w, lineBreak: false });
+      doc.text(p.paidAt ? formatDate(p.paidAt) : "—", COL.paid.x,   tableY, { width: COL.paid.w,   lineBreak: false });
+      doc.text(p.notes ?? "—",                        COL.notes.x,  tableY, { width: COL.notes.w,  lineBreak: false });
+
+      tableY += ROW_H;
+    }
+
+    // Re-sync doc.y to the manual counter before footer
+    doc.text("", 50, tableY + 8);
+    doc.moveDown(0.5);
     footerNote(doc);
     doc.end();
   });
