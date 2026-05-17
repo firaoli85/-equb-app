@@ -2,7 +2,6 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { getDisplayName, getCurrentWeekNumber, TOTAL_WEEKS } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
-import { MobileSignOut } from "@/components/member/MobileSignOut";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default async function MemberLayout({
@@ -36,7 +35,8 @@ export default async function MemberLayout({
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] dark:bg-[#0a0a0b]">
-      <div className="sticky top-0 z-10 bg-[#F7F8FA]/90 dark:bg-[#0a0a0b]/90 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800/60">
+      {/* z-50 ensures nav bar always renders above page content */}
+      <div className="sticky top-0 z-50 bg-[#F7F8FA]/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800/60">
         <div className="max-w-5xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <MemberDrawer token={token} eligibleWeeks={eligibleWeeks} />
@@ -45,13 +45,15 @@ export default async function MemberLayout({
               <span className="text-base font-bold text-gray-800 dark:text-gray-100 hidden sm:block">
                 {displayName}
               </span>
-              <MobileSignOut />
             </div>
           </div>
         </div>
       </div>
 
-      {children}
+      {/* pt-2 adds breathing room below the sticky bar */}
+      <div className="pt-2">
+        {children}
+      </div>
     </div>
   );
 }

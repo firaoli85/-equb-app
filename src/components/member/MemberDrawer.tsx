@@ -93,8 +93,9 @@ export function MemberDrawer({
   return (
     <>
       {/* ── Desktop: horizontal tab row ── */}
+      <div className="hidden md:block">
       <nav
-        className="hidden md:flex items-center gap-1 overflow-x-auto"
+        className="flex items-center gap-1 overflow-x-auto"
         style={{ scrollbarWidth: "none" } as React.CSSProperties}
       >
         {NAV_TABS.map((tab) => {
@@ -134,6 +135,7 @@ export function MemberDrawer({
           {isSigningOut ? "…" : "Sign Out"}
         </button>
       </nav>
+      </div>
 
       {/* ── Mobile: hamburger button ── */}
       <div className="block md:hidden">
