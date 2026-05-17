@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { memberSignOut } from "@/actions/member-auth";
@@ -27,7 +28,7 @@ const CLAIMED_OPTIONS = [
 export interface EligibleWeek {
   id: string;
   weekNumber: number;
-  date: string; // ISO string
+  date: string;
 }
 
 function fmtDate(iso: string) {
@@ -46,16 +47,18 @@ export function MemberDrawer({
   const pathname = usePathname();
   const base = `/m/${token}`;
 
-  // JS-based breakpoint detection — avoids Tailwind v4 CSS cascade issues on real phones
+  // Detect mobile vs desktop — no CSS media queries
   const [isMobile, setIsMobile] = useState(true);
-
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsMobile(!mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
+
+  // Must be mounted before createPortal can target document.body
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const [drawerOpen, setDrawerOpen]     = useState(false);
   const [reviewOpen, setReviewOpen]     = useState(false);
@@ -64,8 +67,10 @@ export function MemberDrawer({
   const [isSubmitting, startSubmit]     = useTransition();
   const [isSigningOut, startSignOut]    = useTransition();
 
+  // Close drawer on route change
   useEffect(() => { setDrawerOpen(false); }, [pathname]);
 
+  // Lock body scroll when any overlay is open
   useEffect(() => {
     document.body.style.overflow = (drawerOpen || reviewOpen) ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -101,71 +106,41 @@ export function MemberDrawer({
     });
   }
 
-  return (
-    <>
-      {/* ── Desktop: horizontal tab row ── */}
-      {!isMobile && (
-        <nav
-          className="flex items-center gap-1 overflow-x-auto"
-          style={{ scrollbarWidth: "none" } as React.CSSProperties}
-        >
-          {NAV_TABS.map((tab) => {
-            const active = isActive(tab.suffix);
-            return (
-              <Link
-                key={tab.suffix}
-                href={`${base}${tab.suffix}`}
-                style={{ minHeight: "40px" }}
-                className={`flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors select-none ${
-                  active
-                    ? "bg-emerald-600 text-white"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-
-          <button
-            type="button"
-            onClick={openReview}
-            style={{ minHeight: "40px", touchAction: "manipulation" }}
-            className="flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            Request Review
-          </button>
-        </nav>
-      )}
-
-      {/* ── Mobile: hamburger button ── */}
-      {isMobile && (
-        <button
-          className="flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          onClick={() => setDrawerOpen(true)}
-          style={{ minWidth: "44px", minHeight: "44px", touchAction: "manipulation" }}
-          aria-label="Open menu"
-        >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      )}
-
-      {/* ── Mobile slide-in drawer ── */}
-      {drawerOpen && (
-        <div className="fixed inset-0" style={{ zIndex: 100 }}>
+  // Drawer portalled to document.body — escapes the header's stacking context
+  const drawerPortal = mounted && drawerOpen
+    ? createPortal(
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999 }}>
+          {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/50"
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              animation: "equb-fadeIn 200ms ease",
+            }}
             onClick={() => setDrawerOpen(false)}
-            style={{ animation: "fadeIn 200ms ease" }}
           />
+          {/* Panel */}
           <div
-            className="absolute top-0 left-0 h-full w-72 max-w-[85vw] bg-white dark:bg-[#141414] shadow-2xl flex flex-col"
-            style={{ animation: "slideInLeft 200ms ease" }}
+            className="bg-white dark:bg-[#141414]"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              height: "100%",
+              width: "288px",
+              maxWidth: "85vw",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4)",
+              display: "flex",
+              flexDirection: "column",
+              animation: "equb-slideInLeft 200ms ease",
+            }}
           >
             {/* Drawer header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800" style={{ minHeight: "56px" }}>
+            <div
+              className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800"
+              style={{ minHeight: "56px", padding: "12px 16px" }}
+            >
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 bg-emerald-100 dark:bg-emerald-950 rounded-lg flex items-center justify-center">
                   <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,7 +153,7 @@ export function MemberDrawer({
                 onClick={() => setDrawerOpen(false)}
                 className="flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 style={{ minWidth: "44px", minHeight: "44px", touchAction: "manipulation" }}
-                aria-label="Close"
+                aria-label="Close menu"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -187,7 +162,10 @@ export function MemberDrawer({
             </div>
 
             {/* Nav links */}
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <nav
+              className="flex-1 overflow-y-auto"
+              style={{ padding: "16px 12px", display: "flex", flexDirection: "column", gap: "4px" }}
+            >
               {NAV_TABS.map((tab) => {
                 const active = isActive(tab.suffix);
                 return (
@@ -224,7 +202,7 @@ export function MemberDrawer({
               </button>
             </nav>
 
-            {/* Sign Out at the bottom — only inside the drawer */}
+            {/* Sign Out — only at the bottom of the drawer */}
             <div className="px-3 pb-8 pt-2 border-t border-gray-100 dark:border-gray-800">
               <button
                 type="button"
@@ -240,16 +218,24 @@ export function MemberDrawer({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+        document.body
+      )
+    : null;
 
-      {/* ── Request Payment Review modal ── */}
-      {reviewOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={closeReview} />
+  // Review modal also portalled to document.body
+  const reviewPortal = mounted && reviewOpen
+    ? createPortal(
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)" }}
+            onClick={closeReview}
+          />
           <div
             className="relative w-full sm:max-w-md bg-white dark:bg-[#141414] rounded-t-2xl sm:rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 z-10 max-h-[90vh] flex flex-col"
-            style={{ animation: "slideInUp 200ms ease" }}
+            style={{ animation: "equb-slideInUp 200ms ease" }}
           >
             <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
               <div>
@@ -388,13 +374,66 @@ export function MemberDrawer({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )
+    : null;
+
+  return (
+    <>
+      {/* Hamburger (mobile) or tab row (desktop) — inline inside the header */}
+      {isMobile ? (
+        <button
+          className="flex items-center justify-center rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          onClick={() => setDrawerOpen(true)}
+          style={{ minWidth: "44px", minHeight: "44px", touchAction: "manipulation" }}
+          aria-label="Open menu"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      ) : (
+        <nav
+          className="flex items-center gap-1 overflow-x-auto"
+          style={{ scrollbarWidth: "none" } as React.CSSProperties}
+        >
+          {NAV_TABS.map((tab) => {
+            const active = isActive(tab.suffix);
+            return (
+              <Link
+                key={tab.suffix}
+                href={`${base}${tab.suffix}`}
+                style={{ minHeight: "40px" }}
+                className={`flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap transition-colors select-none ${
+                  active
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
+          <button
+            type="button"
+            onClick={openReview}
+            style={{ minHeight: "40px", touchAction: "manipulation" }}
+            className="flex items-center justify-center px-4 rounded-xl text-sm font-semibold whitespace-nowrap text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            Request Review
+          </button>
+        </nav>
       )}
 
+      {/* Both portals render to document.body — outside the header stacking context */}
+      {drawerPortal}
+      {reviewPortal}
+
       <style>{`
-        @keyframes fadeIn      { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideInLeft { from { transform: translateX(-100%) } to { transform: translateX(0) } }
-        @keyframes slideInUp   { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+        @keyframes equb-fadeIn      { from { opacity: 0 }                              to { opacity: 1 } }
+        @keyframes equb-slideInLeft { from { transform: translateX(-100%) }            to { transform: translateX(0) } }
+        @keyframes equb-slideInUp   { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
       `}</style>
     </>
   );
