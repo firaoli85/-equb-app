@@ -38,12 +38,16 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\" -Recurse -Force)",
       "Bash(Sort-Object FullName)",
       "Bash(Get-ChildItem \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\admin\\\\\\(protected\\)\\\\members\" -Recurse -Name)",
-      "Bash(node -e \"require\\('bcryptjs'\\).hash\\('1234', 10, \\(e,h\\) => console.log\\(h ? 'OK' : e\\)\\)\")"
+      "Bash(node -e \"require\\('bcryptjs'\\).hash\\('1234', 10, \\(e,h\\) => console.log\\(h ? 'OK' : e\\)\\)\")",
+      "Bash(mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\payment-history\" && mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\api\\\\payment-history\\\\[token]\")",
+      "Bash(mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\\\\documents\")"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",
       "C:\\Users\\firao\\Desktop\\equb-app\\src\\app\\api\\collection-receipt",
-      "c:\\Users\\firao\\Desktop\\equb-app\\src\\app\\admin\\(protected)\\members\\[id]"
+      "c:\\Users\\firao\\Desktop\\equb-app\\src\\app\\admin\\(protected)\\members\\[id]",
+      "c:\\Users\\firao\\Desktop\\equb-app\\src\\app\\api\\payment-history",
+      "c:\\Users\\firao\\Desktop\\equb-app\\src\\app\\m\\[token]"
     ]
   }
 }
