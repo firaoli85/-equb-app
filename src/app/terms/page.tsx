@@ -69,7 +69,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">8. Contact</h2>
           <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-            Questions about these terms: [YOUR EMAIL HERE]
+            Questions about these terms: firaoliseboka@gmail.com
           </p>
         </section>
       </div>

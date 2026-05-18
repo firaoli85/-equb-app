@@ -11,7 +11,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">1. Who We Are</h2>
           <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
             Equb is a rotating savings group management platform operated by Firaoli Seboka,
-            serving Equb group members in the DMV area. You can reach us at [YOUR EMAIL HERE].
+            serving Equb group members in the DMV area. You can reach us at firaoliseboka@gmail.com.
           </p>
         </section>
 
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
             By providing your phone number you consent to receive SMS messages related to your Equb membership.
             Message frequency varies based on Equb activities and payment schedules.
             Message and data rates may apply. Reply <strong>STOP</strong> at any time to opt out.
-            Reply <strong>HELP</strong> for assistance. You can also contact us at [YOUR EMAIL HERE].
+            Reply <strong>HELP</strong> for assistance. You can also contact us at firaoliseboka@gmail.com.
           </p>
         </section>
 
@@ -64,7 +64,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">7. Contact</h2>
           <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-            For questions about this policy or to request data deletion, contact us at: [YOUR EMAIL HERE]
+            For questions about this policy or to request data deletion, contact us at: firaoliseboka@gmail.com
           </p>
         </section>
       </div>
