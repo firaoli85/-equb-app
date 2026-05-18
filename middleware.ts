@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "experimental-edge";
+
 // Edge-compatible: cookie presence only — full DB validation happens in layout
 export function middleware(req: NextRequest) {
   const session = req.cookies.get("equb_member_session");
