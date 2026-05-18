@@ -111,8 +111,8 @@ export function SpinWheel({
 
   function handleManualAssign() {
     const num = parseInt(manualInput, 10);
-    if (!num || num < 1) { setManualError("Enter a valid wheel number."); return; }
-    if (!availableNumbers.includes(num)) { setManualError(`Wheel #${num} has already been drawn or does not exist.`); return; }
+    if (!num || num < 1) { setManualError("Enter a valid lucky number."); return; }
+    if (!availableNumbers.includes(num)) { setManualError(`Lucky #${num} has already been drawn or does not exist.`); return; }
     if (!selectedWeekId) { setManualError("Select a week first."); return; }
     setManualError("");
     startManualTransition(async () => {
@@ -338,7 +338,7 @@ export function SpinWheel({
             value={manualInput}
             onChange={(e) => { setManualInput(e.target.value); setManualError(""); }}
             onKeyDown={(e) => e.key === "Enter" && handleManualAssign()}
-            placeholder="Wheel #"
+            placeholder="Lucky #"
             disabled={spinning || isPending || isManualPending}
             className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
           />

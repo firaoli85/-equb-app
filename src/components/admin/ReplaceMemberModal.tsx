@@ -50,7 +50,7 @@ export function ReplaceMemberModal({
             <div className="px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
               <h2 className="text-base font-bold text-gray-900 dark:text-white">Replace Member</h2>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                Replacing <span className="font-semibold text-gray-700 dark:text-gray-300">{memberName}</span> — Wheel #{wheelNumber}
+                Replacing <span className="font-semibold text-gray-700 dark:text-gray-300">{memberName}</span> — Lucky #{wheelNumber}
               </p>
             </div>
 
@@ -58,7 +58,7 @@ export function ReplaceMemberModal({
               {/* Pre-filled read-only fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Wheel #</p>
+                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Lucky #</p>
                   <p className="text-sm font-bold text-gray-900 dark:text-white px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                     #{wheelNumber}
                   </p>

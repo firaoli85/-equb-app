@@ -181,9 +181,9 @@ export default async function MemberView({
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">payouts issued</p>
           </div>
 
-          {/* On Wheel */}
+          {/* On Draw */}
           <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">On Wheel</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">On Draw</p>
             <p className="text-3xl font-black text-gray-900 dark:text-white leading-none">{wheelEntriesRemaining}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">entries remaining</p>
           </div>
@@ -249,11 +249,11 @@ export default async function MemberView({
           </div>
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <span className="bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 text-sm font-bold px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-              Wheel #{member.wheelNumber}
+              Lucky #{member.wheelNumber}
             </span>
             {member.extraWheelNumber && (
               <span className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-bold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800">
-                + Wheel #{member.extraWheelNumber}
+                + Lucky #{member.extraWheelNumber}
               </span>
             )}
           </div>
@@ -279,7 +279,7 @@ export default async function MemberView({
       {/* Card 2: Extra wheel entry */}
       {hasExtra && member.extraWheelNumber && (
         <PayoutCard
-          label="Extra Wheel Entry"
+          label="Extra Lucky Entry"
           wheelNumber={member.extraWheelNumber}
           weeklyAmount={extraWeekly}
           gross={extraGross}
@@ -366,7 +366,7 @@ export default async function MemberView({
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  Collection Receipt Signed — Wheel #{member.wheelNumber}
+                  Collection Receipt Signed — Lucky #{member.wheelNumber}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {new Date(member.collectionConfirmedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC
@@ -390,7 +390,7 @@ export default async function MemberView({
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  Extra Wheel Receipt Signed — Wheel #{member.extraWheelNumber}
+                  Extra Lucky Receipt Signed — Lucky #{member.extraWheelNumber}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {new Date(member.collectionConfirmedAtExtra).toLocaleString("en-US", { timeZone: "UTC" })} UTC
@@ -497,7 +497,7 @@ function PayoutCard({
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-xs font-bold text-white/60 uppercase tracking-widest">{label}</p>
-          <p className="text-sm font-bold text-white mt-0.5">Wheel #{wheelNumber}</p>
+          <p className="text-sm font-bold text-white mt-0.5">Lucky #{wheelNumber}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.cls}`}>

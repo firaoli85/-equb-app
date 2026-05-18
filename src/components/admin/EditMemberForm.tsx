@@ -132,7 +132,7 @@ export function EditMemberForm({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="wheelNumber" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              Wheel Number <span className="text-red-500">*</span>
+              Lucky Number <span className="text-red-500">*</span>
             </label>
             <input
               id="wheelNumber"
@@ -146,7 +146,7 @@ export function EditMemberForm({
           </div>
           <div>
             <label htmlFor="extraWheelNumber" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              Extra Wheel # <span className="text-gray-400 font-normal">(optional)</span>
+              Extra Lucky # <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               id="extraWheelNumber"

@@ -43,7 +43,7 @@ export function ConfirmCollectionReceipt({
     });
   }
 
-  const label = wheelType === "extra" ? "Extra Wheel Collection Receipt" : "Collection Receipt Agreement";
+  const label = wheelType === "extra" ? "Extra Lucky Number Collection Receipt" : "Collection Receipt Agreement";
 
   return (
     <div className="bg-blue-50 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800 rounded-2xl p-6 space-y-4 shadow-sm">
@@ -56,7 +56,7 @@ export function ConfirmCollectionReceipt({
         <div>
           <h3 className="text-sm font-bold text-blue-900 dark:text-blue-200">{label}</h3>
           <p className="text-xs text-blue-600 dark:text-blue-400">
-            Wheel #{winnerWheelNumber} · Please acknowledge receipt of your payout
+            Lucky #{winnerWheelNumber} · Please acknowledge receipt of your payout
           </p>
         </div>
       </div>

@@ -23,24 +23,24 @@ export async function createMember(
   const extraWheelNumber = extraWheelRaw ? parseInt(extraWheelRaw, 10) : null;
 
   if (!nameAmharic || isNaN(weeklyDollars) || isNaN(wheelNumber)) {
-    return { error: "Amharic name, weekly amount, and wheel number are required." };
+    return { error: "Amharic name, weekly amount, and lucky number are required." };
   }
   if (!/^\d{4}$/.test(pinRaw)) return { error: "PIN is required and must be exactly 4 digits." };
   if (nameAmharic.length < 2) return { error: "Amharic name must be at least 2 characters." };
   if (weeklyDollars < 1) return { error: "Weekly amount must be at least $1." };
-  if (wheelNumber < 1) return { error: "Wheel number must be a positive number." };
+  if (wheelNumber < 1) return { error: "Lucky number must be a positive number." };
   if (extraWheelNumber !== null && (isNaN(extraWheelNumber) || extraWheelNumber < 1)) {
-    return { error: "Extra wheel number must be a positive number." };
+    return { error: "Extra lucky number must be a positive number." };
   }
 
   const weeklyAmount = Math.round(weeklyDollars * 100);
 
   // Check uniqueness against active members only (partial DB index)
   const wheelTaken = await db.member.findFirst({ where: { wheelNumber, isArchived: false } });
-  if (wheelTaken) return { error: `Wheel #${wheelNumber} is already taken.` };
+  if (wheelTaken) return { error: `Lucky #${wheelNumber} is already taken.` };
   if (extraWheelNumber !== null) {
     const extraTaken = await db.member.findFirst({ where: { extraWheelNumber, isArchived: false } });
-    if (extraTaken) return { error: `Extra wheel #${extraWheelNumber} is already taken.` };
+    if (extraTaken) return { error: `Extra lucky #${extraWheelNumber} is already taken.` };
   }
 
   try {
@@ -62,7 +62,7 @@ export async function createMember(
 
     await db.auditLog.create({
       data: {
-        action: `Member added: ${nameAmharic} (${nameEnglishFirst}) — $${weeklyDollars}/wk, Wheel #${wheelNumber}`,
+        action: `Member added: ${nameAmharic} (${nameEnglishFirst}) — $${weeklyDollars}/wk, Lucky #${wheelNumber}`,
         entityType: "Member",
         entityId: member.id,
         after: { nameAmharic, nameEnglishFirst, nameEnglishLast, weeklyAmount, wheelNumber },
@@ -70,7 +70,7 @@ export async function createMember(
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes("Unique constraint")) return { error: `Wheel #${wheelNumber} is already taken.` };
+    if (msg.includes("Unique constraint")) return { error: `Lucky #${wheelNumber} is already taken.` };
     return { error: "Failed to add member." };
   }
 
@@ -96,13 +96,13 @@ export async function updateMember(
   const pinRaw = (formData.get("pin") as string)?.trim();
 
   if (!nameAmharic || isNaN(weeklyDollars) || isNaN(wheelNumber)) {
-    return { error: "Amharic name, weekly amount, and wheel number are required." };
+    return { error: "Amharic name, weekly amount, and lucky number are required." };
   }
   if (nameAmharic.length < 2) return { error: "Amharic name must be at least 2 characters." };
   if (weeklyDollars < 1) return { error: "Weekly amount must be at least $1." };
-  if (wheelNumber < 1) return { error: "Wheel number must be a positive number." };
+  if (wheelNumber < 1) return { error: "Lucky number must be a positive number." };
   if (extraWheelNumber !== null && (isNaN(extraWheelNumber) || extraWheelNumber < 1)) {
-    return { error: "Extra wheel number must be a positive number." };
+    return { error: "Extra lucky number must be a positive number." };
   }
   if (pinRaw && !/^\d{4}$/.test(pinRaw)) {
     return { error: "PIN must be exactly 4 digits." };
@@ -117,12 +117,12 @@ export async function updateMember(
   const wheelTakenByOther = await db.member.findFirst({
     where: { wheelNumber, isArchived: false, id: { not: memberId } },
   });
-  if (wheelTakenByOther) return { error: "That wheel number is already taken by another active member." };
+  if (wheelTakenByOther) return { error: "That lucky number is already taken by another active member." };
   if (extraWheelNumber !== null) {
     const extraTakenByOther = await db.member.findFirst({
       where: { extraWheelNumber, isArchived: false, id: { not: memberId } },
     });
-    if (extraTakenByOther) return { error: "That extra wheel number is already taken by another active member." };
+    if (extraTakenByOther) return { error: "That extra lucky number is already taken by another active member." };
   }
 
   const pinHash = pinRaw ? await hashPin(pinRaw) : undefined;
@@ -192,7 +192,7 @@ export async function suspendFromWheel(memberId: string): Promise<void> {
 
   await db.auditLog.create({
     data: {
-      action: `Wheel suspended: ${member.nameAmharic} (${member.nameEnglishFirst}) — removed from spin draw`,
+      action: `Draw suspended: ${member.nameAmharic} (${member.nameEnglishFirst}) — removed from spin draw`,
       entityType: "Member",
       entityId: memberId,
       before: { wheelSuspended: false },
@@ -424,7 +424,7 @@ export async function replaceMember(
 
   await db.auditLog.create({
     data: {
-      action: `Member replaced: ${oldMember.nameAmharic} → ${nameAmharic} (Wheel #${oldMember.wheelNumber})`,
+      action: `Member replaced: ${oldMember.nameAmharic} → ${nameAmharic} (Lucky #${oldMember.wheelNumber})`,
       entityType: "Member",
       entityId: newMember.id,
       before: { nameAmharic: oldMember.nameAmharic, wheelNumber: oldMember.wheelNumber },
@@ -460,7 +460,7 @@ export async function permanentlyDeleteArchivedMember(memberId: string): Promise
 
   await db.auditLog.create({
     data: {
-      action: `Archived member permanently deleted: ${member.nameAmharic} (Wheel #${member.wheelNumber})`,
+      action: `Archived member permanently deleted: ${member.nameAmharic} (Lucky #${member.wheelNumber})`,
       entityType: "Member",
       entityId: memberId,
       before: { nameAmharic: member.nameAmharic, wheelNumber: member.wheelNumber },

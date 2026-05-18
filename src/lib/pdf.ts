@@ -158,7 +158,7 @@ export function buildParticipationAgreementPDF(
     sectionTitle(doc, "Member Information");
     amharicRow(doc, "Name (Amharic)", amharicName);
     if (data.memberNameEnglish) row(doc, "Name (English)", data.memberNameEnglish);
-    row(doc, "Wheel Number", `#${data.wheelNumber}${data.extraWheelNumber ? ` + #${data.extraWheelNumber}` : ""}`);
+    row(doc, "Lucky Number", `#${data.wheelNumber}${data.extraWheelNumber ? ` + #${data.extraWheelNumber}` : ""}`);
     row(doc, "Weekly Contribution", weekly);
     doc.moveDown(0.6);
     divider(doc);
@@ -246,7 +246,7 @@ export function buildCollectionReceiptPDF(
     sectionTitle(doc, "Collection Details");
     amharicRow(doc, "Name (Amharic)", amharicName);
     if (data.memberNameEnglish) row(doc, "Name (English)", data.memberNameEnglish);
-    row(doc, "Wheel Number", `#${data.winnerWheelNumber}`);
+    row(doc, "Lucky Number", `#${data.winnerWheelNumber}`);
     row(doc, "Payout Week", `Week ${data.winnerWheelNumber}`);
     row(doc, "Payout Date", data.payoutDate);
     row(doc, "Management Fee", `−${fee}`, "#92400e");
@@ -350,7 +350,7 @@ export function buildPaymentHistoryPDF(data: PaymentHistoryData): Promise<Buffer
     doc.fontSize(9).font("Helvetica").fillColor("#6b7280").text("Amharic Name", 50, y, { width: 220 });
     doc.font(font).fillColor("#111827").text(data.memberNameAmharic, 280, y, { width: 282 });
     doc.moveDown(0.2);
-    row(doc, "Wheel Number", `#${data.wheelNumber}${data.extraWheelNumber ? ` (extra: #${data.extraWheelNumber})` : ""}`);
+    row(doc, "Lucky Number", `#${data.wheelNumber}${data.extraWheelNumber ? ` (extra: #${data.extraWheelNumber})` : ""}`);
     row(doc, "Weekly Contribution", formatCurrency(data.weeklyAmountCents));
     doc.moveDown(0.4);
     divider(doc);

@@ -48,7 +48,8 @@
       "Bash(tsconfig)",
       "Bash(next\")",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\" | Where-Object { $_.PSIsContainer -eq $false } | Select-Object Name)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(grep -n \"Wheel #\\\\${oldMember\\\\|Wheel #\\\\${member\" src/actions/members.ts)"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",

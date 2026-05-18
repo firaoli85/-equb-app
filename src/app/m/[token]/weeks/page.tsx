@@ -104,7 +104,7 @@ export default async function MemberWeeksPage({
                   )}
                   {week.winnerWheelNumber !== null && (
                     <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">
-                      Collected — Wheel #{week.winnerWheelNumber}
+                      Collected — Lucky #{week.winnerWheelNumber}
                     </p>
                   )}
                 </div>

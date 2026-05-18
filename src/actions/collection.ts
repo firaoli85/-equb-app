@@ -18,7 +18,7 @@ export async function recordWheelWinner(
 
   await db.auditLog.create({
     data: {
-      action: `Wheel #${wheelNumber} drawn for Week ${week.weekNumber}`,
+      action: `Lucky #${wheelNumber} drawn for Week ${week.weekNumber}`,
       entityType: "Week",
       entityId: weekId,
     },

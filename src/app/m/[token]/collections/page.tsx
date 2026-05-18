@@ -28,7 +28,7 @@ export default async function MemberCollectionsPage({
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Collection History</h1>
         <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
-          {weeks.length} of {TOTAL_WEEKS} collections completed · wheel numbers only
+          {weeks.length} of {TOTAL_WEEKS} collections completed · lucky numbers only
         </p>
       </div>
 
@@ -48,7 +48,7 @@ export default async function MemberCollectionsPage({
           <div className="grid grid-cols-4 gap-3 px-5 py-3 border-b border-gray-100 dark:border-gray-800 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
             <div>Week</div>
             <div>Date</div>
-            <div>Wheel #</div>
+            <div>Lucky #</div>
             <div>Status</div>
           </div>
 

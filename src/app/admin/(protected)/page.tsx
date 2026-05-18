@@ -112,9 +112,9 @@ export default async function AdminDashboard() {
       {/* Stats — row 2 */}
       <div className="grid grid-cols-3 gap-4 animate-fade-in-up-1">
         <StatCard
-          label="Numbers on Wheel"
+          label="Lucky Numbers"
           value={String(numbersOnWheel)}
-          sub="entries still in draw"
+          sub="lucky numbers remaining"
           valueClass="text-blue-600 dark:text-blue-400"
         />
         <StatCard
@@ -133,7 +133,7 @@ export default async function AdminDashboard() {
       {/* Summary line */}
       <p className="text-sm text-gray-500 dark:text-gray-400 animate-fade-in-up-1">
         <span className="font-semibold text-gray-700 dark:text-gray-300">{numbersOnWheel}</span>{" "}
-        number{numbersOnWheel !== 1 ? "s" : ""} remaining on wheel
+        lucky number{numbersOnWheel !== 1 ? "s" : ""} remaining
         {" — "}
         <span className="font-semibold text-gray-700 dark:text-gray-300">{collectionsDone}</span>{" "}
         member{collectionsDone !== 1 ? "s" : ""} {collectionsDone !== 1 ? "have" : "has"} collected
