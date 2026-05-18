@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "experimental-edge";
-
-// Edge-compatible: cookie presence only — full DB validation happens in layout
+// Middleware always runs on Edge by default — no runtime declaration needed.
+// Cookie presence only — full DB validation happens in the member layout.
 export function middleware(req: NextRequest) {
   const session = req.cookies.get("equb_member_session");
   if (!session) {
