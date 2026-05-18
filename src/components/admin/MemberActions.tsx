@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { deleteMember, regenerateToken, suspendFromWheel, reinstateToWheel } from "@/actions/members";
+import { deleteMember, suspendFromWheel, reinstateToWheel } from "@/actions/members";
 import { ReplaceMemberModal } from "@/components/admin/ReplaceMemberModal";
 
 export function MemberActions({
@@ -23,10 +23,6 @@ export function MemberActions({
   function handleDelete() {
     if (!confirm(`Remove ${memberName} from the Equb? This permanently deletes their record.`)) return;
     startTransition(() => deleteMember(memberId));
-  }
-
-  function handleRegenerate() {
-    startTransition(() => regenerateToken(memberId));
   }
 
   function handleSuspend() {
@@ -52,14 +48,6 @@ export function MemberActions({
         wheelNumber={wheelNumber}
         weeklyAmountFormatted={weeklyAmountFormatted}
       />
-      <button
-        onClick={handleRegenerate}
-        disabled={isPending}
-        className="text-xs text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors disabled:opacity-50 font-medium"
-        title="Regenerate member link"
-      >
-        ↻ Link
-      </button>
       {wheelSuspended ? (
         <button
           onClick={handleReinstate}

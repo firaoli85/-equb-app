@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState, useTransition, useEffect } from "react";
 import { lookupPhone, verifyMemberPin } from "@/actions/pin-login";
 
 const initialState = {
@@ -28,6 +28,13 @@ export function LoginForm() {
   const [lockedMinutes, setLockedMinutes] = useState(0);
   const [isVerifying, startVerify]        = useTransition();
   const [overridePhone, setOverridePhone] = useState(false);
+  const [deviceScreen, setDeviceScreen]   = useState("");
+  const [deviceLang, setDeviceLang]       = useState("");
+
+  useEffect(() => {
+    setDeviceScreen(`${window.screen.width}x${window.screen.height}`);
+    setDeviceLang(navigator.language);
+  }, []);
 
   const step         = (phoneState.found && !overridePhone) ? 2 : 1;
   const phone        = phoneState.phone ?? "";
@@ -59,7 +66,7 @@ export function LoginForm() {
 
   function submitPin(pinValue: string) {
     startVerify(async () => {
-      const result = await verifyMemberPin(phone, pinValue);
+      const result = await verifyMemberPin(phone, pinValue, deviceScreen, deviceLang);
       if (result?.noPin) {
         // noPin is shown via hasPin === false — already handled by UI
       } else if (result?.locked) {

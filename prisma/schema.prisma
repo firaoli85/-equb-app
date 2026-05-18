@@ -38,6 +38,7 @@ model Member {
   createdAt                         DateTime          @default(now())
   payments              Payment[]
   reviewRequests        PaymentReviewRequest[]
+  sessions              MemberSession[]
 
   @@map("members")
 }
@@ -101,6 +102,19 @@ model EqubArchive {
   snapshot    Json
 
   @@map("equb_archives")
+}
+
+model MemberSession {
+  id                String   @id @default(cuid())
+  memberId          String
+  sessionToken      String   @unique @default(uuid())
+  deviceFingerprint String
+  createdAt         DateTime @default(now())
+  lastActiveAt      DateTime @default(now())
+  expiresAt         DateTime
+  member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@map("member_sessions")
 }
 
 model AuditLog {

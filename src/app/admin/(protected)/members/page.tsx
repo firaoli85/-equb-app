@@ -12,7 +12,6 @@ import {
 import { MemberActions } from "@/components/admin/MemberActions";
 import { DeleteArchivedMemberButton } from "@/components/admin/DeleteArchivedMemberButton";
 import { DeleteAllMembersButton } from "@/components/admin/DeleteAllMembersButton";
-import { CopyButton } from "@/components/ui/CopyButton";
 import Link from "next/link";
 
 export default async function MembersPage() {
@@ -164,7 +163,6 @@ export default async function MembersPage() {
                   <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Paid</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Doc 1</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Doc 2</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Link</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -285,19 +283,6 @@ export default async function MembersPage() {
                             —
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`/m/${m.token}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-mono"
-                          >
-                            /m/{m.token.slice(0, 6)}…
-                          </a>
-                          <CopyButton value={`/m/${m.token}`} label="Copy" />
-                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <MemberActions

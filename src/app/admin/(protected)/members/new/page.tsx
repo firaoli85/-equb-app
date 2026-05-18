@@ -151,6 +151,27 @@ export default function NewMemberPage() {
             </div>
           </div>
 
+          {/* PIN */}
+          <div>
+            <label htmlFor="pin" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              4-Digit PIN <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="pin"
+              name="pin"
+              type="text"
+              inputMode="numeric"
+              required
+              maxLength={4}
+              pattern="\d{4}"
+              placeholder="e.g. 1234"
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 placeholder-gray-400 font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow"
+            />
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+              Member uses this PIN to log in to their portal.
+            </p>
+          </div>
+
           {state?.error && (
             <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 rounded-xl">
               <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,5 +1,11 @@
+import { headers } from "next/headers";
+import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { notFound } from "next/navigation";
+import {
+  getSessionFromCookies,
+  computeFingerprint,
+  validateSession,
+} from "@/lib/member-session";
 import { getDisplayName, getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -13,8 +19,35 @@ export default async function MemberLayout({
 }) {
   const { token } = await params;
 
-  const member = await db.member.findUnique({ where: { token } });
+  // 1. Require session cookie
+  const sessionData = await getSessionFromCookies();
+  if (!sessionData) redirect("/login");
+
+  // 2. Validate session in DB (inactivity, expiry, device fingerprint)
+  const ua = (await headers()).get("user-agent") ?? "";
+  const fingerprint = await computeFingerprint(ua, sessionData.screen, sessionData.language);
+  const sessionResult = await validateSession(sessionData.sessionToken, fingerprint);
+  if (!sessionResult.valid) redirect("/login?expired=1");
+
+  // 3. Find member by URL token
+  const member = await db.member.findUnique({
+    where: { token },
+    select: {
+      id: true,
+      token: true,
+      isArchived: true,
+      confirmedAt: true,
+      nameAmharic: true,
+      nameEnglishFirst: true,
+      nameEnglishLast: true,
+      displayPreference: true,
+      wheelNumber: true,
+    },
+  });
   if (!member || member.isArchived) notFound();
+
+  // 4. Prevent cross-member access
+  if (sessionResult.memberId !== member.id) redirect("/login");
 
   if (!member.confirmedAt) {
     return <>{children}</>;

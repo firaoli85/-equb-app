@@ -1,18 +1,37 @@
-import { getMemberTokenFromCookie } from "@/lib/member-session";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import {
+  getSessionFromCookies,
+  computeFingerprint,
+  validateSession,
+} from "@/lib/member-session";
 import { LoginForm } from "./LoginForm";
 
-export default async function LoginPage() {
-  // Already logged in — bounce to their profile
-  const token = await getMemberTokenFromCookie();
-  if (token) {
-    const member = await db.member.findUnique({
-      where: { token },
-      select: { token: true },
-    });
-    if (member) redirect(`/m/${member.token}`);
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ notice?: string; expired?: string }>;
+}) {
+  const { notice, expired } = await searchParams;
+
+  // Already have a valid session — bounce to their portal
+  const sessionData = await getSessionFromCookies();
+  if (sessionData) {
+    const ua = (await headers()).get("user-agent") ?? "";
+    const fingerprint = await computeFingerprint(ua, sessionData.screen, sessionData.language);
+    const sessionResult = await validateSession(sessionData.sessionToken, fingerprint);
+    if (sessionResult.valid) {
+      const member = await db.member.findUnique({
+        where: { id: sessionResult.memberId },
+        select: { token: true },
+      });
+      if (member) redirect(`/m/${member.token}`);
+    }
   }
+
+  const showNewDeviceNotice = notice === "new_device";
+  const showExpiredNotice   = expired === "1";
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] dark:bg-[#0a0a0b] flex items-center justify-center px-4">
@@ -25,8 +44,20 @@ export default async function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-black text-gray-900 dark:text-white">Equb Member Login</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter your phone number to receive a login code</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Enter your phone number to continue</p>
         </div>
+
+        {showNewDeviceNotice && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-sm text-amber-700 dark:text-amber-400">
+            You were signed out because you signed in on a different device.
+          </div>
+        )}
+
+        {showExpiredNotice && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400">
+            Your session expired. Please sign in again.
+          </div>
+        )}
 
         <LoginForm />
       </div>

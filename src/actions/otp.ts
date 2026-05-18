@@ -4,7 +4,6 @@
 
 import { db } from "@/lib/db";
 import { sendVerification, checkVerification } from "@/lib/twilio";
-import { setMemberSessionCookie } from "@/lib/member-session";
 import { redirect } from "next/navigation";
 
 function digitsOnly(s: string): string {
@@ -86,7 +85,7 @@ export async function verifyOtp(
       return { error: "Phone number not found." };
     }
 
-    await setMemberSessionCookie(member.token);
+    // OTP login disabled — PIN login is active instead (pin-login.ts)
     redirectToken = member.token;
     console.log("[verifyOtp] success — redirecting member:", member.id);
   } catch (err) {

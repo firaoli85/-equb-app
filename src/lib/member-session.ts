@@ -1,57 +1,104 @@
 import { cookies } from "next/headers";
+import { db } from "@/lib/db";
 
-export const MEMBER_COOKIE = "equb_member_token";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+export const SESSION_COOKIE = "equb_member_session";
+export const DEVICE_COOKIE = "equb_device_hint";
 
-async function getKey(): Promise<CryptoKey> {
-  const secret = process.env.MEMBER_SESSION_SECRET!;
-  return crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"]
-  );
+const INACTIVITY_MS = 2 * 60 * 60 * 1000;  // 2 hours
+const MAX_AGE_MS    = 7 * 24 * 60 * 60 * 1000; // 7 days absolute max
+
+export async function computeFingerprint(ua: string, screen: string, language: string): Promise<string> {
+  const data = `${ua}|${screen}|${language}`;
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(data));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Returns signed cookie value: "<token>.<hex-sig>"
-export async function signMemberToken(token: string): Promise<string> {
-  const key = await getKey();
-  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(token));
-  return `${token}.${Buffer.from(sig).toString("hex")}`;
-}
+export async function createMemberSession(
+  memberId: string,
+  fingerprint: string
+): Promise<{ sessionToken: string; hadPreviousDevice: boolean }> {
+  const existing = await db.memberSession.findFirst({ where: { memberId } });
 
-// Validates cookie value and returns the token, or null if invalid
-export async function verifyMemberCookie(value: string): Promise<string | null> {
-  try {
-    const dot = value.lastIndexOf(".");
-    if (dot === -1) return null;
-    const token = value.slice(0, dot);
-    const sig = Buffer.from(value.slice(dot + 1), "hex");
-    const key = await getKey();
-    const valid = await crypto.subtle.verify("HMAC", key, sig, new TextEncoder().encode(token));
-    return valid ? token : null;
-  } catch {
-    return null;
+  let hadPreviousDevice = false;
+  if (existing) {
+    if (existing.deviceFingerprint !== fingerprint) hadPreviousDevice = true;
+    await db.memberSession.deleteMany({ where: { memberId } });
   }
-}
 
-export async function setMemberSessionCookie(token: string): Promise<void> {
-  const signed = await signMemberToken(token);
-  const jar = await cookies();
-  jar.set(MEMBER_COOKIE, signed, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: COOKIE_MAX_AGE,
-    path: "/",
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + MAX_AGE_MS);
+
+  const session = await db.memberSession.create({
+    data: { memberId, deviceFingerprint: fingerprint, lastActiveAt: now, expiresAt },
   });
+
+  return { sessionToken: session.sessionToken, hadPreviousDevice };
 }
 
-// Returns the member token from cookie, or null
-export async function getMemberTokenFromCookie(): Promise<string | null> {
+export async function validateSession(
+  sessionToken: string,
+  fingerprint: string
+): Promise<{ valid: true; memberId: string } | { valid: false }> {
+  const session = await db.memberSession.findUnique({ where: { sessionToken } });
+  if (!session) return { valid: false };
+
+  const now = new Date();
+
+  if (now.getTime() - session.lastActiveAt.getTime() > INACTIVITY_MS) {
+    await db.memberSession.delete({ where: { sessionToken } }).catch(() => {});
+    return { valid: false };
+  }
+
+  if (now > session.expiresAt) {
+    await db.memberSession.delete({ where: { sessionToken } }).catch(() => {});
+    return { valid: false };
+  }
+
+  if (session.deviceFingerprint !== fingerprint) {
+    await db.memberSession.delete({ where: { sessionToken } }).catch(() => {});
+    return { valid: false };
+  }
+
+  await db.memberSession.update({
+    where: { sessionToken },
+    data: { lastActiveAt: now },
+  }).catch(() => {});
+
+  return { valid: true, memberId: session.memberId };
+}
+
+export async function deleteMemberSession(sessionToken: string): Promise<void> {
+  await db.memberSession.deleteMany({ where: { sessionToken } }).catch(() => {});
+}
+
+export async function setSessionCookies(sessionToken: string, screen: string, language: string): Promise<void> {
   const jar = await cookies();
-  const raw = jar.get(MEMBER_COOKIE)?.value;
-  if (!raw) return null;
-  return verifyMemberCookie(raw);
+  const isProd = process.env.NODE_ENV === "production";
+  const opts = { httpOnly: true, secure: isProd, sameSite: "lax" as const, path: "/" };
+
+  jar.set(SESSION_COOKIE, sessionToken, { ...opts, maxAge: 7 * 24 * 60 * 60 });
+  jar.set(DEVICE_COOKIE, `${screen}|${language}`, { ...opts, maxAge: 7 * 24 * 60 * 60 });
+}
+
+export async function clearSessionCookies(): Promise<void> {
+  const jar = await cookies();
+  jar.delete(SESSION_COOKIE);
+  jar.delete(DEVICE_COOKIE);
+}
+
+export async function getSessionFromCookies(): Promise<{
+  sessionToken: string;
+  screen: string;
+  language: string;
+} | null> {
+  const jar = await cookies();
+  const sessionToken = jar.get(SESSION_COOKIE)?.value;
+  if (!sessionToken) return null;
+
+  const deviceHint = jar.get(DEVICE_COOKIE)?.value ?? "|";
+  const pipeIdx = deviceHint.indexOf("|");
+  const screen   = pipeIdx !== -1 ? deviceHint.slice(0, pipeIdx) : "";
+  const language = pipeIdx !== -1 ? deviceHint.slice(pipeIdx + 1) : "";
+
+  return { sessionToken, screen, language };
 }

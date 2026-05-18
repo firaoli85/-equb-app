@@ -43,7 +43,12 @@
       "Bash(mkdir \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\app\\\\m\\\\[token]\\\\documents\")",
       "Bash(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\prisma\\\\migrations\\\\20260517070000_add_equb_archive\")",
       "Bash(Write-Output \"done\")",
-      "Bash(Remove-Item \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\components\\\\member\\\\MobileSignOut.tsx\")"
+      "Bash(Remove-Item \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\\\\src\\\\components\\\\member\\\\MobileSignOut.tsx\")",
+      "Read(//c/Users/firao/Desktop/**)",
+      "Bash(tsconfig)",
+      "Bash(next\")",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\" | Where-Object { $_.PSIsContainer -eq $false } | Select-Object Name)",
+      "Bash(npx next *)"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",

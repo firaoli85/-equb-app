@@ -16,6 +16,7 @@ export async function createMember(
   const nameEnglishFirst = (formData.get("nameEnglishFirst") as string)?.trim() ?? "";
   const nameEnglishLast = (formData.get("nameEnglishLast") as string)?.trim() ?? "";
   const phone = (formData.get("phone") as string)?.trim() || null;
+  const pinRaw = (formData.get("pin") as string)?.trim() ?? "";
   const weeklyDollars = parseFloat(formData.get("weeklyAmount") as string);
   const wheelNumber = parseInt(formData.get("wheelNumber") as string, 10);
   const extraWheelRaw = (formData.get("extraWheelNumber") as string)?.trim();
@@ -24,6 +25,7 @@ export async function createMember(
   if (!nameAmharic || isNaN(weeklyDollars) || isNaN(wheelNumber)) {
     return { error: "Amharic name, weekly amount, and wheel number are required." };
   }
+  if (!/^\d{4}$/.test(pinRaw)) return { error: "PIN is required and must be exactly 4 digits." };
   if (nameAmharic.length < 2) return { error: "Amharic name must be at least 2 characters." };
   if (weeklyDollars < 1) return { error: "Weekly amount must be at least $1." };
   if (wheelNumber < 1) return { error: "Wheel number must be a positive number." };
@@ -45,8 +47,9 @@ export async function createMember(
     const weeks = await db.week.findMany({ orderBy: { weekNumber: "asc" } });
     if (weeks.length === 0) return { error: "Weeks not initialized. Reload the page and try again." };
 
+    const hashedPin = await hashPin(pinRaw);
     const member = await db.member.create({
-      data: { nameAmharic, nameEnglishFirst, nameEnglishLast, phone, weeklyAmount, wheelNumber, extraWheelNumber },
+      data: { nameAmharic, nameEnglishFirst, nameEnglishLast, phone, weeklyAmount, wheelNumber, extraWheelNumber, pin: hashedPin },
     });
 
     await db.payment.createMany({
