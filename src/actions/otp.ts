@@ -57,6 +57,7 @@ export async function verifyOtp(
     if (!code)  return { error: "Please enter the 6-digit code." };
     if (!/^\d{6}$/.test(code)) return { error: "Code must be exactly 6 digits." };
 
+    console.log("[verifyOtp] checking — phone:", phone, "code:", "*".repeat(code.length));
     const result = await checkVerification(phone, code);
     console.log("[verifyOtp] Twilio result:", result);
 

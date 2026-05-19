@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition, useEffect, useRef } from "react";
+import { useActionState, useState, useTransition, useEffect, useRef, useCallback } from "react";
 import { lookupPhone, verifyMemberPin } from "@/actions/pin-login";
 import { sendOtp, verifyOtp } from "@/actions/otp";
 
@@ -46,12 +46,14 @@ export function LoginForm() {
   const [isVerifying, startVerify]        = useTransition();
 
   // OTP state
-  const [otpSent, setOtpSent]     = useState(false);
-  const [otpCode, setOtpCode]     = useState("");
-  const [otpError, setOtpError]   = useState<string | null>(null);
-  const [isSendingOtp, startSendOtp]       = useTransition();
-  const [isVerifyingOtp, startVerifyOtp]   = useTransition();
-  const otpInputRef = useRef<HTMLInputElement>(null);
+  const [otpSent, setOtpSent]         = useState(false);
+  const [otpCode, setOtpCode]         = useState("");
+  const [otpError, setOtpError]       = useState<string | null>(null);
+  const [hasAttempted, setHasAttempted] = useState(false); // only show error after first submit
+  const [isSendingOtp, startSendOtp]   = useTransition();
+  const [isVerifyingOtp, startVerifyOtp] = useTransition();
+  const otpInputRef    = useRef<HTMLInputElement>(null);
+  const isSubmittingRef = useRef(false); // synchronous guard against double-submit
 
   // Device info
   const [deviceScreen, setDeviceScreen] = useState("");
@@ -74,34 +76,38 @@ export function LoginForm() {
 
   // ── Reset helpers ─────────────────────────────────────────────────────────
 
+  function resetOtpState() {
+    setOtpSent(false); setOtpCode(""); setOtpError(null); setHasAttempted(false);
+    isSubmittingRef.current = false;
+  }
+
   function resetToPhone() {
     setOverridePhone(true);
-    setLoginMethod(null);
-    setSendingChannel(null);
+    setLoginMethod(null); setSendingChannel(null);
     setPin(""); setPinError(null); setLocked(false);
-    setOtpSent(false); setOtpCode(""); setOtpError(null);
+    resetOtpState();
   }
 
   function backToMethod() {
-    setLoginMethod(null);
-    setSendingChannel(null);
+    setLoginMethod(null); setSendingChannel(null);
     setPin(""); setPinError(null);
-    setOtpSent(false); setOtpCode(""); setOtpError(null);
+    resetOtpState();
   }
 
   function handlePhoneAction(formData: FormData) {
     setOverridePhone(false);
     setLoginMethod(null); setSendingChannel(null);
     setPin(""); setPinError(null); setLocked(false);
-    setOtpSent(false); setOtpCode(""); setOtpError(null);
+    resetOtpState();
     phoneAction(formData);
   }
 
   // ── OTP send ──────────────────────────────────────────────────────────────
 
   function handleSendOtp(channel: "whatsapp" | "sms") {
+    // Clear ALL previous error/code state before sending
+    resetOtpState();
     setSendingChannel(channel);
-    setOtpError(null);
     startSendOtp(async () => {
       const result = await sendOtp(phone, channel);
       if (result.error) {
@@ -117,12 +123,11 @@ export function LoginForm() {
 
   function handleResendOtp() {
     if (!loginMethod || loginMethod === "pin") return;
-    setOtpCode("");
-    setOtpError(null);
-    setOtpSent(false);
-    setSendingChannel(loginMethod);
+    const channel = loginMethod as "whatsapp" | "sms";
+    resetOtpState();
+    setSendingChannel(channel);
     startSendOtp(async () => {
-      const result = await sendOtp(phone, loginMethod as "whatsapp" | "sms");
+      const result = await sendOtp(phone, channel);
       if (result.error) {
         setOtpError(result.error);
         setSendingChannel(null);
@@ -133,18 +138,33 @@ export function LoginForm() {
     });
   }
 
-  function handleOtpVerify() {
+  // useCallback so the stable reference can be used in onKeyDown without stale closure issues
+  const handleOtpVerify = useCallback(() => {
+    // Synchronous ref guard prevents double-invocation from Enter key + button click racing
+    if (isSubmittingRef.current) return;
     if (otpCode.length < 6) { setOtpError("Please enter the full 6-digit code."); return; }
+    isSubmittingRef.current = true;
+    setHasAttempted(true);
     setOtpError(null);
     startVerifyOtp(async () => {
-      const result = await verifyOtp(phone, otpCode, deviceScreen, deviceLang);
-      if (result?.error) {
-        setOtpError(result.error);
-        setOtpCode("");
-        if (result.expired) { setOtpSent(false); setLoginMethod(null); }
+      try {
+        const result = await verifyOtp(phone, otpCode, deviceScreen, deviceLang);
+        if (result?.error) {
+          setOtpError(result.error);
+          setOtpCode("");
+          if (result.expired) {
+            // Return to method picker — clear error so it doesn't bleed into next send
+            setOtpError(null);
+            setHasAttempted(false);
+            setOtpSent(false);
+            setLoginMethod(null);
+          }
+        }
+      } finally {
+        isSubmittingRef.current = false;
       }
     });
-  }
+  }, [otpCode, phone, deviceScreen, deviceLang, startVerifyOtp]);
 
   // ── PIN handlers ──────────────────────────────────────────────────────────
 
@@ -452,9 +472,15 @@ export function LoginForm() {
           onChange={(e) => {
             const v = e.target.value.replace(/\D/g, "").slice(0, 6);
             setOtpCode(v);
-            setOtpError(null);
+            if (hasAttempted) setOtpError(null); // clear error as they retype, but only if they already tried
           }}
-          onKeyDown={(e) => { if (e.key === "Enter" && otpCode.length === 6) handleOtpVerify(); }}
+          onKeyDown={(e) => {
+            // Guard with the same ref used by the button — prevents Enter+click double-fire
+            if (e.key === "Enter" && otpCode.length === 6 && !isSubmittingRef.current) {
+              e.preventDefault();
+              handleOtpVerify();
+            }
+          }}
           placeholder="000000"
           style={{ fontSize: "24px", letterSpacing: "0.3em" }}
           className="w-full px-4 py-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-center placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition font-mono"
@@ -462,7 +488,8 @@ export function LoginForm() {
         />
       </div>
 
-      {otpError && (
+      {/* Only show error after the user has actually attempted a submission */}
+      {hasAttempted && otpError && (
         <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900 text-center">
           {otpError}
         </p>
@@ -471,7 +498,7 @@ export function LoginForm() {
       <button
         type="button"
         onClick={handleOtpVerify}
-        disabled={otpCode.length < 6 || isVerifyingOtp}
+        disabled={otpCode.length < 6 || isVerifyingOtp || isSubmittingRef.current}
         style={{ touchAction: "manipulation", minHeight: "52px" }}
         className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-base shadow-sm"
       >
