@@ -10,14 +10,14 @@ function serviceSid(): string {
   return process.env.TWILIO_VERIFY_SERVICE_SID!.trim();
 }
 
-export async function sendVerification(to: string): Promise<void> {
+export async function sendVerification(to: string, channel: "sms" | "whatsapp" = "sms"): Promise<void> {
   const res = await fetch(`${BASE}/${serviceSid()}/Verifications`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Authorization: auth(),
     },
-    body: new URLSearchParams({ To: to, Channel: "sms" }).toString(),
+    body: new URLSearchParams({ To: to, Channel: channel }).toString(),
   });
 
   if (!res.ok) {

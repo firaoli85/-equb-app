@@ -1,9 +1,9 @@
-// SMS OTP disabled pending A2P Campaign approval — re-enable when approved.
-// PIN-based login is active instead (see src/actions/pin-login.ts).
 "use server";
 
 import { db } from "@/lib/db";
 import { sendVerification, checkVerification } from "@/lib/twilio";
+import { computeFingerprint, createMemberSession, setSessionCookies } from "@/lib/member-session";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 function digitsOnly(s: string): string {
@@ -12,10 +12,6 @@ function digitsOnly(s: string): string {
 
 function last10(s: string): string {
   return digitsOnly(s).slice(-10);
-}
-
-function toE164(phone: string): string {
-  return `+1${last10(phone)}`;
 }
 
 async function findMemberByPhone(entered: string) {
@@ -30,38 +26,31 @@ async function findMemberByPhone(entered: string) {
   return members.find((m) => last10(m.phone!) === enteredLast10) ?? null;
 }
 
-export async function requestOtp(
-  _prev: { error?: string; sent?: boolean },
-  formData: FormData
-): Promise<{ error?: string; sent?: boolean; phone?: string }> {
-  const raw = (formData.get("phone") as string)?.trim();
-  if (!raw) return { error: "Please enter your phone number." };
-
-  const member = await findMemberByPhone(raw);
-  if (!member) {
-    return { error: "Phone number not registered. Please contact your Equb manager." };
-  }
-
-  const e164 = toE164(raw);
-  console.log("[requestOtp] sending verification to:", e164);
+// Called directly from LoginForm via useTransition — phone is already E.164
+export async function sendOtp(
+  phone: string,
+  channel: "sms" | "whatsapp"
+): Promise<{ error?: string; sent?: boolean }> {
+  if (!phone) return { error: "Phone number missing." };
 
   try {
-    await sendVerification(e164);
+    await sendVerification(phone, channel);
+    return { sent: true };
   } catch (err) {
-    console.error("[requestOtp] Twilio Verify error:", err);
-    return { error: "Failed to send SMS. Please try again." };
+    console.error("[sendOtp] Twilio error:", err);
+    return {
+      error: `Failed to send ${channel === "whatsapp" ? "WhatsApp" : "SMS"} code. Please try again.`,
+    };
   }
-
-  return { sent: true, phone: e164 };
 }
 
 export async function verifyOtp(
   phone: string,
-  code: string
+  code: string,
+  screen: string = "",
+  language: string = ""
 ): Promise<{ error?: string; expired?: true }> {
-  console.log("[verifyOtp] invoked — phone:", JSON.stringify(phone), "code:", JSON.stringify(code));
-
-  let redirectToken: string | null = null;
+  let redirectPath: string | null = null;
 
   try {
     if (!phone) return { error: "Session error: phone missing. Please go back and re-enter your number." };
@@ -78,22 +67,49 @@ export async function verifyOtp(
       return { error: "Incorrect code. Please check and try again." };
     }
 
-    // result === "approved"
+    // approved — find member and create session
     const member = await findMemberByPhone(phone);
-    if (!member) {
-      console.log("[verifyOtp] member not found for phone:", phone);
-      return { error: "Phone number not found." };
-    }
+    if (!member) return { error: "Phone number not found." };
 
-    // OTP login disabled — PIN login is active instead (pin-login.ts)
-    redirectToken = member.token;
-    console.log("[verifyOtp] success — redirecting member:", member.id);
+    const ua = (await headers()).get("user-agent") ?? "";
+    const fingerprint = await computeFingerprint(ua, screen, language);
+    const { sessionToken, hadPreviousDevice } = await createMemberSession(member.id, fingerprint);
+    await setSessionCookies(sessionToken, screen, language);
+
+    redirectPath = hadPreviousDevice
+      ? `/m/${member.token}?notice=new_device`
+      : `/m/${member.token}`;
   } catch (err) {
     console.error("[verifyOtp] unexpected error:", err);
     return { error: "An unexpected error occurred. Please try again." };
   }
 
-  // redirect() throws NEXT_REDIRECT internally — must be outside try/catch
-  if (redirectToken) redirect(`/m/${redirectToken}`);
+  if (redirectPath) redirect(redirectPath);
   return {};
+}
+
+// Legacy form-action wrapper (kept for compatibility)
+export async function requestOtp(
+  _prev: { error?: string; sent?: boolean },
+  formData: FormData
+): Promise<{ error?: string; sent?: boolean; phone?: string }> {
+  const raw = (formData.get("phone") as string)?.trim();
+  if (!raw) return { error: "Please enter your phone number." };
+
+  const member = await findMemberByPhone(raw);
+  if (!member) {
+    return { error: "Phone number not registered. Please contact your Equb manager." };
+  }
+
+  const e164 = `+1${last10(raw)}`;
+  const channel = (formData.get("channel") as "sms" | "whatsapp") ?? "sms";
+
+  try {
+    await sendVerification(e164, channel);
+  } catch (err) {
+    console.error("[requestOtp] Twilio error:", err);
+    return { error: "Failed to send code. Please try again." };
+  }
+
+  return { sent: true, phone: e164 };
 }
