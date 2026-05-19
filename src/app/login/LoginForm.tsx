@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition, useEffect, useRef } from "react";
 import { lookupPhone, verifyMemberPin } from "@/actions/pin-login";
+import { sendOtp, verifyOtp } from "@/actions/otp";
 
 const initialState = {
   error: undefined as string | undefined,
@@ -18,7 +19,7 @@ const PAD_ROWS = [
   ["",  "0", "⌫"],
 ];
 
-type AuthMode = "pin" | "otp-choose" | "otp-sending" | "otp-ready";
+type LoginMethod = "pin" | "whatsapp" | "sms" | null;
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -31,7 +32,10 @@ function WhatsAppIcon({ className }: { className?: string }) {
 export function LoginForm() {
   const [phoneState, phoneAction, phonePending] = useActionState(lookupPhone, initialState);
 
+  // Navigation state
   const [overridePhone, setOverridePhone] = useState(false);
+  const [loginMethod, setLoginMethod]     = useState<LoginMethod>(null);
+  const [sendingChannel, setSendingChannel] = useState<"whatsapp" | "sms" | null>(null);
 
   // PIN state
   const [pin, setPin]                     = useState("");
@@ -39,19 +43,17 @@ export function LoginForm() {
   const [attemptsLeft, setAttemptsLeft]   = useState<number | null>(null);
   const [locked, setLocked]               = useState(false);
   const [lockedMinutes, setLockedMinutes] = useState(0);
-  const [isVerifyingPin, startVerifyPin]  = useTransition();
+  const [isVerifying, startVerify]        = useTransition();
 
   // OTP state
-  const [authMode, setAuthMode]         = useState<AuthMode>("pin");
-  const [otpChannel, setOtpChannel]     = useState<"whatsapp" | "sms" | null>(null);
-  const [otpCode, setOtpCode]           = useState("");
-  const [otpError, setOtpError]         = useState<string | null>(null);
-  const [otpVerifying, setOtpVerifying] = useState(false);
-  const otpInputRef    = useRef<HTMLInputElement>(null);
-  // Synchronous guard — prevents double-submission from auto-submit + button click racing
-  const otpSubmitGuard = useRef(false);
+  const [otpSent, setOtpSent]     = useState(false);
+  const [otpCode, setOtpCode]     = useState("");
+  const [otpError, setOtpError]   = useState<string | null>(null);
+  const [isSendingOtp, startSendOtp]       = useTransition();
+  const [isVerifyingOtp, startVerifyOtp]   = useTransition();
+  const otpInputRef = useRef<HTMLInputElement>(null);
 
-  // Device info for session fingerprint
+  // Device info
   const [deviceScreen, setDeviceScreen] = useState("");
   const [deviceLang, setDeviceLang]     = useState("");
 
@@ -60,38 +62,94 @@ export function LoginForm() {
     setDeviceLang(navigator.language);
   }, []);
 
-  // Focus OTP input as soon as step 2c mounts
+  // Focus OTP input when shown
   useEffect(() => {
-    if (authMode === "otp-ready") {
-      setTimeout(() => otpInputRef.current?.focus(), 80);
-    }
-  }, [authMode]);
+    if (otpSent) setTimeout(() => otpInputRef.current?.focus(), 100);
+  }, [otpSent]);
 
   const phone        = phoneState.phone ?? "";
   const displayPhone = phoneState.displayPhone ?? "";
+  const hasPin       = phoneState.hasPin;
   const phoneFound   = phoneState.found && !overridePhone;
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Reset helpers ─────────────────────────────────────────────────────────
 
   function resetToPhone() {
     setOverridePhone(true);
-    setPin(""); setPinError(null); setAttemptsLeft(null); setLocked(false);
-    setAuthMode("pin"); setOtpChannel(null); setOtpCode(""); setOtpError(null);
-    otpSubmitGuard.current = false;
+    setLoginMethod(null);
+    setSendingChannel(null);
+    setPin(""); setPinError(null); setLocked(false);
+    setOtpSent(false); setOtpCode(""); setOtpError(null);
+  }
+
+  function backToMethod() {
+    setLoginMethod(null);
+    setSendingChannel(null);
+    setPin(""); setPinError(null);
+    setOtpSent(false); setOtpCode(""); setOtpError(null);
   }
 
   function handlePhoneAction(formData: FormData) {
     setOverridePhone(false);
-    setPin(""); setPinError(null); setAttemptsLeft(null); setLocked(false);
-    setAuthMode("pin"); setOtpChannel(null); setOtpCode(""); setOtpError(null);
-    otpSubmitGuard.current = false;
+    setLoginMethod(null); setSendingChannel(null);
+    setPin(""); setPinError(null); setLocked(false);
+    setOtpSent(false); setOtpCode(""); setOtpError(null);
     phoneAction(formData);
+  }
+
+  // ── OTP send ──────────────────────────────────────────────────────────────
+
+  function handleSendOtp(channel: "whatsapp" | "sms") {
+    setSendingChannel(channel);
+    setOtpError(null);
+    startSendOtp(async () => {
+      const result = await sendOtp(phone, channel);
+      if (result.error) {
+        setOtpError(result.error);
+        setSendingChannel(null);
+      } else {
+        setLoginMethod(channel);
+        setOtpSent(true);
+        setSendingChannel(null);
+      }
+    });
+  }
+
+  function handleResendOtp() {
+    if (!loginMethod || loginMethod === "pin") return;
+    setOtpCode("");
+    setOtpError(null);
+    setOtpSent(false);
+    setSendingChannel(loginMethod);
+    startSendOtp(async () => {
+      const result = await sendOtp(phone, loginMethod as "whatsapp" | "sms");
+      if (result.error) {
+        setOtpError(result.error);
+        setSendingChannel(null);
+      } else {
+        setOtpSent(true);
+        setSendingChannel(null);
+      }
+    });
+  }
+
+  function handleOtpVerify() {
+    if (otpCode.length < 6) { setOtpError("Please enter the full 6-digit code."); return; }
+    setOtpError(null);
+    startVerifyOtp(async () => {
+      const result = await verifyOtp(phone, otpCode, deviceScreen, deviceLang);
+      if (result?.error) {
+        setOtpError(result.error);
+        setOtpCode("");
+        if (result.expired) { setOtpSent(false); setLoginMethod(null); }
+      }
+    });
   }
 
   // ── PIN handlers ──────────────────────────────────────────────────────────
 
   function handleDigit(d: string) {
-    if (pin.length >= 4 || isVerifyingPin || locked) return;
+    if (pin.length >= 4 || isVerifying || locked) return;
     const next = pin + d;
     setPin(next);
     setPinError(null); setAttemptsLeft(null);
@@ -99,13 +157,13 @@ export function LoginForm() {
   }
 
   function handleBackspace() {
-    if (isVerifyingPin) return;
+    if (isVerifying) return;
     setPin((p) => p.slice(0, -1));
     setPinError(null);
   }
 
   function submitPin(pinValue: string) {
-    startVerifyPin(async () => {
+    startVerify(async () => {
       const result = await verifyMemberPin(phone, pinValue, deviceScreen, deviceLang);
       if (result?.locked) {
         setLocked(true); setLockedMinutes(result.lockedMinutes ?? 30); setPin("");
@@ -115,67 +173,7 @@ export function LoginForm() {
     });
   }
 
-  // ── OTP handlers ──────────────────────────────────────────────────────────
-
-  async function handleSendOtp(channel: "whatsapp" | "sms") {
-    setOtpChannel(channel);
-    setOtpCode(""); setOtpError(null);
-    otpSubmitGuard.current = false;
-    setAuthMode("otp-sending");
-
-    try {
-      const res = await fetch("/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, channel }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setOtpError(data.error ?? "Failed to send code. Please try again.");
-        setAuthMode("otp-choose");
-      } else {
-        setAuthMode("otp-ready");
-      }
-    } catch {
-      setOtpError("Network error. Please try again.");
-      setAuthMode("otp-choose");
-    }
-  }
-
-  // Accepts the code value directly so it can be called from onChange before
-  // the setOtpCode state update has committed (React state updates are async).
-  async function handleVerifyOtp(codeValue: string = otpCode) {
-    if (otpSubmitGuard.current) return;
-    if (codeValue.length < 6) return;
-    otpSubmitGuard.current = true;
-    setOtpVerifying(true);
-    setOtpError(null);
-
-    try {
-      const res = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code: codeValue, screen: deviceScreen, language: deviceLang }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        setOtpError(data.error ?? "Invalid or expired code.");
-        setOtpCode("");
-        otpSubmitGuard.current = false;
-      } else {
-        // Full page reload so the session cookie is included in the navigation request.
-        window.location.href = data.redirectTo;
-      }
-    } catch {
-      setOtpError("Network error. Please try again.");
-      setOtpCode("");
-      otpSubmitGuard.current = false;
-    } finally {
-      setOtpVerifying(false);
-    }
-  }
-
-  // ── Shared pieces ─────────────────────────────────────────────────────────
+  // ── Shared phone chip ─────────────────────────────────────────────────────
 
   const PhoneChip = () => (
     <div className="flex justify-center mb-5">
@@ -185,6 +183,15 @@ export function LoginForm() {
         </svg>
         {displayPhone}
       </div>
+    </div>
+  );
+
+  const BackToPhone = () => (
+    <div className="text-center pt-2">
+      <button type="button" onClick={resetToPhone}
+        className="text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors">
+        ← Use a different phone number
+      </button>
     </div>
   );
 
@@ -225,10 +232,107 @@ export function LoginForm() {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // STEP 2a — PIN pad
+  // STEP 2 — Choose login method
   // ─────────────────────────────────────────────────────────────────────────
 
-  if (authMode === "pin") {
+  if (!loginMethod && !otpSent) {
+    return (
+      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 space-y-3">
+        <PhoneChip />
+
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center mb-4">
+          How would you like to sign in?
+        </p>
+
+        {/* Option 1 — PIN */}
+        <button
+          type="button"
+          onClick={() => setLoginMethod("pin")}
+          disabled={hasPin === false || isSendingOtp}
+          style={{ touchAction: "manipulation", minHeight: "56px" }}
+          className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1c1c1c] hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left group"
+        >
+          <span className="text-2xl shrink-0">🔐</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-gray-900 dark:text-white">Enter my PIN</p>
+            {hasPin === false ? (
+              <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">No PIN set — contact your Equb manager</p>
+            ) : (
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">4-digit ATM-style PIN</p>
+            )}
+          </div>
+          <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0 group-hover:text-gray-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* Option 2 — WhatsApp */}
+        <button
+          type="button"
+          onClick={() => handleSendOtp("whatsapp")}
+          disabled={isSendingOtp}
+          style={{ touchAction: "manipulation", minHeight: "56px" }}
+          className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 border-[#25D366]/40 bg-[#25D366]/5 hover:bg-[#25D366]/10 hover:border-[#25D366]/70 disabled:opacity-60 disabled:cursor-wait transition-all text-left group"
+        >
+          <span className="shrink-0 text-[#25D366]">
+            <WhatsAppIcon className="w-7 h-7" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-gray-900 dark:text-white">
+              {sendingChannel === "whatsapp" ? "Sending code…" : "Send WhatsApp code"}
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              {sendingChannel === "whatsapp" ? "Please wait" : "One-time code via WhatsApp"}
+            </p>
+          </div>
+          {sendingChannel === "whatsapp" ? (
+            <svg className="w-4 h-4 text-[#25D366] animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-[#25D366]/40 shrink-0 group-hover:text-[#25D366]/70 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          )}
+        </button>
+
+        {/* Option 3 — SMS (disabled) */}
+        <button
+          type="button"
+          disabled
+          style={{ touchAction: "manipulation", minHeight: "56px" }}
+          className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 opacity-50 cursor-not-allowed text-left"
+        >
+          <span className="text-2xl shrink-0 grayscale">💬</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Send SMS code</p>
+              <span className="text-xs bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">
+                Coming soon
+              </span>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Pending carrier approval</p>
+          </div>
+        </button>
+
+        {/* OTP send error */}
+        {otpError && (
+          <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900 text-center">
+            {otpError}
+          </p>
+        )}
+
+        <BackToPhone />
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STEP 3a — PIN pad
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (loginMethod === "pin") {
     return (
       <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6">
         <PhoneChip />
@@ -273,7 +377,7 @@ export function LoginForm() {
               {PAD_ROWS.flat().map((key, idx) => {
                 if (key === "") return <div key={idx} />;
                 const isBackspace = key === "⌫";
-                const disabled = isVerifyingPin || (isBackspace ? pin.length === 0 : pin.length >= 4);
+                const disabled = isVerifying || (isBackspace ? pin.length === 0 : pin.length >= 4);
                 return (
                   <button key={idx} type="button"
                     onClick={() => isBackspace ? handleBackspace() : handleDigit(key)}
@@ -290,129 +394,39 @@ export function LoginForm() {
               })}
             </div>
 
-            {isVerifyingPin && (
+            {isVerifying && (
               <p className="text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Verifying…</p>
             )}
           </div>
         )}
 
-        <div className="text-center pt-5 space-y-2">
-          <button
-            type="button"
-            onClick={() => setAuthMode("otp-choose")}
-            className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
-          >
-            Send a verification code instead
+        <div className="text-center pt-4 space-y-2">
+          <button type="button" onClick={backToMethod}
+            className="block w-full text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors">
+            ← Back to sign-in options
           </button>
-          <div>
-            <button type="button" onClick={resetToPhone}
-              className="text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors">
-              ← Use a different phone number
-            </button>
-          </div>
+          <BackToPhone />
         </div>
       </div>
     );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // STEP 2b — Choose OTP channel
+  // STEP 3b — OTP code entry (WhatsApp / SMS)
   // ─────────────────────────────────────────────────────────────────────────
 
-  if (authMode === "otp-choose" || authMode === "otp-sending") {
-    const sending = authMode === "otp-sending";
-    return (
-      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 space-y-3">
-        <PhoneChip />
-
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center mb-1">
-          Send a one-time code to:
-        </p>
-
-        {/* WhatsApp */}
-        <button
-          type="button"
-          onClick={() => !sending && handleSendOtp("whatsapp")}
-          disabled={sending}
-          style={{ touchAction: "manipulation", minHeight: "56px" }}
-          className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-950/60 disabled:opacity-60 disabled:cursor-wait transition-all text-left group"
-        >
-          <span className="shrink-0 text-green-600 dark:text-green-400">
-            <WhatsAppIcon className="w-7 h-7" />
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-gray-900 dark:text-white">
-              {sending && otpChannel === "whatsapp" ? "Sending…" : "WhatsApp"}
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">6-digit code via WhatsApp</p>
-          </div>
-          {sending && otpChannel === "whatsapp" ? (
-            <svg className="w-4 h-4 text-green-600 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          )}
-        </button>
-
-        {/* SMS — disabled pending A2P approval */}
-        <button
-          type="button"
-          disabled
-          style={{ touchAction: "manipulation", minHeight: "56px" }}
-          className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 opacity-50 cursor-not-allowed text-left"
-        >
-          <span className="text-2xl shrink-0 grayscale">💬</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-bold text-gray-500 dark:text-gray-400">SMS</p>
-              <span className="text-xs bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">
-                Coming soon
-              </span>
-            </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Pending carrier approval</p>
-          </div>
-        </button>
-
-        {otpError && (
-          <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900 text-center">
-            {otpError}
-          </p>
-        )}
-
-        <div className="text-center pt-1">
-          <button
-            type="button"
-            onClick={() => { setAuthMode("pin"); setOtpError(null); }}
-            className="text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
-          >
-            ← Back to PIN
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // STEP 2c — OTP code entry
-  // ─────────────────────────────────────────────────────────────────────────
-
-  const channelLabel = otpChannel === "whatsapp" ? "WhatsApp" : "SMS";
+  const channelLabel = loginMethod === "whatsapp" ? "WhatsApp" : "SMS";
+  const channelIcon  = loginMethod === "whatsapp"
+    ? <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />
+    : <span className="text-xl">💬</span>;
 
   return (
     <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-6 space-y-5">
       <PhoneChip />
 
-      {/* Sent confirmation banner */}
+      {/* Sent confirmation */}
       <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900 rounded-xl px-4 py-3">
-        {otpChannel === "whatsapp" ? (
-          <WhatsAppIcon className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0" />
-        ) : (
-          <span className="text-xl shrink-0">💬</span>
-        )}
+        {channelIcon}
         <div>
           <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {channelLabel} code sent
@@ -423,7 +437,7 @@ export function LoginForm() {
         </div>
       </div>
 
-      {/* Code input — auto-submits when 6 digits are entered */}
+      {/* Code input */}
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
           Enter 6-digit code
@@ -439,14 +453,12 @@ export function LoginForm() {
             const v = e.target.value.replace(/\D/g, "").slice(0, 6);
             setOtpCode(v);
             setOtpError(null);
-            // Auto-submit: pass the new value directly so we don't read stale state
-            if (v.length === 6) handleVerifyOtp(v);
           }}
+          onKeyDown={(e) => { if (e.key === "Enter" && otpCode.length === 6) handleOtpVerify(); }}
           placeholder="000000"
           style={{ fontSize: "24px", letterSpacing: "0.3em" }}
           className="w-full px-4 py-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-center placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition font-mono"
           autoComplete="one-time-code"
-          disabled={otpVerifying}
         />
       </div>
 
@@ -456,29 +468,34 @@ export function LoginForm() {
         </p>
       )}
 
-      {otpVerifying && (
-        <p className="text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Verifying…</p>
-      )}
+      <button
+        type="button"
+        onClick={handleOtpVerify}
+        disabled={otpCode.length < 6 || isVerifyingOtp}
+        style={{ touchAction: "manipulation", minHeight: "52px" }}
+        className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-base shadow-sm"
+      >
+        {isVerifyingOtp ? "Verifying…" : "Verify Code"}
+      </button>
 
-      {/* Resend + back */}
-      <div className="text-center space-y-2">
-        <button
-          type="button"
-          onClick={() => { setOtpCode(""); setOtpError(null); otpSubmitGuard.current = false; handleSendOtp(otpChannel!); }}
-          disabled={otpVerifying}
-          className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 transition-opacity"
-        >
-          Didn&apos;t receive it? Resend code
-        </button>
-        <div>
-          <button
-            type="button"
-            onClick={() => { setAuthMode("otp-choose"); setOtpCode(""); setOtpError(null); otpSubmitGuard.current = false; }}
-            className="text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
-          >
-            ← Back
+      {/* Resend */}
+      <div className="text-center">
+        {sendingChannel ? (
+          <p className="text-xs text-gray-400 animate-pulse">Sending new code…</p>
+        ) : (
+          <button type="button" onClick={handleResendOtp} disabled={isSendingOtp}
+            className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 transition-opacity">
+            Didn&apos;t receive it? Resend code
           </button>
-        </div>
+        )}
+      </div>
+
+      <div className="text-center space-y-1.5">
+        <button type="button" onClick={backToMethod}
+          className="block w-full text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 transition-colors">
+          ← Back to sign-in options
+        </button>
+        <BackToPhone />
       </div>
     </div>
   );

@@ -11,26 +11,18 @@ function serviceSid(): string {
 }
 
 export async function sendVerification(to: string, channel: "sms" | "whatsapp" = "sms"): Promise<void> {
-  const sid = process.env.TWILIO_VERIFY_SERVICE_SID!.trim();
-  const url = `${BASE}/${sid}/Verifications`;
-  const body = new URLSearchParams({ To: to, Channel: channel }).toString();
-
-  console.log("[sendVerification] →", { url, to, channel, body });
-
-  const res = await fetch(url, {
+  const res = await fetch(`${BASE}/${serviceSid()}/Verifications`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Authorization: auth(),
     },
-    body,
+    body: new URLSearchParams({ To: to, Channel: channel }).toString(),
   });
 
-  const responseText = await res.text();
-  console.log("[sendVerification] ←", { status: res.status, ok: res.ok, body: responseText });
-
   if (!res.ok) {
-    throw new Error(`Twilio Verify send error ${res.status}: ${responseText}`);
+    const text = await res.text();
+    throw new Error(`Twilio Verify send error ${res.status}: ${text}`);
   }
 }
 
