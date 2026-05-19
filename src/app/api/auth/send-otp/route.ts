@@ -35,11 +35,8 @@ export async function POST(req: Request) {
     }
 
     const e164 = `+1${last10(phone)}`;
-    // WhatsApp requires the whatsapp: URI prefix so Twilio routes through the
-    // WhatsApp channel explicitly. SMS uses plain E.164.
-    const toField = channel === "whatsapp" ? `whatsapp:${e164}` : e164;
 
-    console.log("[send-otp] e164:", e164, "| toField:", toField);
+    console.log("[send-otp] e164:", e164, "| channel:", channel);
 
     const sid        = process.env.TWILIO_VERIFY_SERVICE_SID!.trim();
     const accountSid = process.env.TWILIO_ACCOUNT_SID!.trim();
@@ -49,7 +46,7 @@ export async function POST(req: Request) {
     const twUrl = `https://verify.twilio.com/v2/Services/${sid}/Verifications`;
 
     console.log("[send-otp] Twilio URL:", twUrl);
-    console.log("[send-otp] Twilio request body:", { To: toField, Channel: channel });
+    console.log("[send-otp] Twilio request body:", { To: e164, Channel: channel });
 
     const twRes = await fetch(twUrl, {
       method: "POST",
@@ -57,7 +54,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${basic}`,
       },
-      body: new URLSearchParams({ To: toField, Channel: channel }).toString(),
+      body: new URLSearchParams({ To: e164, Channel: channel }).toString(),
     });
 
     const twBody = await twRes.text();
@@ -66,6 +63,7 @@ export async function POST(req: Request) {
     console.log("[send-otp] Twilio response body:", twBody);
 
     if (!twRes.ok) {
+      console.error("[send-otp] Twilio error body:", twBody);
       return NextResponse.json({ error: "Failed to send code. Please try again." }, { status: 502 });
     }
 
