@@ -19,6 +19,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { phone, channel } = body as { phone?: string; channel?: string };
 
+    // 1. Raw request body
+    console.log("[send-otp] request body:", { phone, channel });
+
     if (!phone || !channel) {
       return NextResponse.json({ error: "Missing phone or channel." }, { status: 400 });
     }
@@ -28,16 +31,27 @@ export async function POST(req: Request) {
 
     const member = await findMemberByPhone(phone);
     if (!member) {
+      console.log("[send-otp] member not found for phone:", phone);
       return NextResponse.json({ error: "Phone number not registered. Please contact your Equb manager." }, { status: 404 });
     }
 
     const e164 = `+1${last10(phone)}`;
-    const sid       = process.env.TWILIO_VERIFY_SERVICE_SID!.trim();
+
+    // 2. E.164 number being sent to Twilio
+    console.log("[send-otp] e164:", e164);
+
+    const sid        = process.env.TWILIO_VERIFY_SERVICE_SID!.trim();
     const accountSid = process.env.TWILIO_ACCOUNT_SID!.trim();
     const authToken  = process.env.TWILIO_AUTH_TOKEN!.trim();
     const basic = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
 
-    const twRes = await fetch(`https://verify.twilio.com/v2/Services/${sid}/Verifications`, {
+    const twUrl = `https://verify.twilio.com/v2/Services/${sid}/Verifications`;
+
+    // 3. Full Twilio API URL
+    console.log("[send-otp] Twilio URL:", twUrl);
+    console.log("[send-otp] Twilio request body:", { To: e164, Channel: channel });
+
+    const twRes = await fetch(twUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -47,7 +61,12 @@ export async function POST(req: Request) {
     });
 
     const twBody = await twRes.text();
-    console.log("[send-otp] Twilio", twRes.status, twBody.slice(0, 200));
+
+    // 4. HTTP status code
+    console.log("[send-otp] Twilio status:", twRes.status);
+
+    // 5. Full Twilio response body
+    console.log("[send-otp] Twilio response body:", twBody);
 
     if (!twRes.ok) {
       return NextResponse.json({ error: "Failed to send code. Please try again." }, { status: 502 });
