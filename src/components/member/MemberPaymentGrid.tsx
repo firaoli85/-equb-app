@@ -28,14 +28,15 @@ interface Props {
   payments: GridPayment[];
 }
 
-function cellClass(status: Status, isSkipped: boolean): string {
-  if (isSkipped) return "bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600";
-  if (status === "PAID")     return "bg-emerald-500 dark:bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-700";
-  if (status === "LATE")     return "bg-red-100 dark:bg-red-950 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400";
-  if (status === "DEFERRED") return "bg-orange-100 dark:bg-orange-950 border border-orange-300 dark:border-orange-800 text-orange-600 dark:text-orange-400";
-  if (status === "PARTIAL")  return "bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-800 text-blue-600 dark:text-blue-400";
-  return "bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500";
-}
+const CELL_STYLE: Record<Status, string> = {
+  PAID:     "bg-emerald-500 dark:bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-300 dark:ring-emerald-700",
+  LATE:     "bg-red-100 dark:bg-red-950 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400",
+  DEFERRED: "bg-orange-100 dark:bg-orange-950 border border-orange-300 dark:border-orange-800 text-orange-600 dark:text-orange-400",
+  PARTIAL:  "bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-800 text-blue-600 dark:text-blue-400",
+  PENDING:  "bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500",
+};
+
+const CELL_SKIPPED = "bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600";
 
 const STATUS_ICON: Record<Status, React.ReactNode> = {
   PAID: (
@@ -109,7 +110,7 @@ export function MemberPaymentGrid({ members, weeks, payments }: Props) {
                   return (
                     <td key={m.id} className="px-2 py-2 text-center">
                       <div
-                        className={`relative inline-flex items-center justify-center w-9 h-9 rounded-lg text-xs font-bold ${cellClass(status, week.isSkipped)}`}
+                        className={`relative inline-flex items-center justify-center w-9 h-9 rounded-lg text-xs font-bold ${week.isSkipped ? CELL_SKIPPED : CELL_STYLE[status]}`}
                       >
                         {week.isSkipped ? "—" : STATUS_ICON[status]}
                         {!week.isSkipped && status === "PAID" && (

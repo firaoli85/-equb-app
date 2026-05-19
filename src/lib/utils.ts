@@ -21,14 +21,16 @@ export function paymentMethodLabel(
   return { CASH: "Cash", ZELLE: "Zelle", OTHER: "Other" }[method];
 }
 
-export function statusColor(status: PaymentStatus): string {
-  return {
-    PENDING:  "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
-    PAID:     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-semibold",
-    LATE:     "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-semibold",
-    DEFERRED: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 font-semibold",
-    PARTIAL:  "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-semibold",
-  }[status];
+const STATUS_COLOR: Record<string, string> = {
+  PAID:     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-semibold",
+  LATE:     "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-semibold",
+  DEFERRED: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 font-semibold",
+  PARTIAL:  "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-semibold",
+  PENDING:  "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+};
+
+export function statusColor(status: string): string {
+  return STATUS_COLOR[status] ?? STATUS_COLOR.PENDING;
 }
 
 export function statusCellColor(status: PaymentStatus): string {
