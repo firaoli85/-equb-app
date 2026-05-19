@@ -14,13 +14,20 @@ import {
 } from "@/lib/equb";
 import { SpinWheel } from "@/components/admin/SpinWheel";
 import { EndEqubButton } from "@/components/admin/EndEqubButton";
+import { LockedMembersPanel } from "@/components/admin/LockedMembersPanel";
 
 export default async function AdminDashboard() {
-  const [members, weeks, recentLogs, archiveCount] = await Promise.all([
+  const now = new Date();
+  const [members, weeks, recentLogs, archiveCount, lockedMembers] = await Promise.all([
     db.member.findMany({ where: { isArchived: false }, orderBy: { wheelNumber: "asc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
     db.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
     db.equbArchive.count(),
+    db.member.findMany({
+      where: { isArchived: false, pinLockedUntil: { not: null, gt: now } },
+      select: { id: true, nameAmharic: true, nameEnglishFirst: true, phone: true, pinLockedUntil: true },
+      orderBy: { pinLockedUntil: "asc" },
+    }),
   ]);
 
   const drawnNumbers = new Set(
@@ -83,6 +90,16 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      <LockedMembersPanel
+        initialLocked={lockedMembers.map((m) => ({
+          id: m.id,
+          nameAmharic: m.nameAmharic,
+          nameEnglishFirst: m.nameEnglishFirst,
+          phone: m.phone,
+          pinLockedUntil: m.pinLockedUntil!.toISOString(),
+        }))}
+      />
+
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white animate-fade-in-up">
         Dashboard
       </h1>
