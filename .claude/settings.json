@@ -51,7 +51,8 @@
       "Bash(npx next *)",
       "Bash(grep -n \"Wheel #\\\\${oldMember\\\\|Wheel #\\\\${member\" src/actions/members.ts)",
       "Bash(node -e ' *)",
-      "Bash(openssl rand *)"
+      "Bash(openssl rand *)",
+      "Bash(curl -s -H \"Authorization: Bearer 1c57bf4dd8c71306cad7c73ea94e90a4090b89df6b34e84f248dd0af71589d1e\" https://equb-app-hazel.vercel.app/api/cron/telegram)"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",
