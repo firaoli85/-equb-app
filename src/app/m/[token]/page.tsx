@@ -22,15 +22,6 @@ import { NameToggle } from "@/components/member/NameToggle";
 import { AutoRefresh } from "@/components/member/AutoRefresh";
 import { ReviewRequestButton } from "@/components/member/ReviewRequestButton";
 
-function rowBg(status: string): string {
-  switch (status) {
-    case "PAID":     return "bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-l-emerald-500";
-    case "LATE":     return "bg-red-50 dark:bg-red-950/30 border-l-4 border-l-red-400";
-    case "DEFERRED": return "bg-orange-50 dark:bg-orange-950/30 border-l-4 border-l-orange-400";
-    case "PARTIAL":  return "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400";
-    default:         return "border-l-4 border-l-gray-200 dark:border-l-gray-700";
-  }
-}
 
 function statusBadgeLabel(status: PaymentStatus): string {
   return {
@@ -467,9 +458,13 @@ export default async function MemberView({
               <div
                 key={p.id}
                 className={`flex items-center gap-3 px-5 py-3 transition-colors ${
-                  isMainWeek  ? "bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-l-emerald-500" :
-                  isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400" :
-                  rowBg(p.status)
+                  isMainWeek       ? "bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-l-emerald-500" :
+                  isExtraWeek      ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400" :
+                  p.status === "PAID"     ? "bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-l-emerald-500" :
+                  p.status === "LATE"     ? "bg-red-50 dark:bg-red-950/30 border-l-4 border-l-red-500" :
+                  p.status === "DEFERRED" ? "bg-orange-50 dark:bg-orange-950/30 border-l-4 border-l-orange-400" :
+                  p.status === "PARTIAL"  ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400" :
+                                            "border-l-4 border-l-gray-200 dark:border-l-gray-700"
                 }`}
               >
                 <div className="w-7 text-xs text-gray-500 dark:text-gray-400 text-center font-mono shrink-0">
