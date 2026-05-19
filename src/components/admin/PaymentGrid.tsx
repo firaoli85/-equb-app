@@ -37,7 +37,11 @@ interface GridData {
 }
 
 const STATUS_ICON: Record<Status, React.ReactNode> = {
-  PAID:     "✓",
+  PAID: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  ),
   LATE:     "!",
   PENDING:  "−",
   DEFERRED: (
@@ -211,11 +215,11 @@ function PaymentCell({
     <div className="relative inline-block">
       <button
         onClick={onOpen}
-        className={`w-10 h-10 rounded-xl text-xs font-bold transition-all hover:scale-105 hover:shadow-sm active:scale-95 touch-manipulation flex items-center justify-center ${statusColor(payment.status)} ${justPaid ? "animate-paid-flash" : ""}`}
+        className={`w-11 h-11 rounded-xl text-sm font-bold transition-all hover:scale-105 hover:shadow-sm active:scale-95 touch-manipulation flex items-center justify-center ${payment.status === "PAID" ? "bg-emerald-600 text-white dark:bg-emerald-500 shadow-sm" : statusColor(payment.status)} ${justPaid ? "animate-paid-flash" : ""}`}
         title={`${STATUS_LABELS[payment.status]}${payment.method ? ` · ${paymentMethodLabel(payment.method)}` : ""}`}
       >
         {justPaid ? (
-          <svg className="w-4 h-4 animate-check-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <svg className="w-5 h-5 animate-check-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         ) : STATUS_ICON[payment.status]}

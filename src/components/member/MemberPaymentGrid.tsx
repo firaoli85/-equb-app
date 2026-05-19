@@ -30,7 +30,7 @@ interface Props {
 
 function cellClass(status: Status, isSkipped: boolean): string {
   if (isSkipped) return "bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600";
-  if (status === "PAID")     return "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800";
+  if (status === "PAID")     return "bg-emerald-600 dark:bg-emerald-500 text-white shadow-sm";
   if (status === "LATE")     return "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800";
   if (status === "DEFERRED") return "bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800";
   if (status === "PARTIAL")  return "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800";
@@ -38,7 +38,11 @@ function cellClass(status: Status, isSkipped: boolean): string {
 }
 
 const STATUS_ICON: Record<Status, React.ReactNode> = {
-  PAID:     "✓",
+  PAID: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  ),
   LATE:     "!",
   PENDING:  "−",
   DEFERRED: (
@@ -100,7 +104,7 @@ export function MemberPaymentGrid({ members, weeks, payments }: Props) {
                   return (
                     <td key={m.id} className="px-2 py-2 text-center">
                       <div
-                        className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold ${cellClass(status, week.isSkipped)}`}
+                        className={`inline-flex items-center justify-center w-9 h-9 rounded-lg text-xs font-bold ${cellClass(status, week.isSkipped)}`}
                       >
                         {week.isSkipped ? "—" : STATUS_ICON[status]}
                       </div>
