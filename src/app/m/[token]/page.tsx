@@ -23,11 +23,11 @@ import { AutoRefresh } from "@/components/member/AutoRefresh";
 import { ReviewRequestButton } from "@/components/member/ReviewRequestButton";
 
 const ROW_STYLE: Record<string, string> = {
-  PAID:     "bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-l-emerald-500",
-  LATE:     "bg-red-50 dark:bg-red-950/30 border-l-4 border-l-red-500",
-  DEFERRED: "bg-orange-50 dark:bg-orange-950/30 border-l-4 border-l-orange-400",
-  PARTIAL:  "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400",
-  PENDING:  "border-l-4 border-l-gray-200 dark:border-l-gray-700",
+  PAID:     "bg-emerald-100 dark:bg-emerald-900/50 border-l-4 border-l-emerald-500",
+  LATE:     "bg-red-100 dark:bg-red-900/50 border-l-4 border-l-red-500",
+  DEFERRED: "bg-orange-100 dark:bg-orange-900/50 border-l-4 border-l-orange-500",
+  PARTIAL:  "bg-blue-100 dark:bg-blue-900/50 border-l-4 border-l-blue-500",
+  PENDING:  "border-l-4 border-l-gray-300 dark:border-l-gray-600",
 };
 
 function statusBadgeLabel(status: PaymentStatus): string {
@@ -491,9 +491,18 @@ export default async function MemberView({
                   {p.method && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
                   )}
-                  <span className={`text-xs px-2.5 py-0.5 rounded-full ${statusColor(p.status as PaymentStatus)}`}>
-                    {statusBadgeLabel(p.status as PaymentStatus)}
-                  </span>
+                  {p.status === "PAID" ? (
+                    <span
+                      className={`text-sm px-2.5 py-0.5 rounded-full shadow-sm ${statusColor(p.status as PaymentStatus)}`}
+                      style={{ animation: "pulse 0.8s ease-in-out 2" }}
+                    >
+                      ⭐ Paid
+                    </span>
+                  ) : (
+                    <span className={`text-xs px-2.5 py-0.5 rounded-full ${statusColor(p.status as PaymentStatus)}`}>
+                      {statusBadgeLabel(p.status as PaymentStatus)}
+                    </span>
+                  )}
                 </div>
               </div>
             );

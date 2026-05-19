@@ -22,11 +22,11 @@ export function paymentMethodLabel(
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  PAID:     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-semibold",
-  LATE:     "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-semibold",
-  DEFERRED: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 font-semibold",
-  PARTIAL:  "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-semibold",
-  PENDING:  "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+  PAID:     "bg-emerald-200 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100 font-bold",
+  LATE:     "bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-100 font-bold",
+  DEFERRED: "bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-orange-100 font-bold",
+  PARTIAL:  "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-100 font-bold",
+  PENDING:  "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300",
 };
 
 export function statusColor(status: string): string {
