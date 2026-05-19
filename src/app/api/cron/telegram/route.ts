@@ -30,10 +30,25 @@ export async function GET(req: Request) {
   const remainingWord = remaining === 1 ? "ሳምንት" : "ሳምንታት";
   const remainingEn = remaining === 1 ? "week" : "weeks";
 
+  // Previous message (single bilingual line-by-line):
+  // 🗓 ዛሬ የዕቁብ ሳምንት *N* ነው። | Week *N* of your Equb is today.
+  // ⏳ N ሳምንታት ቀርተዋል። | N weeks remaining.
+  // 💳 እባክዎ ክፍያዎን ያረጋግጡ። | Please make your weekly payment.
+  // 🔗 Login: https://equb-app-hazel.vercel.app/login
+
   const message =
-    `🗓 ዛሬ የዕቁብ ሳምንት *${weekNumber}* ነው። | Week *${weekNumber}* of your Equb is today.\n` +
-    `⏳ ${remaining} ${remainingWord} ቀርተዋል። | ${remaining} ${remainingEn} remaining.\n` +
-    `💳 እባክዎ ክፍያዎን ያረጋግጡ። | Please make your weekly payment.\n` +
+    `🗓 ዛሬ የዕቁብ ሳምንት *${weekNumber}* ነው።\n` +
+    `⏳ ${remaining} ${remainingWord} ቀርተዋል።\n` +
+    `💰 እባክዎ የዚህን ሳምንት ክፍያ ያረጋግጡ።\n` +
+    `💳 ዘሌ: 301-541-6005 (Firaoli Seboka)\n` +
+    `🔗 ሎጊን: https://equb-app-hazel.vercel.app/login\n` +
+    `\n` +
+    `―――――――――――――――――\n` +
+    `\n` +
+    `🗓 Week *${weekNumber}* of your Equb is today.\n` +
+    `⏳ ${remaining} ${remainingEn} remaining.\n` +
+    `💰 Please make your weekly payment.\n` +
+    `💳 Zelle: 301-541-6005 (Firaoli Seboka)\n` +
     `🔗 Login: https://equb-app-hazel.vercel.app/login`;
 
   const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
