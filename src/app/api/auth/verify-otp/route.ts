@@ -31,12 +31,23 @@ export async function POST(req: Request) {
     }
 
     const e164 = `+1${last10(phone)}`;
+
+    // 1. E.164 number being sent to VerificationCheck
+    console.log("[verify-otp] e164:", e164);
+
+    // 2. Code value being checked
+    console.log("[verify-otp] code:", code);
+
     const sid        = process.env.TWILIO_VERIFY_SERVICE_SID!.trim();
     const accountSid = process.env.TWILIO_ACCOUNT_SID!.trim();
     const authToken  = process.env.TWILIO_AUTH_TOKEN!.trim();
     const basic = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
 
-    const twRes = await fetch(`https://verify.twilio.com/v2/Services/${sid}/VerificationCheck`, {
+    const twUrl = `https://verify.twilio.com/v2/Services/${sid}/VerificationCheck`;
+    console.log("[verify-otp] Twilio URL:", twUrl);
+    console.log("[verify-otp] Twilio request body:", { To: e164, Code: code });
+
+    const twRes = await fetch(twUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -46,7 +57,10 @@ export async function POST(req: Request) {
     });
 
     const twBody = await twRes.text();
-    console.log("[verify-otp] Twilio", twRes.status, twBody.slice(0, 200));
+
+    // 3. Full Twilio response body (untruncated)
+    console.log("[verify-otp] Twilio status:", twRes.status);
+    console.log("[verify-otp] Twilio response body:", twBody);
 
     if (twRes.status === 404) {
       return NextResponse.json({ error: "Code expired or already used. Request a new one." }, { status: 400 });
@@ -57,6 +71,10 @@ export async function POST(req: Request) {
 
     let parsed: { status?: string };
     try { parsed = JSON.parse(twBody); } catch { parsed = {}; }
+
+    // 4. Parsed status field from Twilio
+    console.log("[verify-otp] Twilio parsed status:", parsed.status);
+
     if (parsed.status !== "approved") {
       return NextResponse.json({ error: "Invalid or expired code." }, { status: 400 });
     }
