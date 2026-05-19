@@ -111,10 +111,13 @@ export function LoginForm() {
             </label>
             <input
               name="phone" type="tel" required autoComplete="tel"
-              placeholder="(301) 541-6005"
+              placeholder="Enter your phone number"
               style={{ fontSize: "16px" }}
               className="w-full px-4 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
             />
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              Use the phone number you registered with your Equb manager
+            </p>
           </div>
 
           {phoneState.error && (
