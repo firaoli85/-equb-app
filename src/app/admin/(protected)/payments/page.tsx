@@ -23,9 +23,10 @@ export default async function PaymentsPage() {
       id: p.id,
       memberId: p.memberId,
       weekId: p.weekId,
-      status: p.status as "PENDING" | "PAID" | "LATE" | "DEFERRED",
+      status: p.status as "PENDING" | "PAID" | "LATE" | "DEFERRED" | "PARTIAL",
       method: p.method as "CASH" | "ZELLE" | "OTHER" | null,
       notes: p.notes,
+      paidAmount: p.paidAmount,
     })),
   };
 

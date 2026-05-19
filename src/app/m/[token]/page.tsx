@@ -461,49 +461,69 @@ export default async function MemberView({
             const diff = p.week.weekNumber - currentWeekNum;
             const reviewEligible = diff >= -2 && diff <= 2;
             const existingReview = reviewByWeekId.get(p.weekId) ?? null;
-            return (
-              <div
-                key={p.id}
-                className={`flex items-center gap-3 px-5 py-3 transition-colors ${
+            const rowStyle =
                   isMainWeek  ? "bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-l-emerald-500" :
                   isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400" :
-                  (ROW_STYLE[p.status] ?? ROW_STYLE.PENDING)
-                }`}
-              >
-                <div className="w-7 text-xs text-gray-500 dark:text-gray-400 text-center font-mono shrink-0">
-                  {p.week.weekNumber}
+                  (ROW_STYLE[p.status] ?? ROW_STYLE.PENDING);
+            return (
+              <div key={p.id} className={`transition-colors ${rowStyle}`}>
+                <div className="flex items-center gap-3 px-5 py-3">
+                  <div className="w-7 text-xs text-gray-500 dark:text-gray-400 text-center font-mono shrink-0">
+                    {p.week.weekNumber}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{formatDate(p.week.date)}</p>
+                    {isMainWeek && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">★ Main wheel payout week</p>}
+                    {isExtraWeek && <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">★ Extra wheel payout week</p>}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {reviewEligible && (
+                      <ReviewRequestButton
+                        token={member.token}
+                        weekId={p.weekId}
+                        weekNumber={p.week.weekNumber}
+                        weekDate={formatDate(p.week.date)}
+                        existingStatus={existingReview}
+                      />
+                    )}
+                    {p.method && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
+                    )}
+                    {p.status === "PAID" ? (
+                      <span
+                        className={`text-sm px-2.5 py-0.5 rounded-full shadow-sm ${statusColor(p.status as PaymentStatus)}`}
+                        style={{ animation: "pulse 0.8s ease-in-out 2" }}
+                      >
+                        ⭐ Paid
+                      </span>
+                    ) : (
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full ${statusColor(p.status as PaymentStatus)}`}>
+                        {statusBadgeLabel(p.status as PaymentStatus)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{formatDate(p.week.date)}</p>
-                  {isMainWeek && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">★ Main wheel payout week</p>}
-                  {isExtraWeek && <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">★ Extra wheel payout week</p>}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {reviewEligible && (
-                    <ReviewRequestButton
-                      token={member.token}
-                      weekId={p.weekId}
-                      weekNumber={p.week.weekNumber}
-                      weekDate={formatDate(p.week.date)}
-                      existingStatus={existingReview}
-                    />
-                  )}
-                  {p.method && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
-                  )}
-                  {p.status === "PAID" ? (
-                    <span
-                      className={`text-sm px-2.5 py-0.5 rounded-full shadow-sm ${statusColor(p.status as PaymentStatus)}`}
-                      style={{ animation: "pulse 0.8s ease-in-out 2" }}
-                    >
-                      ⭐ Paid
-                    </span>
-                  ) : (
-                    <span className={`text-xs px-2.5 py-0.5 rounded-full ${statusColor(p.status as PaymentStatus)}`}>
-                      {statusBadgeLabel(p.status as PaymentStatus)}
-                    </span>
-                  )}
-                </div>
+                {p.status === "PARTIAL" && p.paidAmount != null && (
+                  <div className="px-5 pb-3">
+                    <div className="flex gap-4 text-xs mb-1">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                        Paid: {formatCurrency(p.paidAmount)}
+                      </span>
+                      <span className="text-red-500 dark:text-red-400 font-medium">
+                        Remaining: {formatCurrency(member.weeklyAmount - p.paidAmount)}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-blue-200 dark:bg-blue-900 overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 rounded-full"
+                        style={{ width: `${Math.min(100, Math.round((p.paidAmount / member.weeklyAmount) * 100))}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-blue-500 dark:text-blue-400 mt-0.5">
+                      {Math.round((p.paidAmount / member.weeklyAmount) * 100)}% paid
+                    </p>
+                  </div>
+                )}
               </div>
             );
           })}

@@ -28,6 +28,7 @@ interface GridPayment {
   status: Status;
   method: Method;
   notes: string | null;
+  paidAmount: number | null;
 }
 
 interface GridData {
@@ -184,6 +185,9 @@ function PaymentCell({
   const [status, setStatus] = useState<Status>(payment.status);
   const [method, setMethod] = useState<Method>(payment.method);
   const [notes, setNotes] = useState(payment.notes ?? "");
+  const [paidAmountDollars, setPaidAmountDollars] = useState(
+    payment.paidAmount != null ? String(payment.paidAmount / 100) : ""
+  );
   const [justPaid, setJustPaid] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -201,8 +205,11 @@ function PaymentCell({
   function handleSave() {
     startTransition(async () => {
       const isNewlyPaid = status === "PAID" && payment.status !== "PAID";
-      await updatePaymentStatus({ paymentId: payment.id, status, method, notes });
-      onUpdate({ ...payment, status, method, notes });
+      const paidAmountCents = status === "PARTIAL" && paidAmountDollars !== ""
+        ? Math.round(parseFloat(paidAmountDollars) * 100)
+        : null;
+      await updatePaymentStatus({ paymentId: payment.id, status, method, notes, paidAmount: paidAmountCents });
+      onUpdate({ ...payment, status, method, notes, paidAmount: paidAmountCents });
       if (isNewlyPaid) {
         setJustPaid(true);
         setTimeout(() => setJustPaid(false), 650);
@@ -261,6 +268,23 @@ function PaymentCell({
                 </button>
               </div>
             </div>
+
+            {status === "PARTIAL" && (
+              <div>
+                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">
+                  Amount Paid ($)
+                </p>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paidAmountDollars}
+                  onChange={(e) => setPaidAmountDollars(e.target.value)}
+                  placeholder="e.g. 250"
+                  className="w-full px-2 py-1.5 text-xs border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-950 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-shadow"
+                />
+              </div>
+            )}
 
             <div>
               <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-1.5">

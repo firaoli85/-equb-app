@@ -60,15 +60,16 @@ model Week {
 }
 
 model Payment {
-  id        String         @id @default(cuid())
-  memberId  String
-  weekId    String
-  status    PaymentStatus  @default(PENDING)
-  method    PaymentMethod?
-  paidAt    DateTime?
-  notes     String?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id         String         @id @default(cuid())
+  memberId   String
+  weekId     String
+  status     PaymentStatus  @default(PENDING)
+  method     PaymentMethod?
+  paidAt     DateTime?
+  notes      String?
+  paidAmount Int?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
   member    Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
   week      Week           @relation(fields: [weekId], references: [id], onDelete: Cascade)
 

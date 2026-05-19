@@ -10,6 +10,7 @@ export async function updatePaymentStatus(data: {
   status: PaymentStatus;
   method?: PaymentMethod | null;
   notes?: string;
+  paidAmount?: number | null;
 }): Promise<{ error?: string }> {
   const payment = await db.payment.findUnique({
     where: { id: data.paymentId },
@@ -17,7 +18,7 @@ export async function updatePaymentStatus(data: {
   });
   if (!payment) return { error: "Payment not found" };
 
-  const before = { status: payment.status, method: payment.method, notes: payment.notes };
+  const before = { status: payment.status, method: payment.method, notes: payment.notes, paidAmount: payment.paidAmount };
 
   const updated = await db.payment.update({
     where: { id: data.paymentId },
@@ -26,10 +27,11 @@ export async function updatePaymentStatus(data: {
       method: data.method ?? null,
       notes: data.notes ?? null,
       paidAt: data.status === "PAID" ? (payment.paidAt ?? new Date()) : null,
+      paidAmount: data.status === "PARTIAL" ? (data.paidAmount ?? null) : null,
     },
   });
 
-  const after = { status: updated.status, method: updated.method, notes: updated.notes };
+  const after = { status: updated.status, method: updated.method, notes: updated.notes, paidAmount: updated.paidAmount };
 
   const displayName = `${payment.member.nameAmharic} (${payment.member.nameEnglishFirst})`;
 
