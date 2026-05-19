@@ -438,8 +438,8 @@ export default async function MemberView({
         </div>
         <div className="divide-y divide-gray-50 dark:divide-gray-800/60">
           {member.payments.map((p) => {
-            const isMainWeek  = p.week.weekNumber === member.wheelNumber;
-            const isExtraWeek = hasExtra && p.week.weekNumber === member.extraWheelNumber;
+            const isMainWeek  = p.week.weekNumber === member.wheelNumber && drawnSet.has(member.wheelNumber);
+            const isExtraWeek = hasExtra && p.week.weekNumber === member.extraWheelNumber && drawnSet.has(member.extraWheelNumber!);
             const diff = p.week.weekNumber - currentWeekNum;
             const reviewEligible = diff >= -2 && diff <= 2;
             const existingReview = reviewByWeekId.get(p.weekId) ?? null;
