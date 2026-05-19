@@ -50,7 +50,7 @@ export function LoginForm() {
   const [otpCode, setOtpCode]         = useState("");
   const [otpError, setOtpError]       = useState<string | null>(null);
   const [hasAttempted, setHasAttempted] = useState(false); // only show error after first submit
-  const [isSendingOtp, startSendOtp]   = useTransition();
+  const [isSendingOtp, setIsSendingOtp] = useState(false); // plain state — avoids async-transition timing issues
   const [isVerifyingOtp, startVerifyOtp] = useTransition();
   const otpInputRef    = useRef<HTMLInputElement>(null);
   const isSubmittingRef = useRef(false); // synchronous guard against double-submit
@@ -104,29 +104,35 @@ export function LoginForm() {
 
   // ── OTP send ──────────────────────────────────────────────────────────────
 
-  function handleSendOtp(channel: "whatsapp" | "sms") {
+  async function handleSendOtp(channel: "whatsapp" | "sms") {
     // Clear ALL previous error/code state before sending
     resetOtpState();
     setSendingChannel(channel);
-    startSendOtp(async () => {
+    setIsSendingOtp(true);
+    try {
       const result = await sendOtp(phone, channel);
+      console.log("[handleSendOtp] result:", JSON.stringify(result), "channel:", channel);
       if (result.error) {
         setOtpError(result.error);
         setSendingChannel(null);
       } else {
+        console.log("[handleSendOtp] success — setting loginMethod + otpSent");
         setLoginMethod(channel);
         setOtpSent(true);
         setSendingChannel(null);
       }
-    });
+    } finally {
+      setIsSendingOtp(false);
+    }
   }
 
-  function handleResendOtp() {
+  async function handleResendOtp() {
     if (!loginMethod || loginMethod === "pin") return;
     const channel = loginMethod as "whatsapp" | "sms";
     resetOtpState();
     setSendingChannel(channel);
-    startSendOtp(async () => {
+    setIsSendingOtp(true);
+    try {
       const result = await sendOtp(phone, channel);
       if (result.error) {
         setOtpError(result.error);
@@ -135,7 +141,9 @@ export function LoginForm() {
         setOtpSent(true);
         setSendingChannel(null);
       }
-    });
+    } finally {
+      setIsSendingOtp(false);
+    }
   }
 
   // useCallback so the stable reference can be used in onKeyDown without stale closure issues
