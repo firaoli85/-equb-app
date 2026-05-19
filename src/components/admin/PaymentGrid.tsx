@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { updatePaymentStatus } from "@/actions/payments";
 import { statusColor, paymentMethodLabel } from "@/lib/utils";
 
-type Status = "PENDING" | "PAID" | "LATE" | "DEFERRED";
+type Status = "PENDING" | "PAID" | "LATE" | "DEFERRED" | "PARTIAL";
 type Method = "CASH" | "ZELLE" | "OTHER" | null;
 
 interface GridMember {
@@ -45,6 +45,12 @@ const STATUS_ICON: Record<Status, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6" />
     </svg>
   ),
+  PARTIAL: (
+    <svg className="w-3.5 h-3.5 mx-auto" viewBox="0 0 16 16">
+      <path d="M8 1a7 7 0 0 0 0 14z" fill="currentColor" />
+      <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  ),
 };
 
 const STATUS_LABELS: Record<Status, string> = {
@@ -52,6 +58,7 @@ const STATUS_LABELS: Record<Status, string> = {
   PAID:     "Paid",
   LATE:     "Late",
   DEFERRED: "Deferred",
+  PARTIAL:  "Partial",
 };
 
 export default function PaymentGrid({ data }: { data: GridData }) {
@@ -144,6 +151,10 @@ export default function PaymentGrid({ data }: { data: GridData }) {
           Deferred
         </span>
         <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-blue-100 dark:bg-blue-950 inline-block border border-blue-200 dark:border-blue-800" />
+          Partial
+        </span>
+        <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-800 inline-block border border-gray-200 dark:border-gray-700" />
           Pending
         </span>
@@ -169,6 +180,7 @@ function PaymentCell({
   const [status, setStatus] = useState<Status>(payment.status);
   const [method, setMethod] = useState<Method>(payment.method);
   const [notes, setNotes] = useState(payment.notes ?? "");
+  const [justPaid, setJustPaid] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -184,8 +196,13 @@ function PaymentCell({
 
   function handleSave() {
     startTransition(async () => {
+      const isNewlyPaid = status === "PAID" && payment.status !== "PAID";
       await updatePaymentStatus({ paymentId: payment.id, status, method, notes });
       onUpdate({ ...payment, status, method, notes });
+      if (isNewlyPaid) {
+        setJustPaid(true);
+        setTimeout(() => setJustPaid(false), 650);
+      }
       onClose();
     });
   }
@@ -194,10 +211,14 @@ function PaymentCell({
     <div className="relative inline-block">
       <button
         onClick={onOpen}
-        className={`w-10 h-10 rounded-xl text-xs font-bold transition-all hover:scale-105 hover:shadow-sm active:scale-95 touch-manipulation flex items-center justify-center ${statusColor(payment.status)}`}
+        className={`w-10 h-10 rounded-xl text-xs font-bold transition-all hover:scale-105 hover:shadow-sm active:scale-95 touch-manipulation flex items-center justify-center ${statusColor(payment.status)} ${justPaid ? "animate-paid-flash" : ""}`}
         title={`${STATUS_LABELS[payment.status]}${payment.method ? ` · ${paymentMethodLabel(payment.method)}` : ""}`}
       >
-        {STATUS_ICON[payment.status]}
+        {justPaid ? (
+          <svg className="w-4 h-4 animate-check-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        ) : STATUS_ICON[payment.status]}
       </button>
 
       {isOpen && (
@@ -224,6 +245,16 @@ function PaymentCell({
                     {STATUS_LABELS[s]}
                   </button>
                 ))}
+                <button
+                  onClick={() => setStatus("PARTIAL")}
+                  className={`col-span-2 py-1.5 text-xs rounded-lg font-semibold border transition-colors ${
+                    status === "PARTIAL"
+                      ? statusColor("PARTIAL") + " border-transparent"
+                      : "border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 bg-transparent"
+                  }`}
+                >
+                  Partial Payment
+                </button>
               </div>
             </div>
 

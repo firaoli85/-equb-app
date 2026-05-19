@@ -323,14 +323,41 @@ export default async function MemberView({
 
       {/* ── Progress ───────────────────────────────────────────────────────── */}
       <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-3">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Payment Progress</h3>
-          <span className="text-sm font-bold text-gray-900 dark:text-white">{paidCount}/{TOTAL_WEEKS} weeks</span>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-5 text-center">Payment Progress</h3>
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative w-32 h-32">
+            <svg viewBox="0 0 100 100" className="w-full h-full" style={{ transform: "rotate(-90deg)" }}>
+              <circle
+                cx="50" cy="50" r="38"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="8"
+                className="text-gray-100 dark:text-gray-800"
+              />
+              {progressPct > 0 && (
+                <circle
+                  cx="50" cy="50" r="38"
+                  fill="none"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  className={progressPct < 50 ? "text-amber-500" : "text-emerald-500"}
+                  style={{
+                    strokeDasharray: `${2 * Math.PI * 38}`,
+                    strokeDashoffset: `${2 * Math.PI * 38 * (1 - progressPct / 100)}`,
+                    transition: "stroke-dashoffset 0.8s ease",
+                  }}
+                />
+              )}
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-black text-gray-900 dark:text-white leading-none">{progressPct}%</span>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {paidCount} of {TOTAL_WEEKS} weeks paid
+          </p>
         </div>
-        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 mb-1.5 overflow-hidden">
-          <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-700" style={{ width: `${progressPct}%` }} />
-        </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 text-right">{progressPct}% complete</p>
       </div>
 
       {/* ── Documents ──────────────────────────────────────────────────────── */}

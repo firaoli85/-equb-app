@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-type PaymentStatus = "PENDING" | "PAID" | "LATE" | "DEFERRED";
+type PaymentStatus = "PENDING" | "PAID" | "LATE" | "DEFERRED" | "PARTIAL";
 type PaymentMethod = "CASH" | "ZELLE" | "OTHER";
 
 export async function updatePaymentStatus(data: {
@@ -36,6 +36,8 @@ export async function updatePaymentStatus(data: {
   const actionLabel =
     data.status === "DEFERRED"
       ? `Payment deferred — skip request approved for ${displayName}, Week ${payment.week.weekNumber}`
+      : data.status === "PARTIAL"
+      ? `Partial payment recorded — ${displayName}, Week ${payment.week.weekNumber}${data.method ? ` via ${data.method}` : ""}`
       : `Payment ${data.status.toLowerCase()} — ${displayName}, Week ${payment.week.weekNumber}${data.method ? ` via ${data.method}` : ""}`;
 
   await db.auditLog.create({

@@ -1,6 +1,6 @@
 import { getDisplayName } from "@/lib/equb";
 
-type Status = "PENDING" | "PAID" | "LATE" | "DEFERRED";
+type Status = "PENDING" | "PAID" | "LATE" | "DEFERRED" | "PARTIAL";
 
 interface GridMember {
   id: string;
@@ -33,6 +33,7 @@ function cellClass(status: Status, isSkipped: boolean): string {
   if (status === "PAID")     return "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800";
   if (status === "LATE")     return "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800";
   if (status === "DEFERRED") return "bg-orange-100 dark:bg-orange-950 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800";
+  if (status === "PARTIAL")  return "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800";
   return "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 border border-gray-200 dark:border-gray-700";
 }
 
@@ -43,6 +44,12 @@ const STATUS_ICON: Record<Status, React.ReactNode> = {
   DEFERRED: (
     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6" />
+    </svg>
+  ),
+  PARTIAL: (
+    <svg className="w-3 h-3" viewBox="0 0 16 16">
+      <path d="M8 1a7 7 0 0 0 0 14z" fill="currentColor" />
+      <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   ),
 };
@@ -118,6 +125,10 @@ export function MemberPaymentGrid({ members, weeks, payments }: Props) {
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-orange-100 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 inline-block" />
           Deferred
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-blue-100 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 inline-block" />
+          Partial
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 inline-block" />
