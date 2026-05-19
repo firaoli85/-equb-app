@@ -139,6 +139,7 @@ enum PaymentStatus {
   PAID
   LATE
   DEFERRED
+  PARTIAL
 }
 
 enum PaymentMethod {
