@@ -20,14 +20,13 @@ import { ConfirmAgreement } from "@/components/member/ConfirmAgreement";
 import { ConfirmCollectionReceipt } from "@/components/member/ConfirmCollectionReceipt";
 import { NameToggle } from "@/components/member/NameToggle";
 import { AutoRefresh } from "@/components/member/AutoRefresh";
-import { ReviewRequestButton } from "@/components/member/ReviewRequestButton";
 
 const ROW_STYLE: Record<string, string> = {
-  PAID:     "bg-emerald-100 dark:bg-emerald-900/50 border-l-4 border-l-emerald-500",
-  LATE:     "bg-red-100 dark:bg-red-900/50 border-l-4 border-l-red-500",
-  DEFERRED: "bg-orange-100 dark:bg-orange-900/50 border-l-4 border-l-orange-500",
-  PARTIAL:  "bg-blue-100 dark:bg-blue-900/50 border-l-4 border-l-blue-500",
-  PENDING:  "border-l-4 border-l-gray-300 dark:border-l-gray-600",
+  PAID:     "bg-emerald-200 dark:bg-emerald-900/70 border-l-4 border-l-emerald-600",
+  LATE:     "bg-red-200 dark:bg-red-900/70 border-l-4 border-l-red-600",
+  DEFERRED: "bg-orange-200 dark:bg-orange-900/70 border-l-4 border-l-orange-600",
+  PARTIAL:  "bg-blue-200 dark:bg-blue-900/70 border-l-4 border-l-blue-600",
+  PENDING:  "bg-gray-50 dark:bg-gray-900 border-l-4 border-dashed border-l-gray-400",
 };
 
 function statusBadgeLabel(status: PaymentStatus): string {
@@ -88,7 +87,7 @@ export default async function MemberView({
   const extraNet   = hasExtra ? calculateNetPayout(extraGross, extraFee) : 0;
 
   // ── Stats queries + review requests ──────────────────────────────────────
-  const [drawnWeeks, allMembersWheels, reviewRequests] = await Promise.all([
+  const [drawnWeeks, allMembersWheels] = await Promise.all([
     db.week.findMany({
       where: { winnerWheelNumber: { not: null } },
       select: { winnerWheelNumber: true, weekNumber: true, date: true, payoutStatus: true, payoutMethod: true },
@@ -96,19 +95,10 @@ export default async function MemberView({
     db.member.findMany({
       select: { wheelNumber: true, extraWheelNumber: true, wheelSuspended: true },
     }),
-    db.paymentReviewRequest.findMany({
-      where: { memberId: member.id },
-      select: { weekId: true, status: true },
-    }),
   ]);
 
   const drawnSet = new Set(drawnWeeks.map((w) => w.winnerWheelNumber!));
   const collectionsCount = drawnSet.size;
-
-  // Map weekId → review status for quick lookup in the payment table
-  const reviewByWeekId = new Map(
-    reviewRequests.map((r) => [r.weekId, r.status as "PENDING" | "APPROVED" | "REJECTED"])
-  );
 
   let wheelEntriesRemaining = 0;
   for (const m of allMembersWheels) {
@@ -149,6 +139,18 @@ export default async function MemberView({
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-8 pb-8 space-y-5">
+      <style>{`
+        @keyframes shimmer {
+          0% { opacity: 1; }
+          50% { opacity: 0.7; background-color: rgba(52, 211, 153, 0.3); }
+          100% { opacity: 1; }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-3px); }
+          75% { transform: translateX(3px); }
+        }
+      `}</style>
 
       {/* ── Stats section ──────────────────────────────────────────────────── */}
       <div className="space-y-3">
@@ -458,15 +460,16 @@ export default async function MemberView({
           {member.payments.map((p) => {
             const isMainWeek  = p.week.weekNumber === member.wheelNumber && drawnSet.has(member.wheelNumber);
             const isExtraWeek = hasExtra && p.week.weekNumber === member.extraWheelNumber && drawnSet.has(member.extraWheelNumber!);
-            const diff = p.week.weekNumber - currentWeekNum;
-            const reviewEligible = diff >= -2 && diff <= 2;
-            const existingReview = reviewByWeekId.get(p.weekId) ?? null;
             const rowStyle =
                   isMainWeek  ? "bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-l-emerald-500" :
                   isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400" :
                   (ROW_STYLE[p.status] ?? ROW_STYLE.PENDING);
+            const rowAnimation = isMainWeek || isExtraWeek ? undefined :
+                  p.status === "PAID" ? { animation: "shimmer 1.5s ease-in-out 2" } :
+                  p.status === "LATE" ? { animation: "shake 0.4s ease-in-out 1" } :
+                  undefined;
             return (
-              <div key={p.id} className={`transition-colors ${rowStyle}`}>
+              <div key={p.id} className={`transition-colors ${rowStyle}`} style={rowAnimation}>
                 <div className="flex items-center gap-3 px-5 py-3">
                   <div className="w-7 text-xs text-gray-500 dark:text-gray-400 text-center font-mono shrink-0">
                     {p.week.weekNumber}
@@ -477,15 +480,6 @@ export default async function MemberView({
                     {isExtraWeek && <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">★ Extra wheel payout week</p>}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {reviewEligible && (
-                      <ReviewRequestButton
-                        token={member.token}
-                        weekId={p.weekId}
-                        weekNumber={p.week.weekNumber}
-                        weekDate={formatDate(p.week.date)}
-                        existingStatus={existingReview}
-                      />
-                    )}
                     {p.method && (
                       <span className="text-xs text-gray-500 dark:text-gray-400">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
                     )}
@@ -505,21 +499,21 @@ export default async function MemberView({
                 </div>
                 {p.status === "PARTIAL" && p.paidAmount != null && (
                   <div className="px-5 pb-3">
-                    <div className="flex gap-4 text-xs mb-1">
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                        Paid: {formatCurrency(p.paidAmount)}
+                    <div className="flex gap-4 mb-1">
+                      <span className="text-sm font-bold text-emerald-700">
+                        Paid {formatCurrency(p.paidAmount)}
                       </span>
-                      <span className="text-red-500 dark:text-red-400 font-medium">
-                        Remaining: {formatCurrency(member.weeklyAmount - p.paidAmount)}
+                      <span className="text-sm font-bold text-red-600">
+                        Still owe {formatCurrency(member.weeklyAmount - p.paidAmount)}
                       </span>
                     </div>
-                    <div className="h-2 rounded-full bg-blue-200 dark:bg-blue-900 overflow-hidden">
+                    <div className="h-2.5 rounded-full bg-blue-200 dark:bg-blue-900 overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 rounded-full"
+                        className="h-full bg-blue-500 rounded-full transition-all duration-500"
                         style={{ width: `${Math.min(100, Math.round((p.paidAmount / member.weeklyAmount) * 100))}%` }}
                       />
                     </div>
-                    <p className="text-xs text-blue-500 dark:text-blue-400 mt-0.5">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       {Math.round((p.paidAmount / member.weeklyAmount) * 100)}% paid
                     </p>
                   </div>
