@@ -4,7 +4,6 @@ import { db } from "@/lib/db";
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
-  // Vercel sets CRON_SECRET and passes it as Authorization: Bearer <secret>
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
     const auth = req.headers.get("authorization");
@@ -22,45 +21,22 @@ export async function GET(req: Request) {
 
   const week1 = await db.week.findFirst({ where: { weekNumber: 1 }, select: { date: true } });
   const weekNumber = getCurrentWeekNumber(week1?.date ?? EQUB_START);
+
   if (weekNumber < 1 || weekNumber > TOTAL_WEEKS) {
     return new Response("Equb not active", { status: 200 });
   }
 
   const remaining = TOTAL_WEEKS - weekNumber;
-
-  // Check if there's a winner this week
-  const currentWeek = await db.week.findFirst({
-    where: { weekNumber },
-    include: {
-      payments: false,
-    },
-  });
-
-  let winnerLine = "";
-  if (currentWeek?.winnerWheelNumber) {
-    const winner = await db.member.findFirst({
-      where: {
-        OR: [
-          { wheelNumber: currentWeek.winnerWheelNumber },
-          { extraWheelNumber: currentWeek.winnerWheelNumber },
-        ],
-      },
-    });
-    if (winner) {
-      winnerLine = `\n🎉 የዚህ ሳምንት አሸናፊ: ${winner.nameAmharic} (ጎማ #${currentWeek.winnerWheelNumber})`;
-    }
-  }
-
-  const amharicWeekWord = remaining === 1 ? "ሳምንት" : "ሳምንታት";
+  const remainingWord = remaining === 1 ? "ሳምንት" : "ሳምንታት";
+  const remainingEn = remaining === 1 ? "week" : "weeks";
 
   const message =
-    `🗓 *ዛሬ የዕቁብ ሳምንት ${weekNumber} ነው።*\n` +
-    `${remaining > 0 ? `${remaining} ${amharicWeekWord} ቀርተዋል።` : "ዛሬ የመጨረሻው ሳምንት ነው!"}` +
-    winnerLine +
-    `\n\n💳 እባክዎ ክፍያዎን ያረጋግጡ።`;
+    `🗓 ዛሬ የዕቁብ ሳምንት *${weekNumber}* ነው። | Week *${weekNumber}* of your Equb is today.\n` +
+    `⏳ ${remaining} ${remainingWord} ቀርተዋል። | ${remaining} ${remainingEn} remaining.\n` +
+    `💳 እባክዎ ክፍያዎን ያረጋግጡ። | Please make your weekly payment.\n` +
+    `🔗 Login: https://equb-app-hazel.vercel.app/login`;
 
-  const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-  const res = await fetch(telegramUrl, {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -75,5 +51,5 @@ export async function GET(req: Request) {
     return new Response(`Telegram error: ${body}`, { status: 500 });
   }
 
-  return new Response("OK", { status: 200 });
+  return new Response(`OK — sent Week ${weekNumber} reminder`, { status: 200 });
 }
