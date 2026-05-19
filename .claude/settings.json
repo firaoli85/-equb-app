@@ -50,7 +50,8 @@
       "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\" | Where-Object { $_.PSIsContainer -eq $false } | Select-Object Name)",
       "Bash(npx next *)",
       "Bash(grep -n \"Wheel #\\\\${oldMember\\\\|Wheel #\\\\${member\" src/actions/members.ts)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(openssl rand *)"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",
