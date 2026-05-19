@@ -19,7 +19,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { phone, channel } = body as { phone?: string; channel?: string };
 
-    // 1. Raw request body
     console.log("[send-otp] request body:", { phone, channel });
 
     if (!phone || !channel) {
@@ -36,9 +35,11 @@ export async function POST(req: Request) {
     }
 
     const e164 = `+1${last10(phone)}`;
+    // WhatsApp requires the whatsapp: URI prefix so Twilio routes through the
+    // WhatsApp channel explicitly. SMS uses plain E.164.
+    const toField = channel === "whatsapp" ? `whatsapp:${e164}` : e164;
 
-    // 2. E.164 number being sent to Twilio
-    console.log("[send-otp] e164:", e164);
+    console.log("[send-otp] e164:", e164, "| toField:", toField);
 
     const sid        = process.env.TWILIO_VERIFY_SERVICE_SID!.trim();
     const accountSid = process.env.TWILIO_ACCOUNT_SID!.trim();
@@ -47,9 +48,8 @@ export async function POST(req: Request) {
 
     const twUrl = `https://verify.twilio.com/v2/Services/${sid}/Verifications`;
 
-    // 3. Full Twilio API URL
     console.log("[send-otp] Twilio URL:", twUrl);
-    console.log("[send-otp] Twilio request body:", { To: e164, Channel: channel });
+    console.log("[send-otp] Twilio request body:", { To: toField, Channel: channel });
 
     const twRes = await fetch(twUrl, {
       method: "POST",
@@ -57,15 +57,12 @@ export async function POST(req: Request) {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${basic}`,
       },
-      body: new URLSearchParams({ To: e164, Channel: channel }).toString(),
+      body: new URLSearchParams({ To: toField, Channel: channel }).toString(),
     });
 
     const twBody = await twRes.text();
 
-    // 4. HTTP status code
     console.log("[send-otp] Twilio status:", twRes.status);
-
-    // 5. Full Twilio response body
     console.log("[send-otp] Twilio response body:", twBody);
 
     if (!twRes.ok) {
