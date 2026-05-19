@@ -22,24 +22,14 @@ import { NameToggle } from "@/components/member/NameToggle";
 import { AutoRefresh } from "@/components/member/AutoRefresh";
 import { ReviewRequestButton } from "@/components/member/ReviewRequestButton";
 
-function statusRowBorder(status: PaymentStatus): string {
-  return {
-    PAID:     "border-l-4 border-l-emerald-500",
-    LATE:     "border-l-4 border-l-red-400",
-    DEFERRED: "border-l-4 border-l-orange-400",
-    PARTIAL:  "border-l-4 border-l-blue-400",
-    PENDING:  "border-l-4 border-l-gray-300 dark:border-l-gray-600",
-  }[status];
-}
-
-function statusRowBg(status: PaymentStatus): string {
-  return {
-    PAID:     "bg-emerald-50 dark:bg-emerald-950/20",
-    LATE:     "bg-red-50 dark:bg-red-950/20",
-    DEFERRED: "bg-orange-50 dark:bg-orange-950/20",
-    PARTIAL:  "bg-blue-50 dark:bg-blue-950/20",
-    PENDING:  "bg-white dark:bg-[#141414]",
-  }[status];
+function rowBg(status: string): string {
+  switch (status) {
+    case "PAID":     return "bg-emerald-50 dark:bg-emerald-950/30 border-l-4 border-l-emerald-500";
+    case "LATE":     return "bg-red-50 dark:bg-red-950/30 border-l-4 border-l-red-400";
+    case "DEFERRED": return "bg-orange-50 dark:bg-orange-950/30 border-l-4 border-l-orange-400";
+    case "PARTIAL":  return "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400";
+    default:         return "border-l-4 border-l-gray-200 dark:border-l-gray-700";
+  }
 }
 
 function statusBadgeLabel(status: PaymentStatus): string {
@@ -462,7 +452,7 @@ export default async function MemberView({
       </div>
 
       {/* ── Payment table ──────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden animate-fade-in-up-4">
+      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm animate-fade-in-up-4">
         <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">20-Week Payment Schedule</h3>
         </div>
@@ -476,10 +466,10 @@ export default async function MemberView({
             return (
               <div
                 key={p.id}
-                className={`flex items-center gap-3 px-5 py-3 transition-colors ${statusRowBorder(p.status as PaymentStatus)} ${
-                  isMainWeek ? "bg-emerald-50 dark:bg-emerald-950/40" :
-                  isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30" :
-                  statusRowBg(p.status as PaymentStatus)
+                className={`flex items-center gap-3 px-5 py-3 transition-colors ${
+                  isMainWeek  ? "bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-l-emerald-500" :
+                  isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400" :
+                  rowBg(p.status)
                 }`}
               >
                 <div className="w-7 text-xs text-gray-500 dark:text-gray-400 text-center font-mono shrink-0">
