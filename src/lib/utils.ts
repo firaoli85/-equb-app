@@ -23,11 +23,11 @@ export function paymentMethodLabel(
 
 export function statusColor(status: PaymentStatus): string {
   return {
-    PENDING:  "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-    PAID:     "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
-    LATE:     "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-    DEFERRED: "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
-    PARTIAL:  "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
+    PENDING:  "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
+    PAID:     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-semibold",
+    LATE:     "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-semibold",
+    DEFERRED: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 font-semibold",
+    PARTIAL:  "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 font-semibold",
   }[status];
 }
 

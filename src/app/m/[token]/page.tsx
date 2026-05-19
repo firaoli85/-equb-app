@@ -14,13 +14,43 @@ import {
   TOTAL_WEEKS,
   EQUB_START,  // fallback for week1Date when no payments loaded yet
 } from "@/lib/equb";
-import { statusColor, paymentMethodLabel } from "@/lib/utils";
+import { statusColor, paymentMethodLabel, PaymentStatus } from "@/lib/utils";
 import { notFound } from "next/navigation";
 import { ConfirmAgreement } from "@/components/member/ConfirmAgreement";
 import { ConfirmCollectionReceipt } from "@/components/member/ConfirmCollectionReceipt";
 import { NameToggle } from "@/components/member/NameToggle";
 import { AutoRefresh } from "@/components/member/AutoRefresh";
 import { ReviewRequestButton } from "@/components/member/ReviewRequestButton";
+
+function statusRowBorder(status: PaymentStatus): string {
+  return {
+    PAID:     "border-l-4 border-l-emerald-500",
+    LATE:     "border-l-4 border-l-red-400",
+    DEFERRED: "border-l-4 border-l-orange-400",
+    PARTIAL:  "border-l-4 border-l-blue-400",
+    PENDING:  "border-l-4 border-l-gray-300 dark:border-l-gray-600",
+  }[status];
+}
+
+function statusRowBg(status: PaymentStatus): string {
+  return {
+    PAID:     "bg-emerald-50 dark:bg-emerald-950/20",
+    LATE:     "bg-red-50 dark:bg-red-950/20",
+    DEFERRED: "bg-orange-50 dark:bg-orange-950/20",
+    PARTIAL:  "bg-blue-50 dark:bg-blue-950/20",
+    PENDING:  "bg-white dark:bg-[#141414]",
+  }[status];
+}
+
+function statusBadgeLabel(status: PaymentStatus): string {
+  return {
+    PAID:     "✓ Paid",
+    LATE:     "⚠ Late",
+    DEFERRED: "⏸ Deferred",
+    PARTIAL:  "◑ Partial",
+    PENDING:  "⏳ Pending",
+  }[status];
+}
 
 export default async function MemberView({
   params,
@@ -446,9 +476,10 @@ export default async function MemberView({
             return (
               <div
                 key={p.id}
-                className={`flex items-center gap-3 px-5 py-3 transition-colors ${
+                className={`flex items-center gap-3 px-5 py-3 transition-colors ${statusRowBorder(p.status as PaymentStatus)} ${
                   isMainWeek ? "bg-emerald-50 dark:bg-emerald-950/40" :
-                  isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30" : ""
+                  isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30" :
+                  statusRowBg(p.status as PaymentStatus)
                 }`}
               >
                 <div className="w-7 text-xs text-gray-500 dark:text-gray-400 text-center font-mono shrink-0">
@@ -472,8 +503,8 @@ export default async function MemberView({
                   {p.method && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
                   )}
-                  <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${statusColor(p.status as "PENDING" | "PAID" | "LATE")}`}>
-                    {p.status === "PAID" ? "Paid" : p.status === "LATE" ? "Late" : "Pending"}
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full ${statusColor(p.status as PaymentStatus)}`}>
+                    {statusBadgeLabel(p.status as PaymentStatus)}
                   </span>
                 </div>
               </div>
