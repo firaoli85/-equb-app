@@ -2,6 +2,8 @@
 
 import { useActionState, useState, useTransition, useEffect } from "react";
 import { lookupPhone, verifyMemberPin } from "@/actions/pin-login";
+import { auth } from "@/lib/firebase";
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 
 const initialState = {
   error: undefined as string | undefined,
@@ -31,6 +33,13 @@ export function LoginForm() {
   const [lockedMinutes, setLockedMinutes] = useState(0);
   const [isVerifying, startVerify]        = useTransition();
 
+  // SMS OTP state
+  const [smsStep, setSmsStep]                         = useState<"idle" | "sending" | "code-sent" | "verifying">("idle");
+  const [smsCode, setSmsCode]                         = useState("");
+  const [smsError, setSmsError]                       = useState<string | null>(null);
+  const [confirmationResult, setConfirmationResult]   = useState<ConfirmationResult | null>(null);
+  const [recaptchaVerifier, setRecaptchaVerifier]     = useState<RecaptchaVerifier | null>(null);
+
   // Device info for session fingerprint
   const [deviceScreen, setDeviceScreen] = useState("");
   const [deviceLang, setDeviceLang]     = useState("");
@@ -49,11 +58,13 @@ export function LoginForm() {
   function resetToPhone() {
     setOverridePhone(true);
     setPin(""); setPinError(null); setAttemptsLeft(null); setLocked(false);
+    setSmsStep("idle"); setSmsCode(""); setSmsError(null); setConfirmationResult(null);
   }
 
   function handlePhoneAction(formData: FormData) {
     setOverridePhone(false);
     setPin(""); setPinError(null); setAttemptsLeft(null); setLocked(false);
+    setSmsStep("idle"); setSmsCode(""); setSmsError(null); setConfirmationResult(null);
     phoneAction(formData);
   }
 
@@ -82,6 +93,55 @@ export function LoginForm() {
         setPinError(result.error); setAttemptsLeft(result.attemptsLeft ?? null); setPin("");
       }
     });
+  }
+
+  // ── SMS OTP handlers ──────────────────────────────────────────────────────
+
+  async function handleSendSms() {
+    if (smsStep === "sending" || smsStep === "verifying") return;
+    setSmsStep("sending");
+    setSmsError(null);
+    setSmsCode("");
+    try {
+      if (recaptchaVerifier) recaptchaVerifier.clear();
+      const verifier = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+      setRecaptchaVerifier(verifier);
+      const result = await signInWithPhoneNumber(auth, phone, verifier);
+      setConfirmationResult(result);
+      setSmsStep("code-sent");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send SMS.";
+      setSmsError(msg);
+      setSmsStep("idle");
+    }
+  }
+
+  async function handleSmsCodeChange(code: string) {
+    setSmsCode(code);
+    if (code.length !== 6 || !confirmationResult || smsStep === "verifying") return;
+    setSmsStep("verifying");
+    setSmsError(null);
+    try {
+      await confirmationResult.confirm(code);
+      const res = await fetch("/api/auth/firebase-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, screen: deviceScreen, language: deviceLang }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.location.href = data.redirectTo;
+      } else {
+        setSmsError(data.error ?? "Verification failed.");
+        setSmsStep("code-sent");
+        setSmsCode("");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Incorrect code. Please try again.";
+      setSmsError(msg);
+      setSmsStep("code-sent");
+      setSmsCode("");
+    }
   }
 
   // ── Shared phone chip ─────────────────────────────────────────────────────
@@ -206,6 +266,66 @@ export function LoginForm() {
           )}
         </div>
       )}
+
+      {/* ── SMS OTP ───────────────────────────────────────────────────────── */}
+      <div className="mt-5 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
+          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+        </div>
+
+        {smsStep === "idle" || smsStep === "sending" ? (
+          <button
+            type="button"
+            onClick={handleSendSms}
+            disabled={smsStep === "sending"}
+            style={{ touchAction: "manipulation" }}
+            className="w-full py-2.5 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
+          >
+            {smsStep === "sending" ? "Sending SMS…" : "Send SMS code instead"}
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">
+              Enter the 6-digit code sent to {displayPhone}
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={smsCode}
+              onChange={(e) => handleSmsCodeChange(e.target.value.replace(/\D/g, ""))}
+              disabled={smsStep === "verifying"}
+              autoFocus
+              placeholder="000000"
+              style={{ fontSize: "24px", letterSpacing: "0.3em", textAlign: "center" }}
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition disabled:opacity-50"
+            />
+            {smsStep === "verifying" && (
+              <p className="text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Verifying…</p>
+            )}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleSendSms}
+                disabled={smsStep === "verifying"}
+                className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 transition-colors"
+              >
+                Resend code
+              </button>
+            </div>
+          </div>
+        )}
+
+        {smsError && (
+          <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900">
+            {smsError}
+          </p>
+        )}
+      </div>
+
+      <div id="recaptcha-container" />
 
       <div className="text-center pt-5">
         <button type="button" onClick={resetToPhone}
