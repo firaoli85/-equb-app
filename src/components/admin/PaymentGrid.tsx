@@ -189,6 +189,8 @@ function PaymentCell({
     payment.paidAmount != null ? String(payment.paidAmount / 100) : ""
   );
   const [justPaid, setJustPaid] = useState(false);
+  const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -201,6 +203,31 @@ function PaymentCell({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen, onClose]);
+
+  function handleOpen() {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const POPUP_W = 240;
+      const POPUP_H = 300;
+      const GAP = 8;
+      const style: React.CSSProperties = { position: "fixed", zIndex: 50, width: POPUP_W };
+
+      if (rect.bottom + POPUP_H > window.innerHeight) {
+        style.bottom = window.innerHeight - rect.top + GAP;
+      } else {
+        style.top = rect.bottom + GAP;
+      }
+
+      if (rect.right + POPUP_W > window.innerWidth) {
+        style.right = window.innerWidth - rect.right;
+      } else {
+        style.left = rect.left;
+      }
+
+      setPopupStyle(style);
+    }
+    onOpen();
+  }
 
   function handleSave() {
     startTransition(async () => {
@@ -219,9 +246,10 @@ function PaymentCell({
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="inline-block">
       <button
-        onClick={onOpen}
+        ref={buttonRef}
+        onClick={handleOpen}
         className={`w-11 h-11 rounded-xl text-sm font-bold transition-all hover:scale-105 hover:shadow-sm active:scale-95 touch-manipulation flex items-center justify-center ${payment.status === "PAID" ? "bg-emerald-600 text-white dark:bg-emerald-500 shadow-sm" : statusColor(payment.status)} ${justPaid ? "animate-paid-flash" : ""}`}
         title={`${STATUS_LABELS[payment.status]}${payment.method ? ` · ${paymentMethodLabel(payment.method)}` : ""}`}
       >
@@ -235,7 +263,8 @@ function PaymentCell({
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute z-50 bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4 w-60 left-1/2 -translate-x-1/2 top-full mt-2"
+          style={popupStyle}
+          className="bg-white dark:bg-[#1c1c1c] border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-4"
         >
           <div className="space-y-3">
             <div>
