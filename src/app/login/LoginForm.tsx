@@ -105,6 +105,19 @@ export function LoginForm() {
 
   // ── SMS OTP handlers ──────────────────────────────────────────────────────
 
+  function friendlySmsError(error: unknown): string {
+    const code = (error as { code?: string })?.code ?? "";
+    if (code === "auth/too-many-requests")
+      return "Too many attempts. Please wait a few minutes and try again.";
+    if (code === "auth/invalid-verification-code")
+      return "Incorrect code. Please check and try again.";
+    if (code === "auth/code-expired")
+      return "Code expired. Please request a new one.";
+    if (code === "auth/invalid-phone-number")
+      return "Invalid phone number format.";
+    return "Something went wrong. Please try again.";
+  }
+
   async function handleSendSms() {
     if (smsStep === "sending" || smsStep === "verifying") return;
     setSmsStep("sending");
@@ -121,8 +134,7 @@ export function LoginForm() {
       setConfirmationResult(result);
       setSmsStep("code-sent");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send SMS.";
-      setSmsError(msg);
+      setSmsError(friendlySmsError(err));
       setSmsStep("idle");
     }
   }
@@ -148,8 +160,7 @@ export function LoginForm() {
         setSmsCode("");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Incorrect code. Please try again.";
-      setSmsError(msg);
+      setSmsError(friendlySmsError(err));
       setSmsStep("code-sent");
       setSmsCode("");
     }
