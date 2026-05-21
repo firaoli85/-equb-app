@@ -268,62 +268,97 @@ export function LoginForm() {
       )}
 
       {/* ── SMS OTP ───────────────────────────────────────────────────────── */}
-      <div className="mt-5 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-          <span className="text-xs text-gray-400 dark:text-gray-500">or</span>
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+      <div className="relative my-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-200 dark:border-gray-700" />
         </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-white dark:bg-[#141414] px-2 text-gray-400">or</span>
+        </div>
+      </div>
 
-        {smsStep === "idle" || smsStep === "sending" ? (
-          <button
-            type="button"
-            onClick={handleSendSms}
-            disabled={smsStep === "sending"}
-            style={{ touchAction: "manipulation" }}
-            className="w-full py-2.5 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition-colors"
-          >
-            {smsStep === "sending" ? "Sending SMS…" : "Send SMS code instead"}
-          </button>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">
-              Enter the 6-digit code sent to {displayPhone}
-            </p>
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              value={smsCode}
-              onChange={(e) => handleSmsCodeChange(e.target.value.replace(/\D/g, ""))}
-              disabled={smsStep === "verifying"}
-              autoFocus
-              placeholder="000000"
-              style={{ fontSize: "24px", letterSpacing: "0.3em", textAlign: "center" }}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition disabled:opacity-50"
-            />
-            {smsStep === "verifying" && (
-              <p className="text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Verifying…</p>
-            )}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={handleSendSms}
-                disabled={smsStep === "verifying"}
-                className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 transition-colors"
-              >
-                Resend code
-              </button>
+      {smsStep === "idle" || smsStep === "sending" ? (
+        <button
+          type="button"
+          onClick={handleSendSms}
+          disabled={smsStep === "sending"}
+          style={{ touchAction: "manipulation", minHeight: "56px" }}
+          className="w-full flex items-center gap-3 px-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 disabled:opacity-50 transition-all"
+        >
+          <svg className="w-6 h-6 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+          </svg>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-bold text-gray-900 dark:text-white">Send SMS code</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">6-digit code via text message</p>
+          </div>
+          {smsStep === "sending" ? (
+            <svg className="w-5 h-5 text-blue-400 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          )}
+        </button>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900 rounded-xl px-4 py-3">
+            <svg className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+            </svg>
+            <div>
+              <p className="text-sm font-bold text-blue-700 dark:text-blue-300">SMS code sent</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">Check your texts for a 6-digit code</p>
             </div>
           </div>
-        )}
 
-        {smsError && (
-          <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900">
-            {smsError}
-          </p>
-        )}
-      </div>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            value={smsCode}
+            onChange={(e) => handleSmsCodeChange(e.target.value.replace(/\D/g, ""))}
+            disabled={smsStep === "verifying"}
+            autoFocus
+            placeholder="000000"
+            autoComplete="one-time-code"
+            style={{ fontSize: "28px", letterSpacing: "0.5em", textAlign: "center" }}
+            className="w-full px-4 py-3.5 font-mono rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition disabled:opacity-50"
+          />
+
+          {smsStep === "verifying" && (
+            <p className="text-center text-sm text-gray-400 dark:text-gray-500 animate-pulse">Verifying…</p>
+          )}
+
+          <div className="flex justify-center gap-5 text-xs">
+            <button
+              type="button"
+              onClick={handleSendSms}
+              disabled={smsStep === "verifying"}
+              className="text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 transition-colors"
+            >
+              Resend code
+            </button>
+            <span className="text-gray-300 dark:text-gray-600">·</span>
+            <button
+              type="button"
+              onClick={() => { setSmsStep("idle"); setSmsCode(""); setSmsError(null); }}
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              Back to PIN
+            </button>
+          </div>
+        </div>
+      )}
+
+      {smsError && (
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900">
+          {smsError}
+        </p>
+      )}
 
       <div id="recaptcha-container" />
 
