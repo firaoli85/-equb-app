@@ -260,6 +260,17 @@ export default async function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {process.env.NODE_ENV === "development" && (
+        <div className="text-center pt-2 pb-4">
+          <a
+            href="/test/login-preview"
+            className="text-xs text-gray-400 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-400 underline underline-offset-2 transition-colors"
+          >
+            Login Flow Preview (dev only)
+          </a>
+        </div>
+      )}
     </div>
   );
 }
