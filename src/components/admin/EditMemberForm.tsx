@@ -89,7 +89,7 @@ export function EditMemberForm({
             type="tel"
             defaultValue={defaults.phone}
             className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow"
-            placeholder="e.g. 555-123-4567"
+            placeholder="+12025551234"
           />
         </div>
 
