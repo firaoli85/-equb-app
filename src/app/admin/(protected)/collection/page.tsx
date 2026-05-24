@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
-import { formatCurrency, formatDate, calculatePot, calculateMemberFee, calculateMemberGross, calculateNetPayout, getAvailableWheelEntries } from "@/lib/equb";
+import { formatCurrency, formatDate, calculatePot, calculateMemberFee, calculateMemberGross, calculateNetPayout, getAvailableWheelEntries, mainWheelWeekly, extraWheelWeekly } from "@/lib/equb";
 import { updatePayoutRecord } from "@/actions/collection";
 
 const METHOD_LABEL: Record<string, string> = {
@@ -46,7 +46,7 @@ export default async function CollectionPage() {
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Drawn", value: drawn.length, sub: `of ${members.length} slots`, color: "text-blue-600 dark:text-blue-400" },
+          { label: "Drawn", value: drawn.length, sub: `of ${allWheelNumbers.length} entries`, color: "text-blue-600 dark:text-blue-400" },
           { label: "Collected", value: collectedWeeks.length, sub: "payouts done", color: "text-emerald-600 dark:text-emerald-400" },
           { label: "Pending", value: pendingWeeks.length, sub: "awaiting payout", color: "text-amber-600 dark:text-amber-400" },
           { label: "Remaining", value: remaining.length, sub: "not yet drawn", color: "text-gray-600 dark:text-gray-400" },
@@ -141,8 +141,15 @@ export default async function CollectionPage() {
               {weeks.map((week) => {
                 const winner = week.winnerWheelNumber;
                 const member = winner != null ? memberByWheel.get(winner) : null;
-                const feeCents = member ? calculateMemberFee(member.weeklyAmount) : 0;
-                const netCents = member ? calculateNetPayout(calculateMemberGross(member.weeklyAmount), feeCents) : 0;
+                const hasExtra = member?.extraWheelNumber != null;
+                const isExtraWheel = hasExtra && winner === member?.extraWheelNumber;
+                const weeklyAmt = member
+                  ? isExtraWheel
+                    ? extraWheelWeekly(member.weeklyAmount)
+                    : mainWheelWeekly(member.weeklyAmount, hasExtra)
+                  : 0;
+                const feeCents = member ? calculateMemberFee(weeklyAmt) : 0;
+                const netCents = member ? calculateNetPayout(calculateMemberGross(weeklyAmt), feeCents) : 0;
 
                 if (winner == null) {
                   return (
@@ -175,6 +182,12 @@ export default async function CollectionPage() {
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">
                         #{winner}
                       </span>
+                      {member && (
+                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                          {member.nameAmharic}
+                          {isExtraWheel && <span className="ml-1 text-blue-400">(extra)</span>}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
                       {member ? formatCurrency(netCents) : "—"}
