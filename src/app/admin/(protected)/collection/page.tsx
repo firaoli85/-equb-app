@@ -182,12 +182,6 @@ export default async function CollectionPage() {
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">
                         #{winner}
                       </span>
-                      {member && (
-                        <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                          {member.nameAmharic}
-                          {isExtraWheel && <span className="ml-1 text-blue-400">(extra)</span>}
-                        </span>
-                      )}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">
                       {member ? formatCurrency(netCents) : "—"}

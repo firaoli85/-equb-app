@@ -15,6 +15,7 @@ import {
 import { SpinWheel } from "@/components/admin/SpinWheel";
 import { EndEqubButton } from "@/components/admin/EndEqubButton";
 import { LockedMembersPanel } from "@/components/admin/LockedMembersPanel";
+import { PayoutReveal } from "@/components/admin/PayoutReveal";
 
 export default async function AdminDashboard() {
   const now = new Date();
@@ -181,28 +182,18 @@ export default async function AdminDashboard() {
 
       {/* Next Payout */}
       {nextPayoutMember && nextPayoutWeek && (
-        <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-2">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-            Current Week Payout
-          </h2>
-          <div className="flex flex-wrap gap-6">
-            <PayoutItem label="Member" value={nextPayoutMember.nameAmharic} />
-            <PayoutItem label="Gross" value={formatCurrency(calculateMemberGross(nextPayoutMember.weeklyAmount))} />
-            <PayoutItem
-              label="Fee"
-              value={`−${formatCurrency(calculateMemberFee(nextPayoutMember.weeklyAmount))}`}
-              valueClass="text-amber-500"
-            />
-            <PayoutItem
-              label="Net Payout"
-              value={formatCurrency(
-                calculateNetPayout(calculateMemberGross(nextPayoutMember.weeklyAmount), calculateMemberFee(nextPayoutMember.weeklyAmount))
-              )}
-              valueClass="text-emerald-600 dark:text-emerald-400 text-xl font-bold"
-            />
-            <PayoutItem label="Date" value={formatDate(nextPayoutWeek.date)} />
-          </div>
-        </div>
+        <PayoutReveal
+          memberName={nextPayoutMember.nameAmharic}
+          gross={formatCurrency(calculateMemberGross(nextPayoutMember.weeklyAmount))}
+          fee={`−${formatCurrency(calculateMemberFee(nextPayoutMember.weeklyAmount))}`}
+          net={formatCurrency(
+            calculateNetPayout(
+              calculateMemberGross(nextPayoutMember.weeklyAmount),
+              calculateMemberFee(nextPayoutMember.weeklyAmount)
+            )
+          )}
+          date={formatDate(nextPayoutWeek.date)}
+        />
       )}
 
       {/* Spin Wheel */}
@@ -311,23 +302,3 @@ function StatCard({
   );
 }
 
-function PayoutItem({
-  label,
-  value,
-  valueClass,
-}: {
-  label: string;
-  value: string;
-  valueClass?: string;
-}) {
-  return (
-    <div>
-      <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide font-semibold mb-0.5">
-        {label}
-      </p>
-      <p className={`font-semibold text-gray-900 dark:text-white ${valueClass ?? "text-base"}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
