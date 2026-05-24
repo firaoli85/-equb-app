@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     await client.verify.v2
       .services(process.env.TWILIO_VERIFY_SERVICE_SID!)
       .verifications.create({
-        to: `whatsapp:${toE164(member.phone!)}`,
+        to: toE164(member.phone!),
         channel: "whatsapp",
       });
     return Response.json({ success: true });

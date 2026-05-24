@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const check = await client.verify.v2
       .services(process.env.TWILIO_VERIFY_SERVICE_SID!)
       .verificationChecks.create({
-        to: `whatsapp:${toE164(member.phone!)}`,
+        to: toE164(member.phone!),
         code,
       });
 
