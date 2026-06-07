@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/admin/payments", label: "Payments" },
   { href: "/admin/weeks", label: "Weeks" },
   { href: "/admin/collection", label: "Collection" },
+  { href: "/admin/wheel", label: "Wheel Setup" },
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/audit", label: "Audit" },
   { href: "/admin/archive", label: "Archive" },

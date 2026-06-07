@@ -1,0 +1,143 @@
+"use server";
+
+import { db } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+
+export async function saveWheelSlots(
+  newSlots: { position: number; numbers: number[] }[]
+): Promise<{ error?: string; warning?: string }> {
+  const [members, dbSlots, drawnWeeks] = await Promise.all([
+    db.member.findMany({
+      where: { isArchived: false },
+      select: { wheelNumber: true, extraWheelNumber: true },
+    }),
+    db.wheelSlot.findMany(),
+    db.week.findMany({
+      where: { winnerWheelNumber: { not: null } },
+      select: { winnerWheelNumber: true },
+    }),
+  ]);
+
+  const memberNumbers = new Set<number>();
+  for (const m of members) {
+    memberNumbers.add(m.wheelNumber);
+    if (m.extraWheelNumber != null) memberNumbers.add(m.extraWheelNumber);
+  }
+
+  const drawnNumbers = new Set<number>(drawnWeeks.map((w) => w.winnerWheelNumber!));
+
+  // Locked = any slot in DB that contains a drawn number
+  const dbSlotMap = new Map(
+    dbSlots.map((s) => [s.position, [...s.numbers].sort((a, b) => a - b)])
+  );
+  const lockedPositions = new Set<number>(
+    dbSlots.filter((s) => s.numbers.some((n) => drawnNumbers.has(n))).map((s) => s.position)
+  );
+
+  // 1. No duplicate numbers across slots
+  const seen = new Map<number, number>();
+  for (const s of newSlots) {
+    for (const n of s.numbers) {
+      if (seen.has(n)) {
+        return {
+          error: `Lucky #${n} appears in both slot ${seen.get(n)} and slot ${s.position}. Each number must appear in at most one slot.`,
+        };
+      }
+      seen.set(n, s.position);
+    }
+  }
+
+  // 2. Locked slots must be present and unchanged
+  for (const pos of lockedPositions) {
+    const dbNums = dbSlotMap.get(pos) ?? [];
+    const submitted = newSlots.find((s) => s.position === pos);
+    const submittedNums = [...(submitted?.numbers ?? [])].sort((a, b) => a - b);
+    if (JSON.stringify(dbNums) !== JSON.stringify(submittedNums)) {
+      return {
+        error: `Slot pos ${pos} contains a drawn lucky number and cannot be modified.`,
+      };
+    }
+  }
+
+  // 3. No ghost numbers (in a slot but not on any member)
+  for (const s of newSlots) {
+    for (const n of s.numbers) {
+      if (!memberNumbers.has(n)) {
+        return {
+          error: `Lucky #${n} in slot pos ${s.position} belongs to no member. Remove it before saving.`,
+        };
+      }
+    }
+  }
+
+  // 4. Warn about member numbers absent from all slots (allowed, not blocked)
+  const allSlotNums = new Set(newSlots.flatMap((s) => s.numbers));
+  const unassigned = [...memberNumbers].filter((n) => !allSlotNums.has(n)).sort((a, b) => a - b);
+
+  // Replace all slot rows atomically
+  await db.$transaction(async (tx) => {
+    await tx.wheelSlot.deleteMany();
+    if (newSlots.length > 0) {
+      await tx.wheelSlot.createMany({
+        data: newSlots.map((s) => ({ position: s.position, numbers: s.numbers })),
+      });
+    }
+    await tx.auditLog.create({
+      data: {
+        action: `Wheel slots saved: ${newSlots.length} slot${newSlots.length !== 1 ? "s" : ""}${
+          unassigned.length > 0 ? `; unassigned numbers: [${unassigned.join(", ")}]` : ""
+        }`,
+        entityType: "WheelSlot",
+        entityId: "wheel_slots",
+      },
+    });
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/wheel");
+
+  return unassigned.length > 0
+    ? {
+        warning: `Saved. ${unassigned.length} member number${unassigned.length > 1 ? "s" : ""} not in any slot: [${unassigned.join(", ")}].`,
+      }
+    : {};
+}
+
+export async function savePriorityNumbers(
+  numbers: number[]
+): Promise<{ error?: string }> {
+  const members = await db.member.findMany({
+    where: { isArchived: false },
+    select: { wheelNumber: true, extraWheelNumber: true },
+  });
+
+  const memberNumbers = new Set<number>();
+  for (const m of members) {
+    memberNumbers.add(m.wheelNumber);
+    if (m.extraWheelNumber != null) memberNumbers.add(m.extraWheelNumber);
+  }
+
+  for (const n of numbers) {
+    if (!memberNumbers.has(n)) {
+      return { error: `Lucky #${n} belongs to no member.` };
+    }
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.wheelConfig.upsert({
+      where: { id: 1 },
+      update: { priorityNumbers: numbers },
+      create: { id: 1, priorityNumbers: numbers },
+    });
+    await tx.auditLog.create({
+      data: {
+        action: `Wheel priority numbers updated: [${numbers.join(", ")}]`,
+        entityType: "WheelConfig",
+        entityId: "1",
+      },
+    });
+  });
+
+  revalidatePath("/admin/wheel");
+  return {};
+}
