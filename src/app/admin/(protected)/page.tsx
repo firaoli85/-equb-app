@@ -11,6 +11,8 @@ import {
   formatDate,
   getCurrentWeekNumber,
   TOTAL_WEEKS,
+  mainWheelWeekly,
+  extraWheelWeekly,
 } from "@/lib/equb";
 import { SpinWheel } from "@/components/admin/SpinWheel";
 import { EndEqubButton } from "@/components/admin/EndEqubButton";
@@ -71,14 +73,28 @@ export default async function AdminDashboard() {
     ? Math.round((paidThisWeek / totalExpectedThisWeek) * 100)
     : 0;
 
-  const nextPayoutMember = members.find((m) => m.wheelNumber === currentWeekNum);
-  const nextPayoutWeek = weeks.find((w) => w.weekNumber === currentWeekNum);
+  const currentWeekRow = weeks.find((w) => w.weekNumber === currentWeekNum);
+  const winningNumber = currentWeekRow?.winnerWheelNumber ?? null;
+  const nextPayoutMember =
+    winningNumber != null
+      ? members.find(
+          (m) => m.wheelNumber === winningNumber || m.extraWheelNumber === winningNumber
+        )
+      : null;
+  const nextPayoutWeek = currentWeekRow;
+
+  const payoutHasExtra = nextPayoutMember?.extraWheelNumber != null;
+  const payoutIsExtra = payoutHasExtra && winningNumber === nextPayoutMember?.extraWheelNumber;
+  const payoutWeekly = nextPayoutMember
+    ? payoutIsExtra
+      ? extraWheelWeekly(nextPayoutMember.weeklyAmount)
+      : mainWheelWeekly(nextPayoutMember.weeklyAmount, payoutHasExtra)
+    : 0;
 
   const weeksRemaining = currentWeekNum === 0
     ? TOTAL_WEEKS
     : Math.max(0, TOTAL_WEEKS - currentWeekNum + 1);
 
-  const weeksCompleted = currentWeekNum === 0 ? 0 : Math.min(currentWeekNum, TOTAL_WEEKS);
   const collectionsDone = weeks.filter((w) => w.payoutStatus === "COLLECTED").length;
   const numbersOnWheel = availableNumbers.length;
 
@@ -109,8 +125,8 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in-up-1">
         <StatCard
           label="Weekly Pot"
-          value={formatCurrency(2_000_000)}
-          sub={`Actual: ${formatCurrency(potCents)}`}
+          value={formatCurrency(potCents)}
+          sub="Target: $20,000"
           valueClass="text-emerald-600 dark:text-emerald-400"
           accent
         />
@@ -128,7 +144,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats — row 2 */}
-      <div className="grid grid-cols-3 gap-4 animate-fade-in-up-1">
+      <div className="grid grid-cols-2 gap-4 animate-fade-in-up-1">
         <StatCard
           label="Lucky Numbers"
           value={String(numbersOnWheel)}
@@ -141,23 +157,9 @@ export default async function AdminDashboard() {
           sub="payouts collected"
           valueClass="text-emerald-600 dark:text-emerald-400"
         />
-        <StatCard
-          label="Weeks Completed"
-          value={`${weeksCompleted} of ${TOTAL_WEEKS}`}
-          sub={weeksCompleted > 0 ? `${TOTAL_WEEKS - weeksCompleted} remaining` : "Starts May 17, 2026"}
-        />
       </div>
 
-      {/* Summary line */}
-      <p className="text-sm text-gray-500 dark:text-gray-400 animate-fade-in-up-1">
-        <span className="font-semibold text-gray-700 dark:text-gray-300">{numbersOnWheel}</span>{" "}
-        lucky number{numbersOnWheel !== 1 ? "s" : ""} remaining
-        {" — "}
-        <span className="font-semibold text-gray-700 dark:text-gray-300">{collectionsDone}</span>{" "}
-        member{collectionsDone !== 1 ? "s" : ""} {collectionsDone !== 1 ? "have" : "has"} collected
-      </p>
-
-      {/* Collection Progress */}
+{/* Collection Progress */}
       {currentWeek && (
         <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-2">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
@@ -181,15 +183,15 @@ export default async function AdminDashboard() {
       )}
 
       {/* Next Payout */}
-      {nextPayoutMember && nextPayoutWeek && (
+      {nextPayoutMember && winningNumber != null && nextPayoutWeek && (
         <PayoutReveal
           memberName={nextPayoutMember.nameAmharic}
-          gross={formatCurrency(calculateMemberGross(nextPayoutMember.weeklyAmount))}
-          fee={`−${formatCurrency(calculateMemberFee(nextPayoutMember.weeklyAmount))}`}
+          gross={formatCurrency(calculateMemberGross(payoutWeekly))}
+          fee={`−${formatCurrency(calculateMemberFee(payoutWeekly))}`}
           net={formatCurrency(
             calculateNetPayout(
-              calculateMemberGross(nextPayoutMember.weeklyAmount),
-              calculateMemberFee(nextPayoutMember.weeklyAmount)
+              calculateMemberGross(payoutWeekly),
+              calculateMemberFee(payoutWeekly)
             )
           )}
           date={formatDate(nextPayoutWeek.date)}

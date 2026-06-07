@@ -31,9 +31,9 @@ const TEXT_R_RATIO = 0.67;
 const SLOTS: { numbers: number[] }[] = [
   { numbers: [1, 3] },
   { numbers: [4, 29] },
-  { numbers: [6, 34] },
+  { numbers: [6, 13] },
   { numbers: [7, 10] },
-  { numbers: [11, 13] },
+  { numbers: [11, 34] },
   { numbers: [12, 27] },
   { numbers: [14, 21] },
   { numbers: [15] },
@@ -52,7 +52,7 @@ const SLOTS: { numbers: number[] }[] = [
 ];
 
 // Hidden priority — pick from these slots first when any are eligible
-const PRIORITY_NUMBERS = [5, 6, 34, 39, 78];
+const PRIORITY_NUMBERS = [5, 39, 11, 34];
 
 function slotLabel(numbers: number[]): string {
   return numbers.join(" & ");
