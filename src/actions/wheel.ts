@@ -3,6 +3,29 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
+export async function unlockPriorityNumbers(
+  passphrase: string
+): Promise<{ error?: "unavailable" | "invalid"; priorityNumbers?: number[] }> {
+  const key = process.env.WHEEL_KEY;
+  if (!key) return { error: "unavailable" };
+  if (passphrase !== key) return { error: "invalid" };
+  const config = await db.wheelConfig.findUnique({ where: { id: 1 } });
+  return { priorityNumbers: config?.priorityNumbers ?? [] };
+}
+
+export async function getWheelMemberNames(): Promise<Record<number, string>> {
+  const members = await db.member.findMany({
+    where: { isArchived: false },
+    select: { nameAmharic: true, wheelNumber: true, extraWheelNumber: true },
+  });
+  const result: Record<number, string> = {};
+  for (const m of members) {
+    result[m.wheelNumber] = m.nameAmharic;
+    if (m.extraWheelNumber != null) result[m.extraWheelNumber] = m.nameAmharic;
+  }
+  return result;
+}
+
 export async function saveWheelSlots(
   newSlots: { position: number; numbers: number[] }[]
 ): Promise<{ error?: string; warning?: string }> {
@@ -104,8 +127,12 @@ export async function saveWheelSlots(
 }
 
 export async function savePriorityNumbers(
-  numbers: number[]
+  numbers: number[],
+  passphrase: string
 ): Promise<{ error?: string }> {
+  const key = process.env.WHEEL_KEY;
+  if (!key || passphrase !== key) return { error: "Unauthorized." };
+
   const members = await db.member.findMany({
     where: { isArchived: false },
     select: { wheelNumber: true, extraWheelNumber: true },

@@ -5,9 +5,8 @@ import { mainWheelWeekly, extraWheelWeekly } from "@/lib/equb";
 import { WheelSetup } from "@/components/admin/WheelSetup";
 
 export default async function WheelSetupPage() {
-  const [slots, config, members, drawnWeeks] = await Promise.all([
+  const [slots, members, drawnWeeks] = await Promise.all([
     db.wheelSlot.findMany({ orderBy: { position: "asc" } }),
-    db.wheelConfig.findUnique({ where: { id: 1 } }),
     db.member.findMany({
       where: { isArchived: false },
       orderBy: { wheelNumber: "asc" },
@@ -24,21 +23,19 @@ export default async function WheelSetupPage() {
     }),
   ]);
 
-  // Map each lucky number to the weekly amount it represents and its member name
-  const numberInfo: Record<number, { memberName: string; amountCents: number }> = {};
+  // Map each lucky number to the weekly amount it represents (names withheld — fetched on demand)
+  const numberInfo: Record<number, { amountCents: number }> = {};
   const memberNumbers = new Set<number>();
 
   for (const m of members) {
     const hasExtra = m.extraWheelNumber != null;
     numberInfo[m.wheelNumber] = {
-      memberName: m.nameAmharic,
       amountCents: mainWheelWeekly(m.weeklyAmount, hasExtra),
     };
     memberNumbers.add(m.wheelNumber);
 
     if (m.extraWheelNumber != null) {
       numberInfo[m.extraWheelNumber] = {
-        memberName: m.nameAmharic,
         amountCents: extraWheelWeekly(m.weeklyAmount),
       };
       memberNumbers.add(m.extraWheelNumber);
@@ -99,7 +96,7 @@ export default async function WheelSetupPage() {
                     key={n}
                     className="px-2.5 py-0.5 rounded-full text-sm font-bold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
                   >
-                    #{n}{numberInfo[n] ? ` — ${numberInfo[n].memberName}` : ""}
+                    #{n}
                   </span>
                 ))}
               </div>
@@ -128,7 +125,6 @@ export default async function WheelSetupPage() {
       <WheelSetup
         key={slotKey}
         initialSlots={slots.map((s) => ({ position: s.position, numbers: s.numbers }))}
-        initialPriorityNums={config?.priorityNumbers ?? []}
         numberInfo={numberInfo}
         drawnNumbers={drawnNumbers}
         allMemberNumbers={allMemberNumbers}
