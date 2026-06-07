@@ -165,3 +165,18 @@ enum ReviewStatus {
   APPROVED
   REJECTED
 }
+
+model WheelSlot {
+  id       String @id @default(cuid())
+  position Int    @unique          // order on the wheel, 1..20
+  numbers  Int[]                   // lucky numbers grouped in this slot
+
+  @@map("wheel_slots")
+}
+
+model WheelConfig {
+  id              Int   @id @default(1)  // singleton row, always id = 1
+  priorityNumbers Int[] @default([])
+
+  @@map("wheel_config")
+}

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { recordWheelWinner } from "@/actions/collection";
+import { recordWheelWinner, pickWheelWinner } from "@/actions/collection";
 
 const COLOR_PAIRS: { dark: string; light: string }[] = [
   { dark: "#1e3a8a", light: "#dbeafe" },
@@ -26,39 +26,10 @@ const RING_R = R + 12;
 const HUB_R = 30;
 const TEXT_R_RATIO = 0.67;
 
-// 20 merged slots — order determines position on wheel
-// Each slot is eligible when ALL its lucky numbers are undrawn
-const SLOTS: { numbers: number[] }[] = [
-  { numbers: [1, 3] },
-  { numbers: [4, 29] },
-  { numbers: [6, 13] },
-  { numbers: [7, 10] },
-  { numbers: [11, 34] },
-  { numbers: [12, 27] },
-  { numbers: [14, 21] },
-  { numbers: [15] },
-  { numbers: [155, 19] },
-  { numbers: [2] },
-  { numbers: [22] },
-  { numbers: [5] },
-  { numbers: [55] },
-  { numbers: [24, 30, 619] },
-  { numbers: [8] },
-  { numbers: [9] },
-  { numbers: [16] },
-  { numbers: [18] },
-  { numbers: [25] },
-  { numbers: [78] },
-];
-
-// Hidden priority — pick from these slots first when any are eligible
-const PRIORITY_NUMBERS = [5, 39, 11, 34];
-
 function slotLabel(numbers: number[]): string {
   return numbers.join(" & ");
 }
 
-// Two display lines for the segment — fits narrow slices
 function slotLines(numbers: number[]): string[] {
   if (numbers.length === 1) return [String(numbers[0])];
   if (numbers.length === 2) return [String(numbers[0]), `& ${numbers[1]}`];
@@ -73,64 +44,72 @@ function fontSize(n: number): number {
   return 15;
 }
 
+interface WheelSlotData { position: number; numbers: number[] }
 interface WeekOption { id: string; weekNumber: number; date: string }
-interface WheelEntry { number: number; name: string; isExtra: boolean }
 
 export function SpinWheel({
+  slots,
   availableNumbers,
   weekOptions,
 }: {
+  slots: WheelSlotData[];
   availableNumbers: number[];
   weekOptions: WeekOption[];
-  wheelEntries?: WheelEntry[];
 }) {
   const router = useRouter();
-  const [rotation, setRotation]           = useState(0);
-  const [spinning, setSpinning]           = useState(false);
-  const [winnerSlotIdx, setWinnerSlotIdx] = useState<number | null>(null);
+  const [rotation, setRotation]             = useState(0);
+  const [spinning, setSpinning]             = useState(false);
+  const [winnerSlotIdx, setWinnerSlotIdx]   = useState<number | null>(null);
+  const [winnerNumbers, setWinnerNumbers]   = useState<number[] | null>(null);
   const [selectedWeekId, setSelectedWeekId] = useState(weekOptions[0]?.id ?? "");
   const [isPending, startTransition]        = useTransition();
+  const [isPickPending, startPickTransition] = useTransition();
   const [manualInput, setManualInput]       = useState("");
   const [manualError, setManualError]       = useState("");
   const [isManualPending, startManualTransition] = useTransition();
 
   const availSet = new Set(availableNumbers);
-
-  // A slot is eligible only when EVERY one of its numbers is still undrawn
-  const eligibleSlots = SLOTS
-    .map((slot, origIdx) => ({ ...slot, origIdx }))
-    .filter(slot => slot.numbers.every(n => availSet.has(n)));
+  const eligibleSlots = slots.filter((slot) => slot.numbers.every((n) => availSet.has(n)));
 
   const n = eligibleSlots.length;
   const segAngle = n > 0 ? 360 / n : 360;
   const fs = fontSize(n);
 
   function handleSpin() {
-    if (spinning || n === 0 || !selectedWeekId) return;
+    if (spinning || isPickPending || n === 0 || !selectedWeekId) return;
     setWinnerSlotIdx(null);
+    setWinnerNumbers(null);
 
-    // Priority queue: prefer slots that contain at least one PRIORITY_NUMBER
-    const priorityEligible = eligibleSlots.filter(slot =>
-      slot.numbers.some(num => PRIORITY_NUMBERS.includes(num))
-    );
-    const pool = priorityEligible.length > 0 ? priorityEligible : eligibleSlots;
-    const chosen = pool[Math.floor(Math.random() * pool.length)];
-    const idx = eligibleSlots.findIndex(s => s.origIdx === chosen.origIdx);
+    const capturedRotation = rotation;
+    startPickTransition(async () => {
+      const result = await pickWheelWinner(selectedWeekId);
+      if (result.error || result.slotPosition === undefined) {
+        alert(result.error ?? "Failed to pick winner");
+        return;
+      }
 
-    const winCenter = (idx + 0.5) * segAngle;
-    const targetRem = (360 - (winCenter % 360) + 360) % 360;
-    const currentRem = rotation % 360;
-    const delta = (targetRem - currentRem + 360) % 360;
-    const spins = 7 + Math.floor(Math.random() * 5);
-    const newRot = rotation + delta + spins * 360;
+      const idx = eligibleSlots.findIndex((s) => s.position === result.slotPosition);
+      if (idx === -1) {
+        alert("Selected slot is no longer eligible.");
+        return;
+      }
 
-    setSpinning(true);
-    setRotation(newRot);
+      const winCenter = (idx + 0.5) * segAngle;
+      const targetRem = (360 - (winCenter % 360) + 360) % 360;
+      const currentRem = capturedRotation % 360;
+      const delta = (targetRem - currentRem + 360) % 360;
+      const spins = 7 + Math.floor(Math.random() * 5);
+      const newRot = capturedRotation + delta + spins * 360;
 
-    setTimeout(() => {
-      setSpinning(false);
-      setWinnerSlotIdx(idx);
-    }, 5000);
+      setSpinning(true);
+      setRotation(newRot);
+      setWinnerNumbers(result.numbers ?? null);
+
+      setTimeout(() => {
+        setSpinning(false);
+        setWinnerSlotIdx(idx);
+      }, 5000);
+    });
   }
 
   function handleRecord() {
@@ -138,13 +117,13 @@ export function SpinWheel({
       alert(!selectedWeekId ? "Please select a week first." : "No winner selected.");
       return;
     }
-    // Record the first number of the winning slot as the representative winner
-    const captured = eligibleSlots[winnerSlotIdx].numbers[0];
+    const captured = winnerNumbers?.[0] ?? eligibleSlots[winnerSlotIdx].numbers[0];
     startTransition(async () => {
       try {
         const result = await recordWheelWinner(selectedWeekId, captured);
         if (result?.error) { alert(result.error); return; }
         setWinnerSlotIdx(null);
+        setWinnerNumbers(null);
         setRotation(0);
         router.refresh();
       } catch (err) {
@@ -157,8 +136,8 @@ export function SpinWheel({
     const num = parseInt(manualInput, 10);
     if (!num || num < 1) { setManualError("Enter a valid lucky number."); return; }
     if (!availSet.has(num)) { setManualError(`Lucky #${num} has already been drawn or does not exist.`); return; }
-    const ownerSlot = SLOTS.find(s => s.numbers.includes(num));
-    if (ownerSlot && !ownerSlot.numbers.every(x => availSet.has(x))) {
+    const ownerSlot = slots.find((s) => s.numbers.includes(num));
+    if (ownerSlot && !ownerSlot.numbers.every((x) => availSet.has(x))) {
       setManualError(`Slot for #${num} has already been partially drawn.`);
       return;
     }
@@ -172,19 +151,18 @@ export function SpinWheel({
     });
   }
 
-  // Build SVG segment geometry from eligible slots
   const segments = eligibleSlots.map((slot, i) => {
-    const startRad = (i * segAngle - 90) * (Math.PI / 180);
-    const endRad   = ((i + 1) * segAngle - 90) * (Math.PI / 180);
+    const startRad  = (i * segAngle - 90) * (Math.PI / 180);
+    const endRad    = ((i + 1) * segAngle - 90) * (Math.PI / 180);
     const x1 = CX + R * Math.cos(startRad);
     const y1 = CY + R * Math.sin(startRad);
     const x2 = CX + R * Math.cos(endRad);
     const y2 = CY + R * Math.sin(endRad);
-    const largeArc = segAngle > 180 ? 1 : 0;
-    const midRad   = ((i + 0.5) * segAngle - 90) * (Math.PI / 180);
-    const tr       = R * TEXT_R_RATIO;
-    const textX    = CX + tr * Math.cos(midRad);
-    const textY    = CY + tr * Math.sin(midRad);
+    const largeArc  = segAngle > 180 ? 1 : 0;
+    const midRad    = ((i + 0.5) * segAngle - 90) * (Math.PI / 180);
+    const tr        = R * TEXT_R_RATIO;
+    const textX     = CX + tr * Math.cos(midRad);
+    const textY     = CY + tr * Math.sin(midRad);
     const textAngle = (i + 0.5) * segAngle;
     const path = `M ${CX} ${CY} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
     const { bg, textFill } = segmentStyle(i);
@@ -192,8 +170,7 @@ export function SpinWheel({
     return { path, textX, textY, textAngle, slot, lines, bg, textFill };
   });
 
-  const winnerSlot  = winnerSlotIdx !== null ? eligibleSlots[winnerSlotIdx] : null;
-  const winnerLabel = winnerSlot ? slotLabel(winnerSlot.numbers) : null;
+  const winnerLabel = winnerNumbers ? slotLabel(winnerNumbers) : null;
 
   if (n === 0) {
     return (
@@ -262,7 +239,7 @@ export function SpinWheel({
             const isWinner = !spinning && winnerSlotIdx === i;
             const lineSpacing = fs * 1.3;
             return (
-              <g key={slot.origIdx}>
+              <g key={slot.position}>
                 <path
                   d={path}
                   fill={bg}
@@ -333,7 +310,7 @@ export function SpinWheel({
                   {isPending ? "Recording…" : "✓ Confirm & Record"}
                 </button>
                 <button
-                  onClick={() => { setWinnerSlotIdx(null); }}
+                  onClick={() => { setWinnerSlotIdx(null); setWinnerNumbers(null); }}
                   className="px-5 py-2.5 bg-emerald-700/60 border border-emerald-400/40 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors"
                 >
                   Cancel
@@ -350,7 +327,7 @@ export function SpinWheel({
         <select
           value={selectedWeekId}
           onChange={(e) => setSelectedWeekId(e.target.value)}
-          disabled={spinning || isPending}
+          disabled={spinning || isPending || isPickPending}
           className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 transition-shadow"
         >
           {weekOptions.map((w) => (
@@ -364,12 +341,12 @@ export function SpinWheel({
       {/* ── Spin button ── */}
       <button
         onClick={handleSpin}
-        disabled={spinning || isPending || weekOptions.length === 0}
+        disabled={spinning || isPending || isPickPending || weekOptions.length === 0}
         className={`px-16 py-4 bg-emerald-600 text-white rounded-full font-black text-2xl tracking-widest hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl ${
-          !spinning && !isPending && winnerSlotIdx === null ? "animate-pulse-green" : ""
+          !spinning && !isPending && !isPickPending && winnerSlotIdx === null ? "animate-pulse-green" : ""
         }`}
       >
-        {spinning ? "SPINNING…" : "SPIN"}
+        {isPickPending ? "PICKING…" : spinning ? "SPINNING…" : "SPIN"}
       </button>
 
       {/* ── Manual override ── */}

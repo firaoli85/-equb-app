@@ -21,7 +21,7 @@ import { PayoutReveal } from "@/components/admin/PayoutReveal";
 
 export default async function AdminDashboard() {
   const now = new Date();
-  const [members, weeks, recentLogs, archiveCount, lockedMembers] = await Promise.all([
+  const [members, weeks, recentLogs, archiveCount, lockedMembers, wheelSlots] = await Promise.all([
     db.member.findMany({ where: { isArchived: false }, orderBy: { wheelNumber: "asc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
     db.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
@@ -31,21 +31,16 @@ export default async function AdminDashboard() {
       select: { id: true, nameAmharic: true, nameEnglishFirst: true, phone: true, pinLockedUntil: true },
       orderBy: { pinLockedUntil: "asc" },
     }),
+    db.wheelSlot.findMany({ orderBy: { position: "asc" } }),
   ]);
 
   const drawnNumbers = new Set(
     weeks.filter((w) => w.winnerWheelNumber != null).map((w) => w.winnerWheelNumber!)
   );
   const availableNumbers = getAvailableWheelEntries(members, drawnNumbers);
-
-  const wheelEntries = members.flatMap((m) => {
-    const entries = [];
-    if (!drawnNumbers.has(m.wheelNumber))
-      entries.push({ number: m.wheelNumber, name: m.nameAmharic, isExtra: false });
-    if (m.extraWheelNumber !== null && !drawnNumbers.has(m.extraWheelNumber))
-      entries.push({ number: m.extraWheelNumber, name: m.nameAmharic, isExtra: true });
-    return entries;
-  });
+  const eligibleWheelSlots = wheelSlots.filter((s) =>
+    s.numbers.every((n) => !drawnNumbers.has(n))
+  );
 
   const undrawnWeeks = weeks
     .filter((w) => w.winnerWheelNumber == null && !w.isSkipped)
@@ -205,9 +200,9 @@ export default async function AdminDashboard() {
         </h2>
         <SpinWheel
           key={availableNumbers.join("-")}
+          slots={eligibleWheelSlots}
           availableNumbers={availableNumbers}
           weekOptions={undrawnWeeks}
-          wheelEntries={wheelEntries}
         />
       </div>
 
