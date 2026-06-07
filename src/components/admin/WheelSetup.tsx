@@ -91,10 +91,9 @@ export function WheelSetup({
     }
   }
 
-  // ── Feature 2: Auto-arrange ───────────────────────────────────────────────
-  // Takes currently unassigned numbers, shuffles randomly, bin-packs into new
-  // slots respecting the $1,000 cap. Never touches locked or existing slots.
+  // ── Feature 2: Auto-arrange & Reshuffle all ──────────────────────────────
   const [autoArrangeNote, setAutoArrangeNote] = useState<string | null>(null);
+  const [reshuffleConfirming, setReshuffleConfirming] = useState(false);
 
   function handleAutoArrange() {
     // Fresh shuffle every run so groupings differ
@@ -138,6 +137,55 @@ export function WheelSetup({
     setSlotStatus(null);
   }
 
+  function handleReshuffleAll() {
+    // Collect: all numbers from unlocked slots + all unassigned numbers
+    const lockedSlots = slots.filter((s) => isLocked(s.position));
+    const pool: number[] = [
+      ...slots.filter((s) => !isLocked(s.position)).flatMap((s) => s.numbers),
+      ...unassigned,
+    ];
+
+    // Fresh Fisher-Yates shuffle — different groupings every run
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    // Bin-pack into new slots, same cap rule as Auto-arrange
+    const newSlots: SlotData[] = [];
+    const needsManual: number[] = [];
+
+    for (const n of pool) {
+      const amt = amtOf(n);
+      if (amt > MAIN_WHEEL_CAP_CENTS) {
+        needsManual.push(n);
+        continue;
+      }
+      let placed = false;
+      for (const s of newSlots) {
+        const total = s.numbers.reduce((sum, x) => sum + amtOf(x), 0);
+        if (total + amt <= MAIN_WHEEL_CAP_CENTS) {
+          s.numbers.push(n);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        newSlots.push({ position: nextPos.current++, numbers: [n] });
+      }
+    }
+
+    // Locked slots stay; unlocked replaced entirely by the new groupings
+    setSlots([...lockedSlots, ...newSlots]);
+    setAutoArrangeNote(
+      needsManual.length > 0
+        ? `Needs manual review: ${needsManual.map((n) => `#${n}`).join(", ")} — each exceeds $1,000 alone.`
+        : null
+    );
+    setSlotStatus(null);
+    setReshuffleConfirming(false);
+  }
+
   // ── Lock / unlock state for the hidden priority editor ────────────────────
   const [unlockStage, setUnlockStage] = useState<UnlockStage>("locked");
   const [passInput, setPassInput] = useState("");
@@ -174,6 +222,7 @@ export function WheelSetup({
   const anyOverCap = slots.some(
     (s) => s.numbers.length > 0 && slotTotal(s.numbers) > MAIN_WHEEL_CAP_CENTS
   );
+  const anyEmptyUnlocked = slots.some((s) => !isLocked(s.position) && s.numbers.length === 0);
 
   // ── Drag handlers ──────────────────────────────────────────────────────────
   function handleDrop(to: number | "unassigned") {
@@ -218,7 +267,7 @@ export function WheelSetup({
   function handleSaveSlots() {
     setSlotStatus(null);
     startSlotsTransition(async () => {
-      const result = await saveWheelSlots(slots.filter((s) => s.numbers.length > 0));
+      const result = await saveWheelSlots(slots);
       if (result.error) {
         setSlotStatus({ error: result.error });
       } else {
@@ -272,9 +321,11 @@ export function WheelSetup({
     });
   }
 
-  const saveSlotsBlockReason = anyOverCap
-    ? "One or more slots exceed $1,000/week — rearrange before saving."
-    : null;
+  const saveSlotsBlockReason = anyEmptyUnlocked
+    ? "One or more slots are empty — add a number or remove the empty slot before saving."
+    : anyOverCap
+      ? "One or more slots exceed $1,000/week — rearrange before saving."
+      : null;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -333,6 +384,44 @@ export function WheelSetup({
                 </svg>
                 Auto-arrange
               </button>
+
+              {/* Reshuffle all — with inline confirmation */}
+              {reshuffleConfirming ? (
+                <span className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    Regroup all unlocked?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleReshuffleAll}
+                    className="text-sm font-semibold text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors whitespace-nowrap"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReshuffleConfirming(false)}
+                    className="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setReshuffleConfirming(true)}
+                  disabled={
+                    !slots.some((s) => !isLocked(s.position) && s.numbers.length > 0) &&
+                    unassigned.length === 0
+                  }
+                  className="flex items-center gap-1.5 text-sm font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
+                  Reshuffle all
+                </button>
+              )}
 
               {/* Add slot */}
               <button
