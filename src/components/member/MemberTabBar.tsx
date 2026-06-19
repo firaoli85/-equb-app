@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 // The 4 PRIMARY tabs that live in the mobile bottom bar.
-// Secondary pages (Collections, Activity, Documents) stay in the hamburger drawer.
+// Secondary pages (Activity, Documents) stay in the hamburger drawer.
 const TABS = [
   { label: "Home",        suffix: ""               },
   { label: "Payments",    suffix: "/payments"      },
@@ -47,14 +49,22 @@ export function MemberTabBar({ token }: { token: string }) {
   const pathname = usePathname();
   const base = `/m/${token}`;
 
+  // Portal guard — createPortal requires document.body, which doesn't exist on the server.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   function isActive(suffix: string) {
     const href = `${base}${suffix}`;
     return suffix === "" ? pathname === base : pathname.startsWith(href);
   }
 
-  return (
-    // md:hidden — only visible < 768px. Safe-area padding for iPhone home indicator.
+  if (!mounted) return null;
+
+  // Portaling to document.body escapes any ancestor transform / backdrop-filter
+  // containing-block trap and guarantees true viewport-fixed positioning.
+  return createPortal(
     <nav
+      // md:hidden — hidden at ≥768px; safe-area padding for iPhone home indicator
       className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/60"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Primary navigation"
@@ -94,6 +104,7 @@ export function MemberTabBar({ token }: { token: string }) {
           );
         })}
       </div>
-    </nav>
+    </nav>,
+    document.body
   );
 }
