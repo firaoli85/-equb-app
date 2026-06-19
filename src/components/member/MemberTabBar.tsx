@@ -50,58 +50,26 @@ export function MemberTabBar({ token }: { token: string }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  const navRef   = useRef<HTMLElement>(null);
-  const debugRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const nav   = navRef.current;
-    const debug = debugRef.current;
-    const vv    = window.visualViewport;
-
-    // Show whether the API exists at all — visible immediately on load
-    if (debug) {
-      debug.textContent = `vv:${!!vv} (no events yet)`;
-    }
-
+    const nav = navRef.current;
+    const vv  = window.visualViewport;
     if (!nav || !vv) return;
 
     let rafId = 0;
-    let count = 0;
 
     function update() {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        count++;
-
-        const ch     = document.documentElement.clientHeight;
-        const ih     = window.innerHeight;
-        const h      = vv!.height;
-        const top    = vv!.offsetTop;
-        const offset = ch - (h + top);
-        const bottom = Math.max(0, offset);
-
-        // Apply position fix
-        nav!.style.bottom = `${bottom}px`;
-
-        // Write every value live so you can watch them change on device
-        if (debug) {
-          debug.innerHTML =
-            `<b>VV DEBUG</b><br>` +
-            `vv exists: true<br>` +
-            `vv.height: ${h.toFixed(1)}<br>` +
-            `vv.offsetTop: ${top.toFixed(1)}<br>` +
-            `clientHeight: ${ch}<br>` +
-            `innerHeight: ${ih}<br>` +
-            `offset (ch−h−top): ${offset.toFixed(1)}<br>` +
-            `→ bottom set: ${bottom.toFixed(1)}px<br>` +
-            `fire count: ${count}`;
-        }
+        const offset = document.documentElement.clientHeight - (vv!.height + vv!.offsetTop);
+        nav!.style.bottom = `${Math.max(0, offset)}px`;
       });
     }
 
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
-    update(); // capture values immediately on mount
+    update();
 
     return () => {
       vv.removeEventListener("resize", update);
@@ -118,31 +86,7 @@ export function MemberTabBar({ token }: { token: string }) {
   if (!mounted) return null;
 
   return createPortal(
-    <>
-      {/* ── TEMPORARY DEBUG OVERLAY — remove after diagnosis ── */}
-      <div
-        ref={debugRef}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 99999,
-          background: "rgba(0,0,0,0.82)",
-          color: "#00ff88",
-          fontFamily: "monospace",
-          fontSize: "11px",
-          lineHeight: "1.5",
-          padding: "6px 10px",
-          pointerEvents: "none",
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        vv:loading…
-      </div>
-
-      {/* ── Tab bar ── */}
-      <nav
+    <nav
         ref={navRef}
         className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/60"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
