@@ -8,6 +8,8 @@ import {
 } from "@/lib/member-session";
 import { getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
+import { MemberSidebar } from "@/components/member/MemberSidebar";
+import { MemberTabBar } from "@/components/member/MemberTabBar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NameToggle } from "@/components/member/NameToggle";
 
@@ -69,26 +71,41 @@ export default async function MemberLayout({
   return (
     <div className="min-h-screen bg-[#F7F8FA] dark:bg-[#0a0a0b]">
       {/*
-        Fixed header — exactly 64px tall (h-16), z-50 on top of all content.
-        No Sign Out here. Sign Out lives only inside the hamburger drawer.
+        Fixed header — 64px (h-16), z-50.
+        Mobile: hamburger on left + toggles on right.
+        Desktop: hamburger hidden (sidebar handles nav), toggles indented past sidebar.
       */}
       <header
         className="h-16 bg-[#F7F8FA]/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800/60"
         style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}
       >
-        <div className="h-full max-w-5xl mx-auto px-4 flex items-center justify-between gap-2">
-          <MemberDrawer token={token} eligibleWeeks={eligibleWeeks} />
-          <div className="flex items-center gap-2 shrink-0">
+        <div className="h-full px-4 md:pl-64 flex items-center gap-2">
+          {/* Hamburger — mobile only; sidebar handles desktop nav */}
+          <div className="md:hidden">
+            <MemberDrawer token={token} eligibleWeeks={eligibleWeeks} />
+          </div>
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
             <NameToggle token={token} current={member.displayPreference} />
             <ThemeToggle />
           </div>
         </div>
       </header>
 
-      {/* pt-16 = 64px, exactly the fixed header height — content starts below the header */}
-      <main className="pt-16">
+      {/* Desktop sidebar — fixed left, starts below the header */}
+      <MemberSidebar token={token} eligibleWeeks={eligibleWeeks} />
+
+      {/*
+        pt-16  = clears fixed header (both breakpoints)
+        pb-24  = clears mobile bottom tab bar (56px bar + safe-area headroom)
+        md:pb-0= no bottom tab bar on desktop
+        md:pl-60= offset past the 240px sidebar on desktop
+      */}
+      <main className="pt-16 pb-24 md:pb-0 md:pl-60">
         {children}
       </main>
+
+      {/* Mobile-only bottom tab bar — md:hidden inside the component */}
+      <MemberTabBar token={token} />
     </div>
   );
 }

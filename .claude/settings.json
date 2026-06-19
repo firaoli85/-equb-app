@@ -61,7 +61,12 @@
       "Bash(npx ts-node *)",
       "PowerShell(Stop-Process -Id 1880, 10696, 15900 -Force)",
       "Bash(node -e \"const p = require\\('./node_modules/next/package.json'\\); console.log\\(p.version\\);\")",
-      "PowerShell(cd \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\"; $proc = Start-Process -FilePath \"npm\" -ArgumentList \"run\",\"dev\" -PassThru -RedirectStandardOutput \"$env:TEMP\\\\nextdev-out.txt\" -RedirectStandardError \"$env:TEMP\\\\nextdev-err.txt\" -NoNewWindow; Start-Sleep -Seconds 12; $out = Get-Content \"$env:TEMP\\\\nextdev-out.txt\" -Raw -ErrorAction SilentlyContinue; $err = Get-Content \"$env:TEMP\\\\nextdev-err.txt\" -Raw -ErrorAction SilentlyContinue; Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue; Write-Output \"=STDOUT=\"; $out; Write-Output \"=STDERR=\"; $err)"
+      "PowerShell(cd \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\"; $proc = Start-Process -FilePath \"npm\" -ArgumentList \"run\",\"dev\" -PassThru -RedirectStandardOutput \"$env:TEMP\\\\nextdev-out.txt\" -RedirectStandardError \"$env:TEMP\\\\nextdev-err.txt\" -NoNewWindow; Start-Sleep -Seconds 12; $out = Get-Content \"$env:TEMP\\\\nextdev-out.txt\" -Raw -ErrorAction SilentlyContinue; $err = Get-Content \"$env:TEMP\\\\nextdev-err.txt\" -Raw -ErrorAction SilentlyContinue; Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue; Write-Output \"=STDOUT=\"; $out; Write-Output \"=STDERR=\"; $err)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('react:', p.dependencies.react, 'next:', p.dependencies.next\\)\")",
+      "Bash(node -e \"const t=require\\('next'\\).default; console.log\\(typeof t\\)\")",
+      "Bash(node -e \"const r=require\\('react'\\); console.log\\('forwardRef:', typeof r.forwardRef, 'useImperativeHandle:', typeof r.useImperativeHandle\\)\")",
+      "Bash(node -e \"const {Viewport}=require\\('next/dist/lib/metadata/types/metadata-types'\\); console.log\\(JSON.stringify\\(Object.keys\\(Viewport||{}\\)\\)\\)\")",
+      "Bash(node -e \"const t=require\\('next/dist/lib/metadata/types/metadata-types'\\); console.log\\(Object.keys\\(t\\)\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",

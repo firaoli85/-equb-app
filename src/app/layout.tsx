@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/context/ToastContext";
@@ -20,6 +20,10 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Equb",
   description: "Ethiopian Rotating Savings Group",
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
