@@ -5,8 +5,6 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// The 4 PRIMARY tabs that live in the mobile bottom bar.
-// Secondary pages (Activity, Documents) stay in the hamburger drawer.
 const TABS = [
   { label: "Home",        suffix: ""               },
   { label: "Payments",    suffix: "/payments"      },
@@ -36,7 +34,7 @@ function TabIcon({ suffix, active }: { suffix: string; active: boolean }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       );
-    default: // /collections
+    default:
       return (
         <svg className={cls} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -49,55 +47,68 @@ export function MemberTabBar({ token }: { token: string }) {
   const pathname = usePathname();
   const base = `/m/${token}`;
 
-  // Portal guard — createPortal requires document.body (not available during SSR).
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  // Ref to the portaled nav so we can set its `bottom` imperatively from the
-  // VisualViewport effect without triggering a React re-render on every scroll.
-  const navRef = useRef<HTMLElement>(null);
+  const navRef   = useRef<HTMLElement>(null);
+  const debugRef = useRef<HTMLDivElement>(null);
 
-  // ── VisualViewport anchor ──────────────────────────────────────────────────
-  // iOS Safari's dynamic toolbar changes the *visual* viewport height while the
-  // *layout* viewport (used by `position:fixed; bottom:0`) stays constant.
-  // The gap between the two bottoms is exactly how far the bar drifts.
-  //
-  // Formula:
-  //   offset = layoutViewportHeight − (vv.height + vv.offsetTop)
-  //          = how many px the visual-viewport bottom sits above the layout-viewport bottom
-  //
-  // Setting `nav.style.bottom = offset + "px"` keeps the bar glued to the
-  // visible screen bottom as the toolbar slides in/out.
-  //
-  // On Chrome: vv.height ≈ clientHeight, vv.offsetTop ≈ 0 → offset ≈ 0 → bottom:0 (no change).
-  // Fallback: if VisualViewport API is absent, the CSS `bottom-0` class stays in effect.
   useEffect(() => {
-    const nav = navRef.current;
-    const vv  = window.visualViewport;   // null on very old browsers
+    const nav   = navRef.current;
+    const debug = debugRef.current;
+    const vv    = window.visualViewport;
+
+    // Show whether the API exists at all — visible immediately on load
+    if (debug) {
+      debug.textContent = `vv:${!!vv} (no events yet)`;
+    }
+
     if (!nav || !vv) return;
 
     let rafId = 0;
+    let count = 0;
 
     function update() {
-      // cancelAnimationFrame(0) is a safe no-op; subsequent calls cancel the
-      // previous pending frame so at most one update fires per animation frame.
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        const offset = document.documentElement.clientHeight - (vv!.height + vv!.offsetTop);
-        nav!.style.bottom = `${Math.max(0, offset)}px`;
+        count++;
+
+        const ch     = document.documentElement.clientHeight;
+        const ih     = window.innerHeight;
+        const h      = vv!.height;
+        const top    = vv!.offsetTop;
+        const offset = ch - (h + top);
+        const bottom = Math.max(0, offset);
+
+        // Apply position fix
+        nav!.style.bottom = `${bottom}px`;
+
+        // Write every value live so you can watch them change on device
+        if (debug) {
+          debug.innerHTML =
+            `<b>VV DEBUG</b><br>` +
+            `vv exists: true<br>` +
+            `vv.height: ${h.toFixed(1)}<br>` +
+            `vv.offsetTop: ${top.toFixed(1)}<br>` +
+            `clientHeight: ${ch}<br>` +
+            `innerHeight: ${ih}<br>` +
+            `offset (ch−h−top): ${offset.toFixed(1)}<br>` +
+            `→ bottom set: ${bottom.toFixed(1)}px<br>` +
+            `fire count: ${count}`;
+        }
       });
     }
 
     vv.addEventListener("resize", update);
     vv.addEventListener("scroll", update);
-    update(); // set correct position immediately on mount
+    update(); // capture values immediately on mount
 
     return () => {
       vv.removeEventListener("resize", update);
       vv.removeEventListener("scroll", update);
       cancelAnimationFrame(rafId);
     };
-  }, []); // runs once after mount; nav and vv refs are stable
+  }, []);
 
   function isActive(suffix: string) {
     const href = `${base}${suffix}`;
@@ -106,49 +117,71 @@ export function MemberTabBar({ token }: { token: string }) {
 
   if (!mounted) return null;
 
-  // Portaled to document.body to escape any ancestor containing-block trap.
-  // CSS `bottom-0` is the no-JS fallback; the VisualViewport effect overrides
-  // `style.bottom` in real time when the API is available.
   return createPortal(
-    <nav
-      ref={navRef}
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/60"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      aria-label="Primary navigation"
-    >
-      <div className="grid grid-cols-4 h-14">
-        {TABS.map((tab) => {
-          const active = isActive(tab.suffix);
-          return (
-            <Link
-              key={tab.suffix}
-              href={`${base}${tab.suffix}`}
-              className="flex flex-col items-center justify-center gap-0.5 select-none"
-              style={{ touchAction: "manipulation", minHeight: "44px" }}
-              aria-label={tab.label}
-              aria-current={active ? "page" : undefined}
-            >
-              <span
-                className={`flex items-center justify-center w-10 h-[26px] rounded-full transition-colors ${
-                  active ? "bg-indigo-50 dark:bg-indigo-950/60" : ""
-                }`}
-              >
-                <TabIcon suffix={tab.suffix} active={active} />
-              </span>
-              <span
-                className={`text-[10px] font-semibold leading-none transition-colors ${
-                  active
-                    ? "text-indigo-600 dark:text-indigo-400"
-                    : "text-gray-400 dark:text-gray-500"
-                }`}
-              >
-                {tab.label}
-              </span>
-            </Link>
-          );
-        })}
+    <>
+      {/* ── TEMPORARY DEBUG OVERLAY — remove after diagnosis ── */}
+      <div
+        ref={debugRef}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 99999,
+          background: "rgba(0,0,0,0.82)",
+          color: "#00ff88",
+          fontFamily: "monospace",
+          fontSize: "11px",
+          lineHeight: "1.5",
+          padding: "6px 10px",
+          pointerEvents: "none",
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        vv:loading…
       </div>
-    </nav>,
+
+      {/* ── Tab bar ── */}
+      <nav
+        ref={navRef}
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/60"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-label="Primary navigation"
+      >
+        <div className="grid grid-cols-4 h-14">
+          {TABS.map((tab) => {
+            const active = isActive(tab.suffix);
+            return (
+              <Link
+                key={tab.suffix}
+                href={`${base}${tab.suffix}`}
+                className="flex flex-col items-center justify-center gap-0.5 select-none"
+                style={{ touchAction: "manipulation", minHeight: "44px" }}
+                aria-label={tab.label}
+                aria-current={active ? "page" : undefined}
+              >
+                <span
+                  className={`flex items-center justify-center w-10 h-[26px] rounded-full transition-colors ${
+                    active ? "bg-indigo-50 dark:bg-indigo-950/60" : ""
+                  }`}
+                >
+                  <TabIcon suffix={tab.suffix} active={active} />
+                </span>
+                <span
+                  className={`text-[10px] font-semibold leading-none transition-colors ${
+                    active
+                      ? "text-indigo-600 dark:text-indigo-400"
+                      : "text-gray-400 dark:text-gray-500"
+                  }`}
+                >
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </>,
     document.body
   );
 }
