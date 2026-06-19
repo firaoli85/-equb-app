@@ -66,7 +66,14 @@ export function MemberTabBar({ token }: { token: string }) {
     <nav
       // md:hidden — hidden at ≥768px; safe-area padding for iPhone home indicator
       className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/60"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{
+        paddingBottom: "env(safe-area-inset-bottom)",
+        // Promote to a GPU compositing layer so Safari anchors the bar to the
+        // visual viewport rather than the layout viewport. This prevents the
+        // bar from drifting when Safari's dynamic toolbar slides in/out on scroll.
+        transform: "translateZ(0)",
+        willChange: "transform",
+      }}
       aria-label="Primary navigation"
     >
       <div className="grid grid-cols-4 h-14">
