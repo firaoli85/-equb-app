@@ -20,6 +20,7 @@ export default async function DocumentsPage({
   const member = await db.member.findUnique({
     where: { token },
     select: {
+      id: true,
       confirmedAt: true,
       collectionConfirmedAt: true,
       collectionConfirmedAtExtra: true,
@@ -30,14 +31,14 @@ export default async function DocumentsPage({
   if (!member) notFound();
   if (!member.confirmedAt) redirect(`/m/${token}`);
 
-  // Determine if member has won (their wheel number has been drawn)
-  const drawnWeeks = await db.week.findMany({
-    where: { winnerWheelNumber: { not: null } },
-    select: { winnerWheelNumber: true },
+  // Determine if member has won via WeekPayout rows — correctly handles secondary
+  // winners whose lucky number is not the week's winnerWheelNumber compat field.
+  const memberPayouts = await db.weekPayout.findMany({
+    where: { memberId: member.id },
+    select: { wheelType: true },
   });
-  const drawnNumbers = new Set(drawnWeeks.map((w) => w.winnerWheelNumber!));
-  const hasWonMain  = drawnNumbers.has(member.wheelNumber);
-  const hasWonExtra = member.extraWheelNumber !== null && drawnNumbers.has(member.extraWheelNumber);
+  const hasWonMain  = memberPayouts.some((p) => p.wheelType === "MAIN");
+  const hasWonExtra = member.extraWheelNumber !== null && memberPayouts.some((p) => p.wheelType === "EXTRA");
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">

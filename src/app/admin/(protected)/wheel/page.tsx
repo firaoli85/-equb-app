@@ -5,7 +5,7 @@ import { mainWheelWeekly, extraWheelWeekly } from "@/lib/equb";
 import { WheelSetup } from "@/components/admin/WheelSetup";
 
 export default async function WheelSetupPage() {
-  const [slots, members, drawnWeeks] = await Promise.all([
+  const [slots, members, drawn] = await Promise.all([
     db.wheelSlot.findMany({ orderBy: { position: "asc" } }),
     db.member.findMany({
       where: { isArchived: false },
@@ -17,10 +17,7 @@ export default async function WheelSetupPage() {
         extraWheelNumber: true,
       },
     }),
-    db.week.findMany({
-      where: { winnerWheelNumber: { not: null } },
-      select: { winnerWheelNumber: true },
-    }),
+    db.weekPayout.findMany({ select: { number: true } }),
   ]);
 
   // Map each lucky number to the weekly amount it represents (names withheld — fetched on demand)
@@ -51,7 +48,7 @@ export default async function WheelSetupPage() {
     .filter((n) => !memberNumbers.has(n))
     .sort((a, b) => a - b);
 
-  const drawnNumbers = drawnWeeks.map((w) => w.winnerWheelNumber!);
+  const drawnNumbers = drawn.map((p) => p.number);
   const allMemberNumbers = [...memberNumbers].sort((a, b) => a - b);
   const hasIssues = onMemberNotInSlot.length > 0 || inSlotNotOnMember.length > 0;
 

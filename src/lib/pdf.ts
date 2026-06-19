@@ -212,7 +212,8 @@ export interface CollectionReceiptData {
   memberNameAmharic: string;
   memberNameEnglish: string;
   wheelNumber: number;
-  winnerWheelNumber: number;
+  luckyNumber: number;       // the drawn lucky number (e.g. 13 for Surashe)
+  payoutWeekNumber: number;  // the actual week ordinal (e.g. 2) — NOT the lucky number
   weeklyAmountCents: number;
   netCents: number;
   feeCents: number;
@@ -246,8 +247,8 @@ export function buildCollectionReceiptPDF(
     sectionTitle(doc, "Collection Details");
     amharicRow(doc, "Name (Amharic)", amharicName);
     if (data.memberNameEnglish) row(doc, "Name (English)", data.memberNameEnglish);
-    row(doc, "Lucky Number", `#${data.winnerWheelNumber}`);
-    row(doc, "Payout Week", `Week ${data.winnerWheelNumber}`);
+    row(doc, "Lucky Number", `#${data.luckyNumber}`);
+    row(doc, "Payout Week", `Week ${data.payoutWeekNumber}`);
     row(doc, "Payout Date", data.payoutDate);
     row(doc, "Management Fee", `−${fee}`, "#92400e");
     rowBold(doc, "Net Amount Received", net);
@@ -260,7 +261,7 @@ export function buildCollectionReceiptPDF(
     englishPara(
       doc,
       `I, ${englishNameForPara}, confirm that I received ${net} on ${data.payoutDate} as my Equb ` +
-        `collection for Week ${data.winnerWheelNumber}. A management fee of ${fee} was deducted. ` +
+        `collection for Week ${data.payoutWeekNumber}. A management fee of ${fee} was deducted. ` +
         `I agree to continue making my weekly contribution of ${weekly} for the remaining ` +
         `${data.remainingWeeks} weeks until Week 20 (September 27, 2026), regardless of having ` +
         `received my collection.`
@@ -272,7 +273,7 @@ export function buildCollectionReceiptPDF(
     sectionTitle(doc, "ስምምነት (አማርኛ)", true);
     amharicPara(
       doc,
-      `እኔ ${amharicName} በሳምንት ${data.winnerWheelNumber} ላይ ${net} እንደተቀበልኩ ` +
+      `እኔ ${amharicName} በሳምንት ${data.payoutWeekNumber} ላይ ${net} እንደተቀበልኩ ` +
         `አረጋግጣለሁ። ${fee} የአስተዳደር ክፍያ ተቀንሷል። ለቀሪዎቹ ${data.remainingWeeks} ሳምንታት ` +
         `እስከ ሳምንት 20 ድረስ ${weekly} የሳምንታዊ ክፍያዬን መክፈሌን እንደምቀጥል እስማማለሁ።`
     );

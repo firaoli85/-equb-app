@@ -55,7 +55,13 @@
       "Bash(curl -s -H \"Authorization: Bearer 1c57bf4dd8c71306cad7c73ea94e90a4090b89df6b34e84f248dd0af71589d1e\" https://equb-app-hazel.vercel.app/api/cron/telegram)",
       "Bash(Test-Path \"src/app/api/auth/send-otp/route.ts\")",
       "Bash(Test-Path \"src/app/api/auth/verify-otp/route.ts\")",
-      "Bash(not exist *)"
+      "Bash(not exist *)",
+      "Bash(node --input-type=module)",
+      "PowerShell(Get-WmiObject Win32_Process -Filter \"name='node.exe'\")",
+      "Bash(npx ts-node *)",
+      "PowerShell(Stop-Process -Id 1880, 10696, 15900 -Force)",
+      "Bash(node -e \"const p = require\\('./node_modules/next/package.json'\\); console.log\\(p.version\\);\")",
+      "PowerShell(cd \"C:\\\\Users\\\\firao\\\\Desktop\\\\equb-app\"; $proc = Start-Process -FilePath \"npm\" -ArgumentList \"run\",\"dev\" -PassThru -RedirectStandardOutput \"$env:TEMP\\\\nextdev-out.txt\" -RedirectStandardError \"$env:TEMP\\\\nextdev-err.txt\" -NoNewWindow; Start-Sleep -Seconds 12; $out = Get-Content \"$env:TEMP\\\\nextdev-out.txt\" -Raw -ErrorAction SilentlyContinue; $err = Get-Content \"$env:TEMP\\\\nextdev-err.txt\" -Raw -ErrorAction SilentlyContinue; Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue; Write-Output \"=STDOUT=\"; $out; Write-Output \"=STDERR=\"; $err)"
     ],
     "additionalDirectories": [
       "C:\\Windows\\Fonts",

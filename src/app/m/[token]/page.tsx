@@ -86,25 +86,30 @@ export default async function MemberView({
   const extraFee   = hasExtra ? calculateMemberFee(extraWeekly) : 0;
   const extraNet   = hasExtra ? calculateNetPayout(extraGross, extraFee) : 0;
 
-  // ── Stats queries + review requests ──────────────────────────────────────
-  const [drawnWeeks, allMembersWheels] = await Promise.all([
-    db.week.findMany({
-      where: { winnerWheelNumber: { not: null } },
-      select: { winnerWheelNumber: true, weekNumber: true, date: true, payoutStatus: true, payoutMethod: true },
+  // ── Stats queries ─────────────────────────────────────────────────────────
+  // memberPayouts: this member's own WeekPayout rows (source of truth for whether
+  //   their numbers have been drawn and which payout corresponds to each wheel).
+  // allWeekPayouts: every WeekPayout row for global stats + payment table highlights.
+  const [memberPayouts, allWeekPayouts, allMembersWheels] = await Promise.all([
+    db.weekPayout.findMany({
+      where: { memberId: member.id },
+      include: { week: { select: { weekNumber: true, date: true } } },
     }),
+    db.weekPayout.findMany({ select: { number: true, status: true } }),
     db.member.findMany({
       select: { wheelNumber: true, extraWheelNumber: true, wheelSuspended: true },
     }),
   ]);
 
-  const drawnSet = new Set(drawnWeeks.map((w) => w.winnerWheelNumber!));
-  const collectionsCount = drawnSet.size;
+  // Global drawn set: every lucky number that has a WeekPayout row (drawn anywhere)
+  const globalDrawnSet = new Set(allWeekPayouts.map((p) => p.number));
+  const collectionsCount = globalDrawnSet.size;
 
   let wheelEntriesRemaining = 0;
   for (const m of allMembersWheels) {
     if (m.wheelSuspended) continue;
-    if (!drawnSet.has(m.wheelNumber)) wheelEntriesRemaining++;
-    if (m.extraWheelNumber !== null && !drawnSet.has(m.extraWheelNumber)) wheelEntriesRemaining++;
+    if (!globalDrawnSet.has(m.wheelNumber)) wheelEntriesRemaining++;
+    if (m.extraWheelNumber !== null && !globalDrawnSet.has(m.extraWheelNumber)) wheelEntriesRemaining++;
   }
 
   const week1Date = member.payments.find((p) => p.week.weekNumber === 1)?.week.date ?? EQUB_START;
@@ -113,10 +118,11 @@ export default async function MemberView({
   const currentWeekDate = currentWeekPayment ? formatDate(currentWeekPayment.week.date) : null;
   const weeksRemaining = Math.max(0, TOTAL_WEEKS - currentWeekNum);
 
-  // ── Per-wheel winning week lookup ─────────────────────────────────────────
-  const mainWinnerWeek  = drawnWeeks.find((w) => w.winnerWheelNumber === member.wheelNumber) ?? null;
-  const extraWinnerWeek = hasExtra
-    ? drawnWeeks.find((w) => w.winnerWheelNumber === member.extraWheelNumber) ?? null
+  // ── Per-wheel payout lookup — WeekPayout rows for this member ────────────
+  // wheelType MAIN → member's primary lucky number; EXTRA → extra lucky number.
+  const mainPayout  = memberPayouts.find((p) => p.wheelType === "MAIN")  ?? null;
+  const extraPayout = hasExtra
+    ? memberPayouts.find((p) => p.wheelType === "EXTRA") ?? null
     : null;
 
   const paidCount  = member.payments.filter((p) => p.status === "PAID").length;
@@ -124,18 +130,17 @@ export default async function MemberView({
   const remainingWeeks = TOTAL_WEEKS - paidCount;
 
   // ── Payout week date for the payment table annotation ────────────────────
-  const payoutPayment = member.payments.find((p) => p.week.weekNumber === member.wheelNumber);
-  const mainPayoutDate = payoutPayment ? formatDate(payoutPayment.week.date) : "TBD";
+  const mainPayoutDate = mainPayout ? formatDate(mainPayout.week.date) : "TBD";
 
   // ── Status helpers ────────────────────────────────────────────────────────
-  function wheelStatusBadge(winnerWeek: typeof mainWinnerWeek, confirmed: boolean) {
-    if (!winnerWeek) return { label: "Pending Draw", cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400" };
-    if (confirmed)   return { label: "Collected",    cls: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" };
-    return           { label: "Pending Signature", cls: "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800" };
+  function wheelStatusBadge(hasPayout: boolean, confirmed: boolean) {
+    if (!hasPayout) return { label: "Pending Draw",    cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400" };
+    if (confirmed)  return { label: "Collected",       cls: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" };
+    return          { label: "Pending Signature",      cls: "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800" };
   }
 
-  const mainStatus  = wheelStatusBadge(mainWinnerWeek,  !!member.collectionConfirmedAt);
-  const extraStatus = hasExtra ? wheelStatusBadge(extraWinnerWeek, !!member.collectionConfirmedAtExtra) : null;
+  const mainStatus  = wheelStatusBadge(mainPayout !== null,  !!member.collectionConfirmedAt);
+  const extraStatus = hasExtra ? wheelStatusBadge(extraPayout !== null, !!member.collectionConfirmedAtExtra) : null;
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-8 pb-8 space-y-5">
@@ -222,31 +227,41 @@ export default async function MemberView({
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">20-Week Rotating Savings</p>
       </div>
 
-      {/* ── Collection receipt confirmations (shown when a wheel wins) ─────── */}
-      {mainWinnerWeek && !member.collectionConfirmedAt && (
+      {/* ── Collection receipt confirmations ────────────────────────────────
+           Shown when this member's number has a WeekPayout row (drawn) and
+           they haven't signed yet. Independent of admin's Collected status. */}
+      {mainPayout && !member.collectionConfirmedAt && (
         <ConfirmCollectionReceipt
           token={member.token}
           memberNameEnglish={memberNameEnglish || member.nameAmharic}
           memberNameAmharic={member.nameAmharic}
           weeklyAmountFormatted={formatCurrency(mainWeekly)}
-          netFormatted={formatCurrency(mainNet)}
+          netFormatted={
+            mainPayout.amount
+              ? formatCurrency(Math.round(Number(mainPayout.amount) * 100))
+              : formatCurrency(mainNet)
+          }
           feeFormatted={formatCurrency(mainFee)}
-          payoutDate={formatDate(mainWinnerWeek.date)}
-          winnerWheelNumber={mainWinnerWeek.winnerWheelNumber!}
+          payoutDate={formatDate(mainPayout.week.date)}
+          winnerWheelNumber={member.wheelNumber}
           remainingWeeks={remainingWeeks}
           wheelType="main"
         />
       )}
-      {hasExtra && extraWinnerWeek && !member.collectionConfirmedAtExtra && (
+      {hasExtra && extraPayout && !member.collectionConfirmedAtExtra && (
         <ConfirmCollectionReceipt
           token={member.token}
           memberNameEnglish={memberNameEnglish || member.nameAmharic}
           memberNameAmharic={member.nameAmharic}
           weeklyAmountFormatted={formatCurrency(extraWeekly)}
-          netFormatted={formatCurrency(extraNet)}
+          netFormatted={
+            extraPayout.amount
+              ? formatCurrency(Math.round(Number(extraPayout.amount) * 100))
+              : formatCurrency(extraNet)
+          }
           feeFormatted={formatCurrency(extraFee)}
-          payoutDate={formatDate(extraWinnerWeek.date)}
-          winnerWheelNumber={extraWinnerWeek.winnerWheelNumber!}
+          payoutDate={formatDate(extraPayout.week.date)}
+          winnerWheelNumber={member.extraWheelNumber!}
           remainingWeeks={remainingWeeks}
           wheelType="extra"
         />
@@ -293,7 +308,7 @@ export default async function MemberView({
         payoutDate={mainPayoutDate}
         status={mainStatus}
         confirmedAt={member.collectionConfirmedAt}
-        pdfHref={mainWinnerWeek && member.collectionConfirmedAt ? `/api/collection-receipt/${member.token}` : null}
+        pdfHref={mainPayout && member.collectionConfirmedAt ? `/api/collection-receipt/${member.token}` : null}
       />
 
       {/* Card 2: Extra wheel entry */}
@@ -305,14 +320,10 @@ export default async function MemberView({
           gross={extraGross}
           fee={extraFee}
           net={extraNet}
-          payoutDate={
-            member.payments.find((p) => p.week.weekNumber === member.extraWheelNumber)
-              ? formatDate(member.payments.find((p) => p.week.weekNumber === member.extraWheelNumber)!.week.date)
-              : "TBD"
-          }
+          payoutDate={extraPayout ? formatDate(extraPayout.week.date) : "TBD"}
           status={extraStatus!}
           confirmedAt={member.collectionConfirmedAtExtra}
-          pdfHref={extraWinnerWeek && member.collectionConfirmedAtExtra ? `/api/collection-receipt/${member.token}?wheel=extra` : null}
+          pdfHref={extraPayout && member.collectionConfirmedAtExtra ? `/api/collection-receipt/${member.token}?wheel=extra` : null}
           accent="blue"
         />
       )}
@@ -403,7 +414,7 @@ export default async function MemberView({
         </div>
 
         {/* Main wheel collection receipt */}
-        {mainWinnerWeek && member.collectionConfirmedAt && (
+        {mainPayout && member.collectionConfirmedAt && (
           <div className="bg-white dark:bg-[#141414] border border-blue-200 dark:border-blue-800 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center shrink-0">
@@ -427,7 +438,7 @@ export default async function MemberView({
         )}
 
         {/* Extra wheel collection receipt */}
-        {hasExtra && extraWinnerWeek && member.collectionConfirmedAtExtra && (
+        {hasExtra && extraPayout && member.collectionConfirmedAtExtra && (
           <div className="bg-white dark:bg-[#141414] border border-purple-200 dark:border-purple-800 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center shrink-0">
@@ -458,8 +469,8 @@ export default async function MemberView({
         </div>
         <div className="divide-y divide-gray-50 dark:divide-gray-800/60">
           {member.payments.map((p) => {
-            const isMainWeek  = p.week.weekNumber === member.wheelNumber && drawnSet.has(member.wheelNumber);
-            const isExtraWeek = hasExtra && p.week.weekNumber === member.extraWheelNumber && drawnSet.has(member.extraWheelNumber!);
+            const isMainWeek  = mainPayout  != null && p.week.weekNumber === mainPayout.week.weekNumber;
+            const isExtraWeek = extraPayout != null && p.week.weekNumber === extraPayout.week.weekNumber;
             const rowStyle =
                   isMainWeek  ? "bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-l-emerald-500" :
                   isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400" :

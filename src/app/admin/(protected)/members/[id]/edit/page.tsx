@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { EditMemberForm } from "@/components/admin/EditMemberForm";
@@ -12,6 +14,14 @@ export default async function EditMemberPage({
 
   const member = await db.member.findUnique({ where: { id } });
   if (!member) notFound();
+
+  const wonPayouts = await db.weekPayout.findMany({
+    where: { memberId: member.id },
+    select: { number: true },
+  });
+  const wonSet = new Set(wonPayouts.map((p) => p.number));
+  const mainWon = wonSet.has(member.wheelNumber);
+  const extraWon = member.extraWheelNumber != null && wonSet.has(member.extraWheelNumber);
 
   return (
     <div className="max-w-lg">
@@ -29,6 +39,8 @@ export default async function EditMemberPage({
       <EditMemberForm
         memberId={member.id}
         hasPinSet={!!member.pin}
+        mainWon={mainWon}
+        extraWon={extraWon}
         defaults={{
           nameAmharic: member.nameAmharic,
           nameEnglishFirst: member.nameEnglishFirst,

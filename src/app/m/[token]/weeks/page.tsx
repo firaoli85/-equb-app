@@ -19,7 +19,10 @@ export default async function MemberWeeksPage({
   if (!viewer.confirmedAt) redirect(`/m/${token}`);
 
   const [weeks, payments] = await Promise.all([
-    db.week.findMany({ orderBy: { weekNumber: "asc" } }),
+    db.week.findMany({
+      orderBy: { weekNumber: "asc" },
+      include: { payouts: { select: { number: true }, orderBy: { number: "asc" } } },
+    }),
     db.payment.findMany({ select: { weekId: true, status: true } }),
   ]);
 
@@ -36,9 +39,9 @@ export default async function MemberWeeksPage({
   const week1Date = weeks.find((w) => w.weekNumber === 1)?.date ?? EQUB_START;
   const currentWeekNum = getCurrentWeekNumber(week1Date);
 
-  function weekStatus(week: { weekNumber: number; isSkipped: boolean; winnerWheelNumber: number | null }) {
+  function weekStatus(week: { weekNumber: number; isSkipped: boolean; payouts: { number: number }[] }) {
     if (week.isSkipped) return { label: "Skipped", cls: "bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800" };
-    if (week.winnerWheelNumber !== null) return { label: "Collected", cls: "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" };
+    if (week.payouts.length > 0) return { label: "Collected", cls: "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" };
     if (week.weekNumber === currentWeekNum) return { label: "Open", cls: "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800" };
     if (week.weekNumber < currentWeekNum) return { label: "Past", cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700" };
     return { label: "Upcoming", cls: "bg-gray-50 dark:bg-gray-900 text-gray-400 dark:text-gray-500 border-gray-100 dark:border-gray-800" };
@@ -72,7 +75,7 @@ export default async function MemberWeeksPage({
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0 ${
                   isCurrent
                     ? "bg-blue-600 text-white"
-                    : week.winnerWheelNumber !== null
+                    : week.payouts.length > 0
                     ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400"
                     : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
                 }`}>
@@ -102,9 +105,9 @@ export default async function MemberWeeksPage({
                       </span>
                     </div>
                   )}
-                  {week.winnerWheelNumber !== null && (
+                  {week.payouts.length > 0 && (
                     <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">
-                      Collected — Lucky #{week.winnerWheelNumber}
+                      Collected — Lucky {week.payouts.map((p) => `#${p.number}`).join(", ")}
                     </p>
                   )}
                 </div>

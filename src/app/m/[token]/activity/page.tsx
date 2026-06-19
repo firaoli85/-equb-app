@@ -10,25 +10,24 @@ export default async function MemberActivityPage({
 }) {
   const { token } = await params;
 
-  const viewer = await db.member.findUnique({
+  const member = await db.member.findUnique({
     where: { token },
-    select: { confirmedAt: true },
+    select: { confirmedAt: true, id: true },
   });
-  if (!viewer) notFound();
-  if (!viewer.confirmedAt) redirect(`/m/${token}`);
+  if (!member) notFound();
+  if (!member.confirmedAt) redirect(`/m/${token}`);
 
-  // Show only public events: payment updates and week events.
-  // Explicitly excludes PaymentReviewRequest entity type AND any action
-  // strings that relate to review submissions, approvals, or rejections —
-  // those are admin-only records members must never see.
+  // Own payment IDs — used to scope Payment audit entries to this member only.
+  // in: [] matches nothing if the member has no payment history yet (correct).
+  const paymentIds = (
+    await db.payment.findMany({ where: { memberId: member.id }, select: { id: true } })
+  ).map((p) => p.id);
+
   const logs = await db.auditLog.findMany({
     where: {
-      entityType: { in: ["Payment", "Week"] },
-      NOT: [
-        { entityType: "PaymentReviewRequest" },
-        { action: { startsWith: "REVIEW_" } },
-        { action: { startsWith: "Review approved" } },
-        { action: { contains: "review request", mode: "insensitive" } },
+      OR: [
+        { entityType: "Payment", entityId: { in: paymentIds } }, // this member's own payments
+        { entityType: "Week" },                                   // draw events — communal
       ],
     },
     orderBy: { createdAt: "desc" },

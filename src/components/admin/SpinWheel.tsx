@@ -117,7 +117,7 @@ export function SpinWheel({
       alert(!selectedWeekId ? "Please select a week first." : "No winner selected.");
       return;
     }
-    const captured = winnerNumbers?.[0] ?? eligibleSlots[winnerSlotIdx].numbers[0];
+    const captured = winnerNumbers ?? eligibleSlots[winnerSlotIdx].numbers;
     startTransition(async () => {
       try {
         const result = await recordWheelWinner(selectedWeekId, captured);
@@ -144,7 +144,7 @@ export function SpinWheel({
     if (!selectedWeekId) { setManualError("Select a week first."); return; }
     setManualError("");
     startManualTransition(async () => {
-      const result = await recordWheelWinner(selectedWeekId, num);
+      const result = await recordWheelWinner(selectedWeekId, ownerSlot?.numbers ?? [num]);
       if (result?.error) { setManualError(result.error); return; }
       setManualInput("");
       router.refresh();

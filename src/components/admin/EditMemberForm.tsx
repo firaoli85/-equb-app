@@ -21,10 +21,14 @@ export function EditMemberForm({
   memberId,
   hasPinSet,
   defaults,
+  mainWon,
+  extraWon,
 }: {
   memberId: string;
   hasPinSet: boolean;
   defaults: Defaults;
+  mainWon: boolean;
+  extraWon: boolean;
 }) {
   const boundAction = updateMember.bind(null, memberId);
   const [state, formAction, pending] = useActionState(boundAction, {});
@@ -136,13 +140,22 @@ export function EditMemberForm({
             </label>
             <input
               id="wheelNumber"
-              name="wheelNumber"
+              name={mainWon ? undefined : "wheelNumber"}
               type="number"
-              required
+              required={!mainWon}
               min="1"
               defaultValue={defaults.wheelNumber}
-              className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow"
+              disabled={mainWon}
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
             />
+            {mainWon && (
+              <>
+                <input type="hidden" name="wheelNumber" value={defaults.wheelNumber} />
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+                  Already drawn — locked
+                </p>
+              </>
+            )}
           </div>
           <div>
             <label htmlFor="extraWheelNumber" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -150,13 +163,22 @@ export function EditMemberForm({
             </label>
             <input
               id="extraWheelNumber"
-              name="extraWheelNumber"
+              name={extraWon ? undefined : "extraWheelNumber"}
               type="number"
               min="1"
               defaultValue={defaults.extraWheelNumber ?? ""}
-              className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow"
+              disabled={extraWon}
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-shadow disabled:opacity-60 disabled:cursor-not-allowed"
               placeholder="Extra"
             />
+            {extraWon && (
+              <>
+                <input type="hidden" name="extraWheelNumber" value={defaults.extraWheelNumber ?? ""} />
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+                  Already drawn — locked
+                </p>
+              </>
+            )}
           </div>
         </div>
 

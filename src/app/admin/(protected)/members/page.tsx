@@ -15,15 +15,12 @@ import { DeleteAllMembersButton } from "@/components/admin/DeleteAllMembersButto
 import Link from "next/link";
 
 export default async function MembersPage() {
-  const [activeMembers, archivedMembers, weeks, payments, winningWeeks] = await Promise.all([
+  const [activeMembers, archivedMembers, weeks, payments, drawn] = await Promise.all([
     db.member.findMany({ where: { isArchived: false }, orderBy: { wheelNumber: "asc" } }),
     db.member.findMany({ where: { isArchived: true }, orderBy: { archivedAt: "desc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
     db.payment.findMany({ where: { member: { isArchived: false } } }),
-    db.week.findMany({
-      where: { winnerWheelNumber: { not: null } },
-      select: { winnerWheelNumber: true },
-    }),
+    db.weekPayout.findMany({ select: { number: true } }),
   ]);
 
   const potCents = calculatePot(activeMembers);
@@ -33,7 +30,7 @@ export default async function MembersPage() {
       paidCountByMember.set(p.memberId, (paidCountByMember.get(p.memberId) ?? 0) + 1);
   }
   const weekByNumber = new Map(weeks.map((w) => [w.weekNumber, w]));
-  const drawnNumbers = new Set(winningWeeks.map((w) => w.winnerWheelNumber!));
+  const drawnNumbers = new Set(drawn.map((p) => p.number));
 
   // ── Fee earnings summary (active members only) ────────────────────────────
   let totalFeesCents = 0;

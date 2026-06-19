@@ -29,16 +29,13 @@ export async function getWheelMemberNames(): Promise<Record<number, string>> {
 export async function saveWheelSlots(
   newSlots: { position: number; numbers: number[] }[]
 ): Promise<{ error?: string; warning?: string }> {
-  const [members, dbSlots, drawnWeeks] = await Promise.all([
+  const [members, dbSlots, drawn] = await Promise.all([
     db.member.findMany({
       where: { isArchived: false },
       select: { wheelNumber: true, extraWheelNumber: true },
     }),
     db.wheelSlot.findMany(),
-    db.week.findMany({
-      where: { winnerWheelNumber: { not: null } },
-      select: { winnerWheelNumber: true },
-    }),
+    db.weekPayout.findMany({ select: { number: true } }),
   ]);
 
   const memberNumbers = new Set<number>();
@@ -47,7 +44,7 @@ export async function saveWheelSlots(
     if (m.extraWheelNumber != null) memberNumbers.add(m.extraWheelNumber);
   }
 
-  const drawnNumbers = new Set<number>(drawnWeeks.map((w) => w.winnerWheelNumber!));
+  const drawnNumbers = new Set<number>(drawn.map((p) => p.number));
 
   // Locked = any slot in DB that contains a drawn number
   const dbSlotMap = new Map(

@@ -21,7 +21,7 @@ import { PayoutReveal } from "@/components/admin/PayoutReveal";
 
 export default async function AdminDashboard() {
   const now = new Date();
-  const [members, weeks, recentLogs, archiveCount, lockedMembers, wheelSlots] = await Promise.all([
+  const [members, weeks, recentLogs, archiveCount, lockedMembers, wheelSlots, allPayouts] = await Promise.all([
     db.member.findMany({ where: { isArchived: false }, orderBy: { wheelNumber: "asc" } }),
     db.week.findMany({ orderBy: { weekNumber: "asc" } }),
     db.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
@@ -32,11 +32,11 @@ export default async function AdminDashboard() {
       orderBy: { pinLockedUntil: "asc" },
     }),
     db.wheelSlot.findMany({ orderBy: { position: "asc" } }),
+    db.weekPayout.findMany({ select: { number: true, status: true, weekId: true } }),
   ]);
 
-  const drawnNumbers = new Set(
-    weeks.filter((w) => w.winnerWheelNumber != null).map((w) => w.winnerWheelNumber!)
-  );
+  // drawnNumbers sourced from WeekPayout rows — includes all drawn numbers (merged slots, catch-up draws)
+  const drawnNumbers = new Set(allPayouts.map((p) => p.number));
   const availableNumbers = getAvailableWheelEntries(members, drawnNumbers);
   const eligibleWheelSlots = wheelSlots.filter((s) =>
     s.numbers.every((n) => !drawnNumbers.has(n))
@@ -69,7 +69,12 @@ export default async function AdminDashboard() {
     : 0;
 
   const currentWeekRow = weeks.find((w) => w.weekNumber === currentWeekNum);
-  const winningNumber = currentWeekRow?.winnerWheelNumber ?? null;
+  // Use WeekPayout rows to determine drawn numbers for the current week — supports
+  // multi-winner weeks (all drawn numbers, not just winnerWheelNumber compat field).
+  const currentWeekPayouts = currentWeekRow
+    ? allPayouts.filter((p) => p.weekId === currentWeekRow.id)
+    : [];
+  const winningNumber = currentWeekPayouts[0]?.number ?? null;
   const nextPayoutMember =
     winningNumber != null
       ? members.find(
@@ -90,7 +95,7 @@ export default async function AdminDashboard() {
     ? TOTAL_WEEKS
     : Math.max(0, TOTAL_WEEKS - currentWeekNum + 1);
 
-  const collectionsDone = weeks.filter((w) => w.payoutStatus === "COLLECTED").length;
+  const collectionsDone = allPayouts.filter((p) => p.status === "COLLECTED").length;
   const numbersOnWheel = availableNumbers.length;
 
   const logDotColor = (type: string) =>

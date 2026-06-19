@@ -15,11 +15,15 @@ export async function endEqub(
   const newStartDate = new Date(rawDate + "T00:00:00.000Z");
   if (isNaN(newStartDate.getTime())) return { error: "Invalid date." };
 
-  // Verify all collections are confirmed
-  const collectionsDone = await db.week.count({ where: { payoutStatus: "COLLECTED" } });
-  if (collectionsDone < TOTAL_WEEKS) {
+  // Verify all WeekPayout rows are COLLECTED (counts per lucky number, not per week,
+  // so a week with 2 drawn numbers requires both to be confirmed before ending).
+  const [totalPayoutCount, collectionsDone] = await Promise.all([
+    db.weekPayout.count(),
+    db.weekPayout.count({ where: { status: "COLLECTED" } }),
+  ]);
+  if (collectionsDone < totalPayoutCount) {
     return {
-      error: `Only ${collectionsDone} of ${TOTAL_WEEKS} collections are confirmed. All payouts must be collected before ending the Equb.`,
+      error: `Only ${collectionsDone} of ${totalPayoutCount} collections are confirmed. All payouts must be collected before ending the Equb.`,
     };
   }
 

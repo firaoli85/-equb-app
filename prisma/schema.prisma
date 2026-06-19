@@ -39,6 +39,7 @@ model Member {
   payments              Payment[]
   reviewRequests        PaymentReviewRequest[]
   sessions              MemberSession[]
+  weekPayouts           WeekPayout[]
 
   @@map("members")
 }
@@ -50,11 +51,13 @@ model Week {
   isSkipped         Boolean          @default(false)
   notes             String?
   winnerWheelNumber Int?
+  winnerNumbers     Int[]            @default([])
   payoutStatus      PayoutStatus?
   payoutMethod      CollectionMethod?
   payoutNotes       String?
   payments          Payment[]
   reviewRequests    PaymentReviewRequest[]
+  payouts           WeekPayout[]
 
   @@map("weeks")
 }
@@ -160,6 +163,21 @@ enum CollectionMethod {
   BOTH
 }
 
+enum PayoutMethod {
+  CASH
+  ZELLE
+  BOTH
+  CASHAPP
+  VENMO
+  BANK
+  OTHER
+}
+
+enum WheelType {
+  MAIN
+  EXTRA
+}
+
 enum ReviewStatus {
   PENDING
   APPROVED
@@ -179,4 +197,28 @@ model WheelConfig {
   priorityNumbers Int[] @default([])
 
   @@map("wheel_config")
+}
+
+model WeekPayout {
+  id          String        @id @default(cuid())
+  weekId      String
+  memberId    String?
+  number      Int
+  wheelType   WheelType     @default(MAIN)
+  amount      Decimal?      @db.Decimal(12, 2)
+  status      PayoutStatus  @default(PENDING)
+  method      PayoutMethod?
+  notes       String?
+  collectedAt DateTime?
+  signedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  week        Week          @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  member      Member?       @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@unique([weekId, number])
+  @@index([weekId])
+  @@index([memberId])
+  @@index([status])
+  @@map("week_payouts")
 }

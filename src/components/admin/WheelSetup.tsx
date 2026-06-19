@@ -323,9 +323,7 @@ export function WheelSetup({
 
   const saveSlotsBlockReason = anyEmptyUnlocked
     ? "One or more slots are empty — add a number or remove the empty slot before saving."
-    : anyOverCap
-      ? "One or more slots exceed $1,000/week — rearrange before saving."
-      : null;
+    : null;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -605,6 +603,11 @@ export function WheelSetup({
             {saveSlotsBlockReason && (
               <p className="text-sm text-red-600 dark:text-red-400 font-medium">
                 {saveSlotsBlockReason}
+              </p>
+            )}
+            {!saveSlotsBlockReason && anyOverCap && (
+              <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">
+                ⚠ One or more slots exceed $1,000/week — allowed, but double-check this is intended.
               </p>
             )}
             {slotStatus?.error && (

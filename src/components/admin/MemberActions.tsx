@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { deleteMember, suspendFromWheel, reinstateToWheel } from "@/actions/members";
+import { deleteMember, suspendFromWheel, reinstateToWheel, regenerateToken } from "@/actions/members";
 import { ReplaceMemberModal } from "@/components/admin/ReplaceMemberModal";
 
 export function MemberActions({
@@ -32,6 +32,11 @@ export function MemberActions({
 
   function handleReinstate() {
     startTransition(() => reinstateToWheel(memberId));
+  }
+
+  function handleRotateLink() {
+    if (!confirm(`Rotate ${memberName}'s member link? This invalidates their current link and signs them out of all devices. They must use the new link to log in.`)) return;
+    startTransition(() => regenerateToken(memberId));
   }
 
   return (
@@ -65,6 +70,13 @@ export function MemberActions({
           Suspend
         </button>
       )}
+      <button
+        onClick={handleRotateLink}
+        disabled={isPending}
+        className="text-xs text-gray-400 dark:text-gray-500 hover:text-purple-500 dark:hover:text-purple-400 transition-colors disabled:opacity-50 font-medium"
+      >
+        Rotate Link
+      </button>
       <button
         onClick={handleDelete}
         disabled={isPending}

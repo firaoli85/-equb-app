@@ -44,11 +44,14 @@ export async function GET(
 
   const targetWheelNumber = isExtra ? member.extraWheelNumber! : member.wheelNumber;
 
-  const winnerWeek = await db.week.findFirst({
-    where: { winnerWheelNumber: targetWheelNumber },
+  // Look up via WeekPayout — supports secondary winners whose lucky number is not
+  // the week's winnerWheelNumber compat field (e.g. #13 in a week where #5 was primary).
+  const winnerPayout = await db.weekPayout.findFirst({
+    where: { memberId: member.id, number: targetWheelNumber },
+    include: { week: true },
   });
 
-  if (!winnerWeek)
+  if (!winnerPayout)
     return new Response("No winning week found", { status: 400 });
 
   const weeklyAmountCents = isExtra
@@ -74,11 +77,12 @@ export async function GET(
     memberNameAmharic: member.nameAmharic,
     memberNameEnglish,
     wheelNumber: targetWheelNumber,
-    winnerWheelNumber: winnerWeek.winnerWheelNumber!,
+    luckyNumber: targetWheelNumber,
+    payoutWeekNumber: winnerPayout.week.weekNumber,
     weeklyAmountCents,
     netCents: net,
     feeCents: fee,
-    payoutDate: formatDate(winnerWeek.date),
+    payoutDate: formatDate(winnerPayout.week.date),
     remainingWeeks,
     collectionConfirmedAt: confirmedAt,
     collectionConfirmedIp: confirmedIp,
