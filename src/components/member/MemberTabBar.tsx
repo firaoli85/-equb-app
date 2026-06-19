@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -49,9 +49,55 @@ export function MemberTabBar({ token }: { token: string }) {
   const pathname = usePathname();
   const base = `/m/${token}`;
 
-  // Portal guard — createPortal requires document.body, which doesn't exist on the server.
+  // Portal guard — createPortal requires document.body (not available during SSR).
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+
+  // Ref to the portaled nav so we can set its `bottom` imperatively from the
+  // VisualViewport effect without triggering a React re-render on every scroll.
+  const navRef = useRef<HTMLElement>(null);
+
+  // ── VisualViewport anchor ──────────────────────────────────────────────────
+  // iOS Safari's dynamic toolbar changes the *visual* viewport height while the
+  // *layout* viewport (used by `position:fixed; bottom:0`) stays constant.
+  // The gap between the two bottoms is exactly how far the bar drifts.
+  //
+  // Formula:
+  //   offset = layoutViewportHeight − (vv.height + vv.offsetTop)
+  //          = how many px the visual-viewport bottom sits above the layout-viewport bottom
+  //
+  // Setting `nav.style.bottom = offset + "px"` keeps the bar glued to the
+  // visible screen bottom as the toolbar slides in/out.
+  //
+  // On Chrome: vv.height ≈ clientHeight, vv.offsetTop ≈ 0 → offset ≈ 0 → bottom:0 (no change).
+  // Fallback: if VisualViewport API is absent, the CSS `bottom-0` class stays in effect.
+  useEffect(() => {
+    const nav = navRef.current;
+    const vv  = window.visualViewport;   // null on very old browsers
+    if (!nav || !vv) return;
+
+    let rafId = 0;
+
+    function update() {
+      // cancelAnimationFrame(0) is a safe no-op; subsequent calls cancel the
+      // previous pending frame so at most one update fires per animation frame.
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const offset = document.documentElement.clientHeight - (vv!.height + vv!.offsetTop);
+        nav!.style.bottom = `${Math.max(0, offset)}px`;
+      });
+    }
+
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    update(); // set correct position immediately on mount
+
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+      cancelAnimationFrame(rafId);
+    };
+  }, []); // runs once after mount; nav and vv refs are stable
 
   function isActive(suffix: string) {
     const href = `${base}${suffix}`;
@@ -60,20 +106,14 @@ export function MemberTabBar({ token }: { token: string }) {
 
   if (!mounted) return null;
 
-  // Portaling to document.body escapes any ancestor transform / backdrop-filter
-  // containing-block trap and guarantees true viewport-fixed positioning.
+  // Portaled to document.body to escape any ancestor containing-block trap.
+  // CSS `bottom-0` is the no-JS fallback; the VisualViewport effect overrides
+  // `style.bottom` in real time when the API is available.
   return createPortal(
     <nav
-      // md:hidden — hidden at ≥768px; safe-area padding for iPhone home indicator
+      ref={navRef}
       className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/60"
-      style={{
-        paddingBottom: "env(safe-area-inset-bottom)",
-        // Promote to a GPU compositing layer so Safari anchors the bar to the
-        // visual viewport rather than the layout viewport. This prevents the
-        // bar from drifting when Safari's dynamic toolbar slides in/out on scroll.
-        transform: "translateZ(0)",
-        willChange: "transform",
-      }}
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Primary navigation"
     >
       <div className="grid grid-cols-4 h-14">
@@ -88,7 +128,6 @@ export function MemberTabBar({ token }: { token: string }) {
               aria-label={tab.label}
               aria-current={active ? "page" : undefined}
             >
-              {/* Icon inside a subtle pill that lights up when active */}
               <span
                 className={`flex items-center justify-center w-10 h-[26px] rounded-full transition-colors ${
                   active ? "bg-indigo-50 dark:bg-indigo-950/60" : ""
@@ -96,8 +135,6 @@ export function MemberTabBar({ token }: { token: string }) {
               >
                 <TabIcon suffix={tab.suffix} active={active} />
               </span>
-
-              {/* Label */}
               <span
                 className={`text-[10px] font-semibold leading-none transition-colors ${
                   active
