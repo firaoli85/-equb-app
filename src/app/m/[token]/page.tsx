@@ -12,32 +12,15 @@ import {
   mainWheelWeekly,
   extraWheelWeekly,
   TOTAL_WEEKS,
-  EQUB_START,  // fallback for week1Date when no payments loaded yet
+  EQUB_START,
 } from "@/lib/equb";
-import { statusColor, paymentMethodLabel, PaymentStatus } from "@/lib/utils";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { ConfirmAgreement } from "@/components/member/ConfirmAgreement";
 import { ConfirmCollectionReceipt } from "@/components/member/ConfirmCollectionReceipt";
-import { NameToggle } from "@/components/member/NameToggle";
 import { AutoRefresh } from "@/components/member/AutoRefresh";
-
-const ROW_STYLE: Record<string, string> = {
-  PAID:     "bg-emerald-200 dark:bg-emerald-900/70 border-l-4 border-l-emerald-600",
-  LATE:     "bg-red-200 dark:bg-red-900/70 border-l-4 border-l-red-600",
-  DEFERRED: "bg-orange-200 dark:bg-orange-900/70 border-l-4 border-l-orange-600",
-  PARTIAL:  "bg-blue-200 dark:bg-blue-900/70 border-l-4 border-l-blue-600",
-  PENDING:  "bg-gray-50 dark:bg-gray-900 border-l-4 border-dashed border-l-gray-400",
-};
-
-function statusBadgeLabel(status: PaymentStatus): string {
-  return {
-    PAID:     "✓ Paid",
-    LATE:     "⚠ Late",
-    DEFERRED: "⏸ Deferred",
-    PARTIAL:  "◑ Partial",
-    PENDING:  "⏳ Pending",
-  }[status];
-}
+import { WeekStampList, type StampWeek } from "@/components/member/WeekStampList";
+import { EqubCalendar, type CalendarWeek } from "@/components/member/EqubCalendar";
 
 export default async function MemberView({
   params,
@@ -60,7 +43,6 @@ export default async function MemberView({
 
   const memberNameEnglish = member.nameEnglishFirst || member.nameAmharic;
 
-  // ── Gate: show participation agreement before anything else ───────────────
   if (!member.confirmedAt) {
     return (
       <ConfirmAgreement
@@ -74,8 +56,8 @@ export default async function MemberView({
 
   const hasExtra = member.extraWheelNumber !== null;
 
-  // ── Per-wheel amounts ─────────────────────────────────────────────────────
-  const mainWeekly = mainWheelWeekly(member.weeklyAmount, hasExtra);
+  // ── Per-wheel amounts ─────────────────────────────────────────────────
+  const mainWeekly  = mainWheelWeekly(member.weeklyAmount, hasExtra);
   const extraWeekly = hasExtra ? extraWheelWeekly(member.weeklyAmount) : 0;
 
   const mainGross = calculateMemberGross(mainWeekly);
@@ -86,150 +68,92 @@ export default async function MemberView({
   const extraFee   = hasExtra ? calculateMemberFee(extraWeekly) : 0;
   const extraNet   = hasExtra ? calculateNetPayout(extraGross, extraFee) : 0;
 
-  // ── Stats queries ─────────────────────────────────────────────────────────
-  // memberPayouts: this member's own WeekPayout rows (source of truth for whether
-  //   their numbers have been drawn and which payout corresponds to each wheel).
-  // allWeekPayouts: every WeekPayout row for global stats + payment table highlights.
-  const [memberPayouts, allWeekPayouts, allMembersWheels] = await Promise.all([
-    db.weekPayout.findMany({
-      where: { memberId: member.id },
-      include: { week: { select: { weekNumber: true, date: true } } },
-    }),
-    db.weekPayout.findMany({ select: { number: true, status: true } }),
-    db.member.findMany({
-      select: { wheelNumber: true, extraWheelNumber: true, wheelSuspended: true },
-    }),
-  ]);
+  // ── WeekPayout rows ───────────────────────────────────────────────────
+  const memberPayouts = await db.weekPayout.findMany({
+    where: { memberId: member.id },
+    include: { week: { select: { weekNumber: true, date: true } } },
+  });
 
-  // Global drawn set: every lucky number that has a WeekPayout row (drawn anywhere)
-  const globalDrawnSet = new Set(allWeekPayouts.map((p) => p.number));
-  const collectionsCount = globalDrawnSet.size;
-
-  let wheelEntriesRemaining = 0;
-  for (const m of allMembersWheels) {
-    if (m.wheelSuspended) continue;
-    if (!globalDrawnSet.has(m.wheelNumber)) wheelEntriesRemaining++;
-    if (m.extraWheelNumber !== null && !globalDrawnSet.has(m.extraWheelNumber)) wheelEntriesRemaining++;
-  }
-
-  const week1Date = member.payments.find((p) => p.week.weekNumber === 1)?.week.date ?? EQUB_START;
+  const week1Date      = member.payments.find((p) => p.week.weekNumber === 1)?.week.date ?? EQUB_START;
   const currentWeekNum = getCurrentWeekNumber(week1Date);
-  const currentWeekPayment = member.payments.find((p) => p.week.weekNumber === currentWeekNum);
-  const currentWeekDate = currentWeekPayment ? formatDate(currentWeekPayment.week.date) : null;
-  const weeksRemaining = Math.max(0, TOTAL_WEEKS - currentWeekNum);
 
-  // ── Per-wheel payout lookup — WeekPayout rows for this member ────────────
-  // wheelType MAIN → member's primary lucky number; EXTRA → extra lucky number.
   const mainPayout  = memberPayouts.find((p) => p.wheelType === "MAIN")  ?? null;
-  const extraPayout = hasExtra
-    ? memberPayouts.find((p) => p.wheelType === "EXTRA") ?? null
-    : null;
+  const extraPayout = hasExtra ? (memberPayouts.find((p) => p.wheelType === "EXTRA") ?? null) : null;
 
-  const paidCount  = member.payments.filter((p) => p.status === "PAID").length;
-  const progressPct = Math.round((paidCount / TOTAL_WEEKS) * 100);
+  // ── Payment standing ──────────────────────────────────────────────────
+  const paidCount     = member.payments.filter((p) => p.status === "PAID").length;
+  const lateCount     = member.payments.filter((p) => p.status === "LATE").length;
+  const deferredCount = member.payments.filter((p) => p.status === "DEFERRED").length;
+  const partialCount  = member.payments.filter((p) => p.status === "PARTIAL").length;
+  const behindCount   = lateCount + deferredCount + partialCount;
+
+  const owedCents =
+    (lateCount + deferredCount) * member.weeklyAmount +
+    member.payments
+      .filter((p) => p.status === "PARTIAL" && p.paidAmount != null)
+      .reduce((sum, p) => sum + (member.weeklyAmount - p.paidAmount!), 0);
+  const owedDollars = Math.round(owedCents / 100);
+
   const remainingWeeks = TOTAL_WEEKS - paidCount;
 
-  // ── Payout week date for the payment table annotation ────────────────────
-  const mainPayoutDate = mainPayout ? formatDate(mainPayout.week.date) : "TBD";
+  // ── Scroll-stamp list (dates pre-formatted for serialisation) ─────────
+  const stampWeeks: StampWeek[] = member.payments.map((p) => ({
+    id:                p.id,
+    weekNumber:        p.week.weekNumber,
+    date:              formatDate(p.week.date),
+    status:            p.status as StampWeek["status"],
+    isMainPayoutWeek:  mainPayout?.week.weekNumber === p.week.weekNumber,
+    isExtraPayoutWeek: extraPayout?.week.weekNumber === p.week.weekNumber,
+  }));
 
-  // ── Status helpers ────────────────────────────────────────────────────────
-  function wheelStatusBadge(hasPayout: boolean, confirmed: boolean) {
-    if (!hasPayout) return { label: "Pending Draw",    cls: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400" };
-    if (confirmed)  return { label: "Collected",       cls: "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" };
-    return          { label: "Pending Signature",      cls: "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800" };
-  }
+  // ── Hero card state ───────────────────────────────────────────────────
+  const heroAmount =
+    mainPayout?.amount
+      ? formatCurrency(Math.round(Number(mainPayout.amount) * 100))
+      : formatCurrency(mainNet);
 
-  const mainStatus  = wheelStatusBadge(mainPayout !== null,  !!member.collectionConfirmedAt);
-  const extraStatus = hasExtra ? wheelStatusBadge(extraPayout !== null, !!member.collectionConfirmedAtExtra) : null;
+  const heroLabel =
+    mainPayout && member.collectionConfirmedAt
+      ? `Received Wk ${mainPayout.week.weekNumber} · ${formatDate(mainPayout.week.date)}`
+      : mainPayout
+      ? "Payout Ready to Sign"
+      : hasExtra
+      ? "Main Wheel Net Payout"
+      : "Your Net Payout";
+
+  // ── Calendar data ─────────────────────────────────────────────────────
+  const calendarWeeks: CalendarWeek[] = member.payments.map((p) => ({
+    weekNumber: p.week.weekNumber,
+    date:       p.week.date.toISOString().slice(0, 10),
+    status:     p.status as CalendarWeek["status"],
+  }));
+
+  const equbMonths = [
+    ...new Set(member.payments.map((p) => p.week.date.toISOString().slice(0, 7))),
+  ].sort();
+  const nowMonth = new Date().toISOString().slice(0, 7);
+  const defaultCalMonth: string =
+    equbMonths.length === 0
+      ? nowMonth
+      : equbMonths.includes(nowMonth)
+      ? nowMonth
+      : equbMonths.reduce((prev, curr) =>
+          Math.abs(new Date(curr + "-01").getTime() - Date.now()) <
+          Math.abs(new Date(prev + "-01").getTime() - Date.now())
+            ? curr
+            : prev
+        );
+
+  // ── Documents count (agreement + signed receipts) ─────────────────────
+  const docsCount =
+    1 +
+    (mainPayout != null && member.collectionConfirmedAt != null ? 1 : 0) +
+    (hasExtra && extraPayout != null && member.collectionConfirmedAtExtra != null ? 1 : 0);
 
   return (
-    <div className="max-w-lg mx-auto px-4 pt-8 pb-8 space-y-5">
-      <style>{`
-        @keyframes shimmer {
-          0% { opacity: 1; }
-          50% { opacity: 0.7; background-color: rgba(52, 211, 153, 0.3); }
-          100% { opacity: 1; }
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-3px); }
-          75% { transform: translateX(3px); }
-        }
-      `}</style>
+    <div className="max-w-lg mx-auto px-4 pt-6 pb-10 space-y-4">
 
-      {/* ── Stats section ──────────────────────────────────────────────────── */}
-      <div className="space-y-3">
-
-        {/* Hero card: Target Pot */}
-        <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-5 py-5 shadow-sm flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Target Pot</p>
-            <p className="text-4xl font-black text-emerald-600 dark:text-emerald-400 leading-none">$20,000</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">20-week rotating savings group</p>
-          </div>
-          <div className="shrink-0 w-14 h-14 bg-emerald-50 dark:bg-emerald-950/60 rounded-2xl flex items-center justify-center border border-emerald-100 dark:border-emerald-900">
-            <svg className="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-
-        {/* 2×2 stat cards */}
-        <div className="grid grid-cols-2 gap-3">
-
-          {/* Starts */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Starts</p>
-            <p className="text-base font-black text-gray-900 dark:text-white leading-snug">{formatDate(week1Date)}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {currentWeekNum === 0 ? "Not yet started" : `Week ${currentWeekNum} active`}
-            </p>
-          </div>
-
-          {/* Weeks Remaining */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Weeks Left</p>
-            <div className="flex items-baseline gap-1">
-              <p className="text-3xl font-black text-gray-900 dark:text-white leading-none">{weeksRemaining}</p>
-              <p className="text-sm font-bold text-gray-500 dark:text-gray-400">of {TOTAL_WEEKS}</p>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">remaining</p>
-          </div>
-
-          {/* Collected */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">Collected</p>
-            <div className="flex items-baseline gap-1">
-              <p className="text-3xl font-black text-gray-900 dark:text-white leading-none">{collectionsCount}</p>
-              <p className="text-sm font-bold text-gray-500 dark:text-gray-400">of {TOTAL_WEEKS}</p>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">payouts issued</p>
-          </div>
-
-          {/* On Draw */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 px-4 py-4 shadow-sm">
-            <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-2">On Draw</p>
-            <p className="text-3xl font-black text-gray-900 dark:text-white leading-none">{wheelEntriesRemaining}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">entries remaining</p>
-          </div>
-
-        </div>
-      </div>
-
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="text-center animate-fade-in-up">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-100 dark:bg-emerald-950 rounded-2xl mb-3">
-          <svg className="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Your Equb Summary</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">20-Week Rotating Savings</p>
-      </div>
-
-      {/* ── Collection receipt confirmations ────────────────────────────────
-           Shown when this member's number has a WeekPayout row (drawn) and
-           they haven't signed yet. Independent of admin's Collected status. */}
+      {/* ── Collection receipt confirmations ──────────────────────────────── */}
       {mainPayout && !member.collectionConfirmedAt && (
         <ConfirmCollectionReceipt
           token={member.token}
@@ -267,357 +191,228 @@ export default async function MemberView({
         />
       )}
 
-      {/* ── Member card ────────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-1">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white truncate">{getDisplayName(member)}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              Weekly contribution:{" "}
-              <span className="font-semibold text-gray-700 dark:text-gray-200">
-                {formatCurrency(member.weeklyAmount)}
-              </span>
-            </p>
-            <div className="mt-2">
-              <NameToggle token={member.token} current={member.displayPreference} />
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <span className="bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 text-sm font-bold px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-              Lucky #{member.wheelNumber}
-            </span>
-            {member.extraWheelNumber && (
-              <span className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 text-xs font-bold px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800">
-                + Lucky #{member.extraWheelNumber}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* ── Hero card ────────────────────────────────────────────────────── */}
+      <div
+        className="rounded-2xl p-6 animate-fade-in-up"
+        style={{ background: "var(--hero-bg)", boxShadow: "var(--hero-shadow)" }}
+      >
+        {/* Member name — always visible, respects language preference */}
+        <h2 className="text-lg font-bold text-blue-900 dark:text-white mb-4 truncate">
+          {getDisplayName(member)}
+        </h2>
 
-      {/* ── Payout cards ───────────────────────────────────────────────────── */}
-
-      {/* Card 1: Main wheel entry */}
-      <PayoutCard
-        label="Main Wheel Entry"
-        wheelNumber={member.wheelNumber}
-        weeklyAmount={mainWeekly}
-        gross={mainGross}
-        fee={mainFee}
-        net={mainNet}
-        payoutDate={mainPayoutDate}
-        status={mainStatus}
-        confirmedAt={member.collectionConfirmedAt}
-        pdfHref={mainPayout && member.collectionConfirmedAt ? `/api/collection-receipt/${member.token}` : null}
-      />
-
-      {/* Card 2: Extra wheel entry */}
-      {hasExtra && member.extraWheelNumber && (
-        <PayoutCard
-          label="Extra Lucky Entry"
-          wheelNumber={member.extraWheelNumber}
-          weeklyAmount={extraWeekly}
-          gross={extraGross}
-          fee={extraFee}
-          net={extraNet}
-          payoutDate={extraPayout ? formatDate(extraPayout.week.date) : "TBD"}
-          status={extraStatus!}
-          confirmedAt={member.collectionConfirmedAtExtra}
-          pdfHref={extraPayout && member.collectionConfirmedAtExtra ? `/api/collection-receipt/${member.token}?wheel=extra` : null}
-          accent="blue"
-        />
-      )}
-
-      {/* Card 3: Combined total (only when has extra wheel) */}
-      {hasExtra && (
-        <div className="bg-gray-900 dark:bg-gray-950 rounded-2xl p-6 shadow-sm border border-gray-700 dark:border-gray-800">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Combined Total</p>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-xs text-gray-500 mb-0.5">Total Gross</p>
-              <p className="text-base font-bold text-white">{formatCurrency(mainGross + extraGross)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-0.5">Total Fees</p>
-              <p className="text-base font-bold text-amber-400">−{formatCurrency(mainFee + extraFee)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-0.5">Total Net</p>
-              <p className="text-xl font-black text-emerald-400">{formatCurrency(mainNet + extraNet)}</p>
-            </div>
-          </div>
-          <p className="text-xs text-gray-600 mt-3">
-            {formatCurrency(member.weeklyAmount)}/week × {TOTAL_WEEKS} weeks
-          </p>
-        </div>
-      )}
-
-      {/* ── Progress ───────────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm animate-fade-in-up-3">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-5 text-center">Payment Progress</h3>
-        <div className="flex flex-col items-center gap-3">
-          <div className="relative w-32 h-32">
-            <svg viewBox="0 0 100 100" className="w-full h-full" style={{ transform: "rotate(-90deg)" }}>
-              <circle
-                cx="50" cy="50" r="38"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="8"
-                className="text-gray-100 dark:text-gray-800"
-              />
-              {progressPct > 0 && (
-                <circle
-                  cx="50" cy="50" r="38"
-                  fill="none"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  stroke="currentColor"
-                  className={progressPct < 50 ? "text-amber-500" : "text-emerald-500"}
-                  style={{
-                    strokeDasharray: `${2 * Math.PI * 38}`,
-                    strokeDashoffset: `${2 * Math.PI * 38 * (1 - progressPct / 100)}`,
-                    transition: "stroke-dashoffset 0.8s ease",
-                  }}
-                />
-              )}
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-black text-gray-900 dark:text-white leading-none">{progressPct}%</span>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {paidCount} of {TOTAL_WEEKS} weeks paid
-          </p>
-        </div>
-      </div>
-
-      {/* ── Documents ──────────────────────────────────────────────────────── */}
-      <div className="space-y-3 animate-fade-in-up-4">
-        {/* Participation Agreement */}
-        <div className="bg-white dark:bg-[#141414] border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-950 rounded-full flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Participation Agreement Signed</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {new Date(member.confirmedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC
-              </p>
-            </div>
-          </div>
-          <a href={`/api/receipt/${member.token}`} className="shrink-0 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
-            Download PDF
-          </a>
-        </div>
-
-        {/* Main wheel collection receipt */}
-        {mainPayout && member.collectionConfirmedAt && (
-          <div className="bg-white dark:bg-[#141414] border border-blue-200 dark:border-blue-800 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-100 dark:bg-blue-950 rounded-full flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  Collection Receipt Signed — Lucky #{member.wheelNumber}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  {new Date(member.collectionConfirmedAt).toLocaleString("en-US", { timeZone: "UTC" })} UTC
-                </p>
-              </div>
-            </div>
-            <a href={`/api/collection-receipt/${member.token}`} className="shrink-0 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
-              Download PDF
-            </a>
-          </div>
-        )}
-
-        {/* Extra wheel collection receipt */}
-        {hasExtra && extraPayout && member.collectionConfirmedAtExtra && (
-          <div className="bg-white dark:bg-[#141414] border border-purple-200 dark:border-purple-800 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-purple-100 dark:bg-purple-950 rounded-full flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  Extra Lucky Receipt Signed — Lucky #{member.extraWheelNumber}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  {new Date(member.collectionConfirmedAtExtra).toLocaleString("en-US", { timeZone: "UTC" })} UTC
-                </p>
-              </div>
-            </div>
-            <a href={`/api/collection-receipt/${member.token}?wheel=extra`} className="shrink-0 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
-              Download PDF
-            </a>
-          </div>
-        )}
-      </div>
-
-      {/* ── Payment table ──────────────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm animate-fade-in-up-4">
-        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">20-Week Payment Schedule</h3>
-        </div>
-        <div className="divide-y divide-gray-50 dark:divide-gray-800/60">
-          {member.payments.map((p) => {
-            const isMainWeek  = mainPayout  != null && p.week.weekNumber === mainPayout.week.weekNumber;
-            const isExtraWeek = extraPayout != null && p.week.weekNumber === extraPayout.week.weekNumber;
-            const rowStyle =
-                  isMainWeek  ? "bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-l-emerald-500" :
-                  isExtraWeek ? "bg-blue-50 dark:bg-blue-950/30 border-l-4 border-l-blue-400" :
-                  (ROW_STYLE[p.status] ?? ROW_STYLE.PENDING);
-            const rowAnimation = isMainWeek || isExtraWeek ? undefined :
-                  p.status === "PAID" ? { animation: "shimmer 1.5s ease-in-out 2" } :
-                  p.status === "LATE" ? { animation: "shake 0.4s ease-in-out 1" } :
-                  undefined;
-            return (
-              <div key={p.id} className={`transition-colors ${rowStyle}`} style={rowAnimation}>
-                <div className="flex items-center gap-3 px-5 py-3">
-                  <div className="w-7 text-xs text-gray-500 dark:text-gray-400 text-center font-mono shrink-0">
-                    {p.week.weekNumber}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{formatDate(p.week.date)}</p>
-                    {isMainWeek && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">★ Main wheel payout week</p>}
-                    {isExtraWeek && <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">★ Extra wheel payout week</p>}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {p.method && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{paymentMethodLabel(p.method as "CASH" | "ZELLE" | "OTHER")}</span>
-                    )}
-                    {p.status === "PAID" ? (
-                      <span
-                        className={`text-sm px-2.5 py-0.5 rounded-full shadow-sm ${statusColor(p.status as PaymentStatus)}`}
-                        style={{ animation: "pulse 0.8s ease-in-out 2" }}
-                      >
-                        ⭐ Paid
-                      </span>
-                    ) : (
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full ${statusColor(p.status as PaymentStatus)}`}>
-                        {statusBadgeLabel(p.status as PaymentStatus)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                {p.status === "PARTIAL" && p.paidAmount != null && (
-                  <div className="px-5 pb-3">
-                    <div className="flex gap-4 mb-1">
-                      <span className="text-sm font-bold text-emerald-700">
-                        Paid {formatCurrency(p.paidAmount)}
-                      </span>
-                      <span className="text-sm font-bold text-red-600">
-                        Still owe {formatCurrency(member.weeklyAmount - p.paidAmount)}
-                      </span>
-                    </div>
-                    <div className="h-2.5 rounded-full bg-blue-200 dark:bg-blue-900 overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, Math.round((p.paidAmount / member.weeklyAmount) * 100))}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {Math.round((p.paidAmount / member.weeklyAmount) * 100)}% paid
-                    </p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        <AutoRefresh />
-      </div>
-
-    </div>
-  );
-}
-
-// ── PayoutCard component ──────────────────────────────────────────────────────
-
-function PayoutCard({
-  label,
-  wheelNumber,
-  weeklyAmount,
-  gross,
-  fee,
-  net,
-  payoutDate,
-  status,
-  confirmedAt,
-  pdfHref,
-  accent = "emerald",
-}: {
-  label: string;
-  wheelNumber: number;
-  weeklyAmount: number;
-  gross: number;
-  fee: number;
-  net: number;
-  payoutDate: string;
-  status: { label: string; cls: string };
-  confirmedAt: Date | null;
-  pdfHref: string | null;
-  accent?: "emerald" | "blue";
-}) {
-  const bg = accent === "blue"
-    ? "bg-blue-600"
-    : "bg-emerald-600";
-
-  return (
-    <div className={`${bg} rounded-2xl p-6 shadow-sm`}>
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="text-xs font-bold text-white/60 uppercase tracking-widest">{label}</p>
-          <p className="text-sm font-bold text-white mt-0.5">Lucky #{wheelNumber}</p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.cls}`}>
-            {status.label}
+        {/* Lucky number badge + draw state */}
+        <div className="flex items-center justify-between mb-5">
+          <span
+            className="text-xs font-bold px-3 py-1.5 rounded-full"
+            style={{
+              background: "var(--gold-badge-bg)",
+              border: "1px solid var(--gold-badge-border)",
+              color: "var(--gold-badge-text)",
+              letterSpacing: "0.02em",
+            }}
+          >
+            Lucky #{member.wheelNumber}
           </span>
-          {confirmedAt && pdfHref && (
-            <a
-              href={pdfHref}
-              className="text-xs text-white/70 hover:text-white underline underline-offset-2 transition-colors"
-            >
-              Download PDF
-            </a>
+
+          {mainPayout && member.collectionConfirmedAt ? (
+            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-white/50 dark:bg-white/10 px-2.5 py-1 rounded-full">
+              <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
+              </svg>
+              Received
+            </span>
+          ) : mainPayout ? (
+            <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 bg-white/50 dark:bg-white/10 px-2.5 py-1 rounded-full">
+              Pending Signature
+            </span>
+          ) : (
+            <span className="text-[11px] font-bold text-blue-900 dark:text-indigo-300 bg-white/50 dark:bg-white/10 px-2.5 py-1 rounded-full">
+              In the draw
+            </span>
           )}
         </div>
+
+        {/* Label + big Fraunces amount */}
+        <div>
+          <p className="text-[11px] font-semibold text-blue-900/60 dark:text-white/50 uppercase tracking-widest mb-1">
+            {heroLabel}
+          </p>
+          <p
+            className="font-fraunces tabular-nums leading-none"
+            style={{
+              fontSize: "clamp(2.5rem, 10vw, 3.25rem)",
+              fontWeight: 900,
+              color: "var(--hero-amount-accent)",
+            }}
+          >
+            {heroAmount}
+          </p>
+          {!mainPayout && (
+            <p className="text-xs text-blue-900/50 dark:text-white/40 mt-1">
+              Yours when #{member.wheelNumber} is drawn · after {formatCurrency(mainFee)} fee
+            </p>
+          )}
+          {mainPayout && !member.collectionConfirmedAt && (
+            <p className="text-xs text-blue-900/50 dark:text-white/40 mt-1">
+              Confirm receipt above ↑ to complete collection
+            </p>
+          )}
+        </div>
+
+        {/* Extra wheel sub-card */}
+        {hasExtra && (
+          <div className="mt-4 pt-4 border-t border-blue-300/30 dark:border-indigo-400/20">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold text-blue-900/60 dark:text-white/50 uppercase tracking-widest mb-1">
+                  Extra Wheel Net
+                </p>
+                <p
+                  className="font-fraunces text-2xl tabular-nums leading-none"
+                  style={{ fontWeight: 700, color: "var(--hero-amount-accent)" }}
+                >
+                  {extraPayout?.amount
+                    ? formatCurrency(Math.round(Number(extraPayout.amount) * 100))
+                    : formatCurrency(extraNet)}
+                </p>
+                {member.extraWheelNumber != null && (
+                  <span
+                    className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-2"
+                    style={{
+                      background: "var(--gold-badge-bg)",
+                      border: "1px solid var(--gold-badge-border)",
+                      color: "var(--gold-badge-text)",
+                    }}
+                  >
+                    Lucky #{member.extraWheelNumber}
+                  </span>
+                )}
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[11px] font-semibold text-blue-900/60 dark:text-white/50 uppercase tracking-widest mb-1">
+                  Combined Total
+                </p>
+                <p
+                  className="font-fraunces text-3xl tabular-nums leading-none"
+                  style={{ fontWeight: 900, color: "var(--hero-amount-accent)" }}
+                >
+                  {formatCurrency(mainNet + extraNet)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-xs text-white/60 mb-0.5">Weekly Portion</p>
-          <p className="text-base font-bold text-white">{formatCurrency(weeklyAmount)}</p>
-          <p className="text-xs text-white/50">× {TOTAL_WEEKS} weeks</p>
+      {/* ── Payment Standing ──────────────────────────────────────────────── */}
+      <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm animate-fade-in-up-1">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+            Payment Standing
+          </p>
+          <p className="text-xs font-semibold tabular-nums" style={{ color: "var(--accent)" }}>
+            Week {currentWeekNum} of {TOTAL_WEEKS}
+          </p>
         </div>
-        <div>
-          <p className="text-xs text-white/60 mb-0.5">Payout Date</p>
-          <p className="text-base font-bold text-white">{payoutDate}</p>
+
+        <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-4">
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{
+              width: `${Math.round((Math.min(currentWeekNum, TOTAL_WEEKS) / TOTAL_WEEKS) * 100)}%`,
+              background: "var(--accent)",
+            }}
+          />
         </div>
-        <div>
-          <p className="text-xs text-white/60 mb-0.5">Gross Payout</p>
-          <p className="text-base font-bold text-white">{formatCurrency(gross)}</p>
+
+        <div className="flex items-baseline justify-between mb-2">
+          <p className="text-xl font-black text-gray-900 dark:text-white tabular-nums">
+            {paidCount}{" "}
+            <span className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+              week{paidCount !== 1 ? "s" : ""} paid
+            </span>
+          </p>
+          {behindCount > 0 && (
+            <p className="text-sm font-bold text-red-600 dark:text-red-400 tabular-nums">
+              {behindCount} behind · ${owedDollars}
+            </p>
+          )}
         </div>
-        <div>
-          <p className="text-xs text-white/60 mb-0.5">Management Fee</p>
-          <p className="text-base font-bold text-amber-300">−{formatCurrency(fee)}</p>
+
+        <div className="flex gap-0.5 h-2 rounded-full overflow-hidden mb-4">
+          {member.payments.map((p) => (
+            <div
+              key={p.id}
+              className={`flex-1 ${p.status === "PENDING" ? "bg-gray-200 dark:bg-gray-700" : ""}`}
+              style={{
+                background:
+                  p.status === "PAID"     ? "#10b981" :
+                  p.status === "LATE"     ? "#ef4444" :
+                  p.status === "DEFERRED" ? "#f97316" :
+                  p.status === "PARTIAL"  ? "#f59e0b" :
+                  undefined,
+              }}
+            />
+          ))}
         </div>
-        <div className="col-span-2 pt-1 border-t border-white/20">
-          <p className="text-xs text-white/60 mb-0.5">Net Payout</p>
-          <p className="text-2xl font-black text-white">{formatCurrency(net)}</p>
-        </div>
+
+        <WeekStampList weeks={stampWeeks} />
       </div>
+
+      {/* ── Calendar ─────────────────────────────────────────────────────── */}
+      <EqubCalendar weeks={calendarWeeks} defaultMonth={defaultCalMonth} />
+
+      {/* ── Record rows ──────────────────────────────────────────────────── */}
+      <div className="space-y-2 animate-fade-in-up-3">
+        <Link
+          href={`/m/${member.token}/weeks`}
+          className="group flex items-center gap-3 px-4 py-4 bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition-all"
+        >
+          <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 transition-colors">
+            <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">Payment schedule</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {paidCount} of {TOTAL_WEEKS} weeks paid
+            </p>
+          </div>
+          <span className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+            {TOTAL_WEEKS} wks
+          </span>
+          <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0 group-hover:text-indigo-400 dark:group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+
+        <Link
+          href={`/m/${member.token}/documents`}
+          className="group flex items-center gap-3 px-4 py-4 bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition-all"
+        >
+          <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 transition-colors">
+            <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">Documents</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              Agreements, receipts &amp; rules
+            </p>
+          </div>
+          <span className="shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+            {docsCount}
+          </span>
+          <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 shrink-0 group-hover:text-indigo-400 dark:group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
+
+      <AutoRefresh />
     </div>
   );
 }

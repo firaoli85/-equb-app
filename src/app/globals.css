@@ -49,6 +49,11 @@
   60%  { transform: scale(1.25) rotate(5deg); opacity: 1; }
   100% { transform: scale(1)  rotate(0deg);  opacity: 1; }
 }
+@keyframes stampLand {
+  0%   { transform: scale(2.2) rotate(-12deg); opacity: 0; }
+  55%  { transform: scale(0.88) rotate(4deg);  opacity: 1; }
+  100% { transform: scale(1)    rotate(0deg);  opacity: 1; }
+}
 
 .animate-fade-in-up   { animation: fadeInUp 0.4s ease-out both; }
 .animate-fade-in-up-1 { animation: fadeInUp 0.4s ease-out 0.08s both; }
@@ -60,6 +65,7 @@
 .animate-check-bounce { animation: checkBounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 .animate-toast-in     { animation: toastIn 0.25s ease-out both; }
 .animate-toast-out    { animation: toastOut 0.2s ease-in forwards; }
+.animate-stamp-land   { animation: stampLand 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -112,6 +118,9 @@ body {
   --gold-badge-bg:       linear-gradient(160deg, #fcdf8f, #f5c451);
   --gold-badge-border:   rgba(245, 196, 81, 0.5);
   --gold-badge-text:     #3a2a05;
+  /* Week fill colors — used by WeekStampList */
+  --fill-green:          rgba(16,185,129,.22);
+  --fill-red:            rgba(239,68,68,.16);
 }
 .dark {
   --accent:              #6366f1;
@@ -125,6 +134,9 @@ body {
   --gold-badge-bg:       linear-gradient(160deg, #fcdf8f, #f5c451);
   --gold-badge-border:   rgba(245, 196, 81, 0.5);
   --gold-badge-text:     #3a2a05;
+  /* Week fill colors — more opaque on dark backgrounds */
+  --fill-green:          rgba(16,185,129,.30);
+  --fill-red:            rgba(239,68,68,.24);
 }
 
 /* ── Respect reduced-motion for all custom animation classes ─────── */
@@ -138,5 +150,6 @@ body {
   .animate-paid-flash,
   .animate-check-bounce,
   .animate-toast-in,
-  .animate-toast-out { animation: none !important; transition: none !important; }
+  .animate-toast-out,
+  .animate-stamp-land { animation: none !important; transition: none !important; }
 }

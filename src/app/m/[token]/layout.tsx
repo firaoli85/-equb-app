@@ -6,9 +6,10 @@ import {
   computeFingerprint,
   validateSession,
 } from "@/lib/member-session";
-import { getDisplayName, getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
+import { getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { NameToggle } from "@/components/member/NameToggle";
 
 export default async function MemberLayout({
   children,
@@ -53,8 +54,6 @@ export default async function MemberLayout({
     return <>{children}</>;
   }
 
-  const displayName = getDisplayName(member);
-
   const allWeeks = await db.week.findMany({
     orderBy: { weekNumber: "asc" },
     select: { id: true, weekNumber: true, date: true },
@@ -79,11 +78,9 @@ export default async function MemberLayout({
       >
         <div className="h-full max-w-5xl mx-auto px-4 flex items-center justify-between gap-2">
           <MemberDrawer token={token} eligibleWeeks={eligibleWeeks} />
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <NameToggle token={token} current={member.displayPreference} />
             <ThemeToggle />
-            <span className="text-base font-bold text-gray-800 dark:text-gray-100 hidden sm:block">
-              {displayName}
-            </span>
           </div>
         </div>
       </header>
