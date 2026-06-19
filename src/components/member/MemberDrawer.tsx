@@ -55,6 +55,8 @@ export function MemberDrawer({
   }
 
   function handleSignOut() {
+    // Clear the tally animation flag so the next login animates fresh
+    try { sessionStorage.removeItem(`equb_tally_animated_${token}`); } catch {}
     startSignOut(async () => { await memberSignOut(); });
   }
 

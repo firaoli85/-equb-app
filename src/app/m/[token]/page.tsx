@@ -357,7 +357,7 @@ export default async function MemberView({
           ))}
         </div>
 
-        <WeekStampList weeks={stampWeeks} />
+        <WeekStampList weeks={stampWeeks} sessionKey={token} />
       </div>
 
       {/* ── Calendar ─────────────────────────────────────────────────────── */}

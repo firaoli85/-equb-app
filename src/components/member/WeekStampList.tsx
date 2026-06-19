@@ -34,7 +34,15 @@ const MARK_MS  = 220;  // checkBounce animation duration
 // fill completes at FILL_MS, mark bounces in over MARK_MS, then a short settle.
 const SLOT_MS  = FILL_MS + MARK_MS + 30; // ~670ms per row
 
-export function WeekStampList({ weeks }: { weeks: StampWeek[] }) {
+export function WeekStampList({
+  weeks,
+  sessionKey,
+}: {
+  weeks: StampWeek[];
+  /** Member token — used to scope the "already animated" flag to this login session. */
+  sessionKey?: string;
+}) {
+  const storageKey = sessionKey ? `equb_tally_animated_${sessionKey}` : null;
   // DOM refs for IntersectionObserver
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -62,6 +70,10 @@ export function WeekStampList({ weeks }: { weeks: StampWeek[] }) {
   startNextRef.current = () => {
     if (queueRef.current.length === 0) {
       isRunning.current = false;
+      // Animation finished — flag this session so all future mounts render static
+      if (storageKey) {
+        try { sessionStorage.setItem(storageKey, "1"); } catch {}
+      }
       return;
     }
     isRunning.current = true;
@@ -98,8 +110,14 @@ export function WeekStampList({ weeks }: { weeks: StampWeek[] }) {
     setActiveIdx(null);
     setFilled(new Set());
 
-    if (reducedMotion) {
-      // Static path: fill every non-PENDING row immediately, no animation.
+    // Check sessionStorage (safe here — effects only run on the client, never during SSR)
+    let alreadyAnimated = false;
+    if (storageKey) {
+      try { alreadyAnimated = sessionStorage.getItem(storageKey) === "1"; } catch {}
+    }
+
+    if (reducedMotion || alreadyAnimated) {
+      // Static path: show all non-PENDING rows filled immediately, no animation.
       const all = new Set<number>(
         weeks.map((w, i) => (w.status !== "PENDING" ? i : -1)).filter(i => i >= 0)
       );
@@ -147,7 +165,7 @@ export function WeekStampList({ weeks }: { weeks: StampWeek[] }) {
         timerRef.current = null;
       }
     };
-  }, [weeks, reducedMotion]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [weeks, reducedMotion, storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
