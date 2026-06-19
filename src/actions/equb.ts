@@ -4,11 +4,15 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { generateWeekDates, TOTAL_WEEKS } from "@/lib/equb";
+import { requireAdmin } from "@/lib/auth";
 
 export async function endEqub(
   _prevState: unknown,
   formData: FormData
 ): Promise<{ error?: string; success?: boolean }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const rawDate = (formData.get("newStartDate") as string | null)?.trim();
   if (!rawDate) return { error: "New start date is required." };
 
@@ -138,6 +142,9 @@ export async function endEqub(
 export async function deleteArchive(
   archiveId: string
 ): Promise<{ error?: string; success?: boolean }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   await db.equbArchive.delete({ where: { id: archiveId } });
 
   await db.auditLog.create({

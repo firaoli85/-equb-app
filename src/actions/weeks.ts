@@ -2,8 +2,12 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth";
 
 export async function toggleSkipWeek(weekId: string): Promise<void> {
+  const auth = await requireAdmin();
+  if (!auth.ok) throw new Error(auth.error);
+
   const week = await db.week.findUnique({ where: { id: weekId } });
   if (!week) return;
 
@@ -30,6 +34,9 @@ export async function updateWeekNotes(
   weekId: string,
   notes: string
 ): Promise<void> {
+  const auth = await requireAdmin();
+  if (!auth.ok) throw new Error(auth.error);
+
   await db.week.update({
     where: { id: weekId },
     data: { notes: notes.trim() || null },

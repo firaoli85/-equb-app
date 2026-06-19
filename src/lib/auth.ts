@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
+
 const SESSION_COOKIE = "equb_session";
 const SESSION_DATA_PREFIX = "equb-admin-v1:";
-const IDLE_TIMEOUT_MS = 1 * 60 * 1000; // TEMP 1 minute for testing
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 
 async function getKey(): Promise<CryptoKey> {
   const secret = process.env.ADMIN_SESSION_SECRET!;
@@ -57,6 +59,18 @@ export async function validateSessionToken(token: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// Reusable admin session guard for server actions.
+// Reads the same session cookie the (protected) layout validates.
+// Returns { ok: true } for authenticated admins; { ok: false, error } otherwise.
+export async function requireAdmin(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token || !(await validateSessionToken(token))) {
+    return { ok: false, error: "Unauthorized" };
+  }
+  return { ok: true };
 }
 
 export { SESSION_COOKIE };

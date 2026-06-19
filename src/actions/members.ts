@@ -7,11 +7,15 @@ import { randomUUID } from "crypto";
 import { headers } from "next/headers";
 import { buildFingerprint, type ClientFingerprint } from "@/lib/fingerprint";
 import { hashPin } from "@/lib/pin";
+import { requireAdmin } from "@/lib/auth";
 
 export async function createMember(
   _prevState: { error?: string },
   formData: FormData
 ): Promise<{ error?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const nameAmharic = (formData.get("nameAmharic") as string)?.trim();
   const nameEnglishFirst = (formData.get("nameEnglishFirst") as string)?.trim() ?? "";
   const nameEnglishLast = (formData.get("nameEnglishLast") as string)?.trim() ?? "";
@@ -84,6 +88,9 @@ export async function updateMember(
   _prevState: { error?: string },
   formData: FormData
 ): Promise<{ error?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const nameAmharic = (formData.get("nameAmharic") as string)?.trim();
   const nameEnglishFirst = (formData.get("nameEnglishFirst") as string)?.trim() ?? "";
   const nameEnglishLast = (formData.get("nameEnglishLast") as string)?.trim() ?? "";
@@ -256,6 +263,9 @@ export async function updateMember(
 }
 
 export async function deleteMember(memberId: string): Promise<void> {
+  const auth = await requireAdmin();
+  if (!auth.ok) throw new Error(auth.error);
+
   const member = await db.member.findUnique({ where: { id: memberId } });
   if (!member) return;
 
@@ -279,6 +289,9 @@ export async function deleteMember(memberId: string): Promise<void> {
 }
 
 export async function suspendFromWheel(memberId: string): Promise<void> {
+  const auth = await requireAdmin();
+  if (!auth.ok) throw new Error(auth.error);
+
   const member = await db.member.findUnique({ where: { id: memberId } });
   if (!member) return;
 
@@ -299,6 +312,9 @@ export async function suspendFromWheel(memberId: string): Promise<void> {
 }
 
 export async function reinstateToWheel(memberId: string): Promise<void> {
+  const auth = await requireAdmin();
+  if (!auth.ok) throw new Error(auth.error);
+
   const member = await db.member.findUnique({ where: { id: memberId } });
   if (!member) return;
 
@@ -455,6 +471,9 @@ export async function replaceMember(
   _prevState: { error?: string; success?: boolean },
   formData: FormData
 ): Promise<{ error?: string; success?: boolean }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const nameAmharic = (formData.get("nameAmharic") as string)?.trim();
   const nameEnglishFirst = (formData.get("nameEnglishFirst") as string)?.trim() ?? "";
   const nameEnglishLast = (formData.get("nameEnglishLast") as string)?.trim() ?? "";
@@ -551,6 +570,9 @@ export async function replaceMember(
 }
 
 export async function deleteAllMembers(): Promise<void> {
+  const auth = await requireAdmin();
+  if (!auth.ok) throw new Error(auth.error);
+
   // Audit logs have no FK to members — clear them manually first
   await db.auditLog.deleteMany({});
   // Cascade on Member → Payment and Member → PaymentReviewRequest handles the rest
@@ -564,6 +586,9 @@ export async function deleteAllMembers(): Promise<void> {
 }
 
 export async function permanentlyDeleteArchivedMember(memberId: string): Promise<{ error?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const member = await db.member.findUnique({ where: { id: memberId } });
   if (!member) return { error: "Member not found." };
   if (!member.isArchived) return { error: "Only archived members can be permanently deleted." };
@@ -584,6 +609,9 @@ export async function permanentlyDeleteArchivedMember(memberId: string): Promise
 }
 
 export async function regenerateToken(memberId: string): Promise<void> {
+  const auth = await requireAdmin();
+  if (!auth.ok) throw new Error(auth.error);
+
   const newToken = randomUUID();
   await db.$transaction([
     db.member.update({ where: { id: memberId }, data: { token: newToken } }),

@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { Prisma, PayoutMethod } from "@prisma/client";
+import { requireAdmin } from "@/lib/auth";
 import {
   mainWheelWeekly,
   extraWheelWeekly,
@@ -77,6 +78,9 @@ async function resolveWeekPayoutData(number: number): Promise<{
 export async function pickWheelWinner(
   weekId: string
 ): Promise<{ error?: string; slotPosition?: number; numbers?: number[] }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const week = await db.week.findUnique({ where: { id: weekId } });
   if (!week) return { error: "Week not found" };
   if (week.winnerWheelNumber !== null) return { error: "Week already has a winner" };
@@ -126,6 +130,9 @@ export async function recordWheelWinner(
   weekId: string,
   numbers: number[]
 ): Promise<{ error?: string; warnings?: string[] }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   if (numbers.length === 0) return { error: "No numbers provided." };
 
   const week = await db.week.findUnique({ where: { id: weekId } });
@@ -196,6 +203,9 @@ export async function addWinnerToWeek(
   warnings: string[];
 }> {
   const empty = { added: [], skipped: [], warnings: [] };
+
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error, ...empty };
 
   if (numbers.length === 0) return { error: "No numbers provided.", ...empty };
 
@@ -294,6 +304,9 @@ export async function updatePayoutRecord(
     notes?: string;
   }
 ): Promise<{ error?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const payout = await db.weekPayout.findUnique({
     where: { id: weekPayoutId },
     include: {
@@ -363,6 +376,9 @@ async function cleanupSourceWeek(
 export async function removeWinner(
   weekPayoutId: string
 ): Promise<{ error?: string; ok?: boolean }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const payout = await db.weekPayout.findUnique({
     where: { id: weekPayoutId },
     include: {
@@ -426,6 +442,9 @@ export async function moveWinner(
   weekPayoutId: string,
   targetWeekId: string
 ): Promise<{ error?: string; ok?: boolean }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const payout = await db.weekPayout.findUnique({
     where: { id: weekPayoutId },
     include: {

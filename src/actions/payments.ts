@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth";
 type PaymentStatus = "PENDING" | "PAID" | "LATE" | "DEFERRED" | "PARTIAL";
 type PaymentMethod = "CASH" | "ZELLE" | "OTHER";
 
@@ -12,6 +13,9 @@ export async function updatePaymentStatus(data: {
   notes?: string;
   paidAmount?: number | null;
 }): Promise<{ error?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const payment = await db.payment.findUnique({
     where: { id: data.paymentId },
     include: { member: true, week: true },

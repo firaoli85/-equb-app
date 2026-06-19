@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth";
 
 export async function submitReviewRequest(
   _prev: { error?: string; success?: boolean },
@@ -52,6 +53,9 @@ export async function approveReview(
   requestId: string,
   adminNote: string | null
 ): Promise<{ error?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const req = await db.paymentReviewRequest.findUnique({
     where: { id: requestId },
     include: { member: true, week: true },
@@ -125,6 +129,9 @@ export async function rejectReview(
   requestId: string,
   adminNote: string | null
 ): Promise<{ error?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const req = await db.paymentReviewRequest.findUnique({
     where: { id: requestId },
     include: { member: true },

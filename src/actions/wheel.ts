@@ -2,10 +2,14 @@
 
 import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth";
 
 export async function unlockPriorityNumbers(
   passphrase: string
 ): Promise<{ error?: "unavailable" | "invalid"; priorityNumbers?: number[] }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) throw new Error(auth.error);
+
   const key = process.env.WHEEL_KEY;
   if (!key) return { error: "unavailable" };
   if (passphrase !== key) return { error: "invalid" };
@@ -29,6 +33,9 @@ export async function getWheelMemberNames(): Promise<Record<number, string>> {
 export async function saveWheelSlots(
   newSlots: { position: number; numbers: number[] }[]
 ): Promise<{ error?: string; warning?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const [members, dbSlots, drawn] = await Promise.all([
     db.member.findMany({
       where: { isArchived: false },
@@ -127,6 +134,9 @@ export async function savePriorityNumbers(
   numbers: number[],
   passphrase: string
 ): Promise<{ error?: string }> {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { error: auth.error };
+
   const key = process.env.WHEEL_KEY;
   if (!key || passphrase !== key) return { error: "Unauthorized." };
 
