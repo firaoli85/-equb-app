@@ -124,8 +124,7 @@ export function MemberTabBar({ token }: { token: string }) {
             );
           })}
         </div>
-      </nav>
-    </>,
+      </nav>,
     document.body
   );
 }

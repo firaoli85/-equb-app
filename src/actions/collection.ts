@@ -11,6 +11,25 @@ import {
   calculateNetPayout,
 } from "@/lib/equb";
 
+// ── Signed-winner identity lock ───────────────────────────────────────────────
+// Call this before any operation that changes WHO a WeekPayout belongs to or
+// WHICH week it lives in: move, remove/delete, lucky-number change.
+// Bookkeeping (status, method, notes) is always allowed regardless of signedAt.
+// Returns an error string if the row is signed, null if the operation may proceed.
+export async function assertNotSignedForIdentityChange(
+  weekPayoutId: string
+): Promise<string | null> {
+  const row = await db.weekPayout.findUnique({
+    where: { id: weekPayoutId },
+    select: { signedAt: true },
+  });
+  if (!row) return null; // row doesn't exist — let the caller decide
+  if (row.signedAt !== null) {
+    return "This payout is signed by the member — it can't be moved or removed.";
+  }
+  return null;
+}
+
 // ── Shared internal helper ────────────────────────────────────────────────────
 // Resolves a lucky number to the member who owns it and computes their net payout.
 // Checks wheelNumber (MAIN) first, then extraWheelNumber (EXTRA).
@@ -274,7 +293,7 @@ export async function updatePayoutRecord(
     method?: PayoutMethod | null;
     notes?: string;
   }
-): Promise<void> {
+): Promise<{ error?: string }> {
   const payout = await db.weekPayout.findUnique({
     where: { id: weekPayoutId },
     include: {
@@ -282,7 +301,7 @@ export async function updatePayoutRecord(
       member: { select: { nameAmharic: true } },
     },
   });
-  if (!payout) return;
+  if (!payout) return {};
 
   await db.weekPayout.update({
     where: { id: weekPayoutId },
@@ -305,4 +324,216 @@ export async function updatePayoutRecord(
 
   revalidatePath("/admin");
   revalidatePath("/admin/collection");
+  return {};
+}
+
+// ── cleanupSourceWeek (internal) ─────────────────────────────────────────────
+// Shared by removeWinner and moveWinner. Removes a number from a week's
+// winner-tracking fields inside an open transaction: filters winnerNumbers,
+// fixes the legacy winnerWheelNumber pointer, and resets payoutStatus to null
+// if that was the last winner.
+
+async function cleanupSourceWeek(
+  tx: Prisma.TransactionClient,
+  weekId: string,
+  removedNumber: number,
+  current: { winnerNumbers: number[]; winnerWheelNumber: number | null }
+): Promise<void> {
+  const remaining = current.winnerNumbers.filter((n) => n !== removedNumber);
+  const newWinnerWheelNumber =
+    current.winnerWheelNumber === removedNumber
+      ? (remaining[0] ?? null)
+      : current.winnerWheelNumber;
+
+  await tx.week.update({
+    where: { id: weekId },
+    data: {
+      winnerNumbers: remaining,
+      winnerWheelNumber: newWinnerWheelNumber,
+      ...(remaining.length === 0 ? { payoutStatus: null } : {}),
+    },
+  });
+}
+
+// ── removeWinner ──────────────────────────────────────────────────────────────
+// Deletes a WeekPayout and scrubs the number from the week's winner tracking
+// so it becomes drawable again. Blocked if signed OR already collected — only
+// PENDING + unsigned payouts represent genuine draw mistakes worth undoing.
+
+export async function removeWinner(
+  weekPayoutId: string
+): Promise<{ error?: string; ok?: boolean }> {
+  const payout = await db.weekPayout.findUnique({
+    where: { id: weekPayoutId },
+    include: {
+      week: {
+        select: {
+          id: true,
+          weekNumber: true,
+          winnerNumbers: true,
+          winnerWheelNumber: true,
+        },
+      },
+      member: { select: { nameAmharic: true } },
+    },
+  });
+  if (!payout) return { error: "Payout record not found." };
+
+  if (payout.signedAt !== null) {
+    return { error: "This payout is signed by the member and can't be removed." };
+  }
+  if (payout.status === "COLLECTED") {
+    return { error: "This payout is marked collected and can't be removed." };
+  }
+
+  const { number, weekId } = payout;
+
+  await db.$transaction(async (tx) => {
+    await tx.weekPayout.delete({ where: { id: weekPayoutId } });
+
+    await cleanupSourceWeek(tx, weekId, number, payout.week);
+
+    await tx.auditLog.create({
+      data: {
+        action: `Winner removed: Lucky #${number} from Week ${payout.week.weekNumber}`,
+        entityType: "WeekPayout",
+        entityId: weekPayoutId,
+        before: {
+          number,
+          weekId,
+          weekNumber: payout.week.weekNumber,
+          memberId: payout.memberId,
+          memberName: payout.member?.nameAmharic ?? null,
+          status: payout.status,
+          amount: payout.amount?.toString() ?? null,
+        },
+      },
+    });
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/collection");
+  return { ok: true };
+}
+
+// ── moveWinner ────────────────────────────────────────────────────────────────
+// Relocates a WeekPayout to a different week: deletes from source, creates on
+// target with identical number/member/wheelType/amount. The number stays in the
+// global drawn set (now via the target week) so it can't be spun again.
+// Blocked if signed OR already collected — same combined guard as removeWinner.
+
+export async function moveWinner(
+  weekPayoutId: string,
+  targetWeekId: string
+): Promise<{ error?: string; ok?: boolean }> {
+  const payout = await db.weekPayout.findUnique({
+    where: { id: weekPayoutId },
+    include: {
+      week: {
+        select: {
+          id: true,
+          weekNumber: true,
+          winnerNumbers: true,
+          winnerWheelNumber: true,
+        },
+      },
+      member: { select: { nameAmharic: true } },
+    },
+  });
+  if (!payout) return { error: "Payout record not found." };
+
+  if (payout.signedAt !== null) {
+    return { error: "Signed payouts can't be moved." };
+  }
+  if (payout.status === "COLLECTED") {
+    return { error: "Collected payouts can't be moved." };
+  }
+
+  const sourceWeekId = payout.weekId;
+
+  if (targetWeekId === sourceWeekId) {
+    return { error: "The target week is the same as the current week." };
+  }
+
+  const targetWeek = await db.week.findUnique({
+    where: { id: targetWeekId },
+    select: {
+      id: true,
+      weekNumber: true,
+      winnerNumbers: true,
+      winnerWheelNumber: true,
+      payoutStatus: true,
+    },
+  });
+  if (!targetWeek) return { error: "Target week not found." };
+
+  const { number, memberId, wheelType, amount } = payout;
+
+  // Catch the conflict that the DB unique constraint would also catch — cleaner error.
+  if (targetWeek.winnerNumbers.includes(number)) {
+    return {
+      error: `Lucky #${number} is already a winner on Week ${targetWeek.weekNumber}.`,
+    };
+  }
+
+  // Merge number into target's winnerNumbers (union, sorted)
+  const targetNumbers = [...new Set([...targetWeek.winnerNumbers, number])].sort(
+    (a, b) => a - b
+  );
+
+  await db.$transaction(async (tx) => {
+    // 1. Delete from source and scrub source week's tracking fields
+    await tx.weekPayout.delete({ where: { id: weekPayoutId } });
+    await cleanupSourceWeek(tx, sourceWeekId, number, payout.week);
+
+    // 2. Create on target — preserve original number/member/wheelType/amount;
+    //    status resets to PENDING (row is fresh on a new week).
+    await tx.weekPayout.create({
+      data: {
+        weekId: targetWeekId,
+        number,
+        memberId,
+        wheelType,
+        amount,
+        status: "PENDING",
+      },
+    });
+
+    // 3. Update target week's winner tracking fields
+    await tx.week.update({
+      where: { id: targetWeekId },
+      data: {
+        winnerNumbers: targetNumbers,
+        ...(targetWeek.winnerWheelNumber === null ? { winnerWheelNumber: number } : {}),
+        ...(targetWeek.payoutStatus === null ? { payoutStatus: "PENDING" } : {}),
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        action: `Winner moved: Lucky #${number} from Week ${payout.week.weekNumber} to Week ${targetWeek.weekNumber}`,
+        entityType: "WeekPayout",
+        entityId: weekPayoutId,
+        before: {
+          weekId: sourceWeekId,
+          weekNumber: payout.week.weekNumber,
+          number,
+          memberId,
+          memberName: payout.member?.nameAmharic ?? null,
+          status: payout.status,
+          amount: amount?.toString() ?? null,
+        },
+        after: {
+          weekId: targetWeekId,
+          weekNumber: targetWeek.weekNumber,
+          number,
+          status: "PENDING",
+        },
+      },
+    });
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/collection");
+  return { ok: true };
 }

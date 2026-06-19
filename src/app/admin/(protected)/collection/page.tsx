@@ -249,6 +249,7 @@ export default async function CollectionPage() {
                               currentStatus={payout.status}
                               currentMethod={payout.method ?? null}
                               currentNotes={payout.notes ?? ""}
+                              signedAt={payout.signedAt?.toISOString() ?? null}
                             />
                           </td>
                         </tr>
