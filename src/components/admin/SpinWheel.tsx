@@ -36,6 +36,10 @@ function slotLines(numbers: number[]): string[] {
   return [`${numbers[0]} & ${numbers[1]}`, `& ${numbers[2]}`];
 }
 
+// Round to 2 decimal places — makes server/client SVG attribute strings identical
+// (Math.sin/cos can diverge in the last ULP between Node and the browser engine)
+const r2 = (v: number) => Math.round(v * 100) / 100;
+
 function fontSize(n: number): number {
   if (n <= 6)  return 30;
   if (n <= 10) return 26;
@@ -161,9 +165,9 @@ export function SpinWheel({
     const largeArc  = segAngle > 180 ? 1 : 0;
     const midRad    = ((i + 0.5) * segAngle - 90) * (Math.PI / 180);
     const tr        = R * TEXT_R_RATIO;
-    const textX     = CX + tr * Math.cos(midRad);
-    const textY     = CY + tr * Math.sin(midRad);
-    const textAngle = (i + 0.5) * segAngle;
+    const textX     = r2(CX + tr * Math.cos(midRad));
+    const textY     = r2(CY + tr * Math.sin(midRad));
+    const textAngle = r2((i + 0.5) * segAngle);
     const path = `M ${CX} ${CY} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
     const { bg, textFill } = segmentStyle(i);
     const lines = slotLines(slot.numbers);
@@ -268,7 +272,7 @@ export function SpinWheel({
                     <tspan
                       key={li}
                       x={textX}
-                      y={textY + (li - (lines.length - 1) / 2) * lineSpacing}
+                      y={r2(textY + (li - (lines.length - 1) / 2) * lineSpacing)}
                       dominantBaseline="central"
                     >
                       {line}
