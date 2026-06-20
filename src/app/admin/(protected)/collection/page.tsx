@@ -4,6 +4,8 @@ import { Fragment } from "react";
 import { db } from "@/lib/db";
 import { formatCurrency, formatDate, getAvailableWheelEntries } from "@/lib/equb";
 import { PayoutForm } from "@/components/admin/PayoutForm";
+import { WinnerControls } from "@/components/admin/WinnerControls";
+import { AddWinnerForm } from "@/components/admin/AddWinnerForm";
 
 const METHOD_LABEL: Record<string, string> = {
   CASH: "Cash",
@@ -35,6 +37,7 @@ export default async function CollectionPage() {
 
   // WeekPayout rows are now the source of truth for drawn numbers and status
   const allPayouts = weeks.flatMap((w) => w.payouts);
+  const allWeekOptions = weeks.map((w) => ({ id: w.id, weekNumber: w.weekNumber, date: w.date.toISOString() }));
   const drawnSet = new Set(allPayouts.map((p) => p.number));
 
   const allWheelNumbers: number[] = [];
@@ -251,6 +254,15 @@ export default async function CollectionPage() {
                               currentNotes={payout.notes ?? ""}
                               signedAt={payout.signedAt?.toISOString() ?? null}
                             />
+                            <WinnerControls
+                              weekPayoutId={payout.id}
+                              weekNumber={week.weekNumber}
+                              payoutNumber={payout.number}
+                              status={payout.status}
+                              signedAt={payout.signedAt?.toISOString() ?? null}
+                              currentWeekId={week.id}
+                              allWeeks={allWeekOptions}
+                            />
                           </td>
                         </tr>
                       );
@@ -262,6 +274,8 @@ export default async function CollectionPage() {
           </table>
         </div>
       </div>
+
+      <AddWinnerForm weeks={allWeekOptions} />
     </div>
   );
 }
