@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { recordWheelWinner, pickWheelWinner } from "@/actions/collection";
 
 const COLOR_PAIRS: { dark: string; light: string }[] = [
-  { dark: "#1e3a8a", light: "#dbeafe" },
-  { dark: "#065f46", light: "#d1fae5" },
-  { dark: "#581c87", light: "#f3e8ff" },
-  { dark: "#991b1b", light: "#fee2e2" },
-  { dark: "#134e4a", light: "#ccfbf1" },
-  { dark: "#713f12", light: "#fef9c3" },
+  { dark: "#3730a3", light: "#e0e7ff" },  // indigo
+  { dark: "#1e40af", light: "#dbeafe" },  // blue
+  { dark: "#6d28d9", light: "#ede9fe" },  // violet
+  { dark: "#0f766e", light: "#ccfbf1" },  // teal
+  { dark: "#86198f", light: "#fae8ff" },  // plum
+  { dark: "#334155", light: "#e2e8f0" },  // slate
 ];
 
 function segmentStyle(index: number): { bg: string; textFill: string } {
@@ -175,8 +175,8 @@ export function SpinWheel({
   if (n === 0) {
     return (
       <div className="text-center py-10">
-        <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950 rounded-full flex items-center justify-center mx-auto mb-3">
-          <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-950 rounded-full flex items-center justify-center mx-auto mb-3">
+          <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
@@ -199,7 +199,7 @@ export function SpinWheel({
             height: 0,
             borderLeft: "14px solid transparent",
             borderRight: "14px solid transparent",
-            borderTop: "30px solid #ef4444",
+            borderTop: "30px solid #f59e0b",
             filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.5))",
           }}
         />
@@ -280,22 +280,22 @@ export function SpinWheel({
           })}
 
           <circle cx={CX} cy={CY} r={HUB_R} fill="#0f172a" />
-          <circle cx={CX} cy={CY} r={HUB_R - 8} fill="#10b981" />
-          <circle cx={CX} cy={CY} r={HUB_R - 16} fill="#065f46" />
+          <circle cx={CX} cy={CY} r={HUB_R - 8} fill="#6366f1" />
+          <circle cx={CX} cy={CY} r={HUB_R - 16} fill="#3730a3" />
         </svg>
       </div>
 
       {/* ── Winner banner ── */}
       {winnerLabel !== null && !spinning && (
         <div className="w-full animate-fade-in-up">
-          <div className="relative bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-800 rounded-3xl p-7 text-center shadow-2xl ring-4 ring-emerald-400 dark:ring-emerald-500 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-800 rounded-3xl p-7 text-center shadow-2xl ring-4 ring-indigo-400 dark:ring-indigo-500 overflow-hidden">
             <div className="pointer-events-none absolute inset-0 opacity-10">
               <div className="absolute top-0 left-1/4 w-0.5 h-full bg-white rotate-12" />
               <div className="absolute top-0 left-1/2 w-0.5 h-full bg-white rotate-12" />
               <div className="absolute top-0 left-3/4 w-0.5 h-full bg-white rotate-12" />
             </div>
             <div className="relative">
-              <p className="text-emerald-200 text-[10px] font-black uppercase tracking-[0.45em] mb-2">
+              <p className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.45em] mb-2">
                 Winner
               </p>
               <p className="text-[4rem] leading-none font-black text-white drop-shadow-lg tabular-nums">
@@ -305,13 +305,13 @@ export function SpinWheel({
                 <button
                   onClick={handleRecord}
                   disabled={isPending}
-                  className="px-6 py-2.5 bg-white text-emerald-800 rounded-xl text-sm font-black hover:bg-emerald-50 disabled:opacity-50 transition-colors shadow-md"
+                  className="px-6 py-2.5 bg-white text-indigo-800 rounded-xl text-sm font-black hover:bg-indigo-50 disabled:opacity-50 transition-colors shadow-md"
                 >
                   {isPending ? "Recording…" : "✓ Confirm & Record"}
                 </button>
                 <button
                   onClick={() => { setWinnerSlotIdx(null); setWinnerNumbers(null); }}
-                  className="px-5 py-2.5 bg-emerald-700/60 border border-emerald-400/40 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors"
+                  className="px-5 py-2.5 bg-indigo-700/60 border border-indigo-400/40 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
                 >
                   Cancel
                 </button>
@@ -328,7 +328,7 @@ export function SpinWheel({
           value={selectedWeekId}
           onChange={(e) => setSelectedWeekId(e.target.value)}
           disabled={spinning || isPending || isPickPending}
-          className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 transition-shadow"
+          className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-shadow"
         >
           {weekOptions.map((w) => (
             <option key={w.id} value={w.id}>
@@ -342,8 +342,8 @@ export function SpinWheel({
       <button
         onClick={handleSpin}
         disabled={spinning || isPending || isPickPending || weekOptions.length === 0}
-        className={`px-16 py-4 bg-emerald-600 text-white rounded-full font-black text-2xl tracking-widest hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl ${
-          !spinning && !isPending && !isPickPending && winnerSlotIdx === null ? "animate-pulse-green" : ""
+        className={`px-16 py-4 bg-indigo-600 text-white rounded-full font-black text-2xl tracking-widest hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl ${
+          !spinning && !isPending && !isPickPending && winnerSlotIdx === null ? "animate-pulse" : ""
         }`}
       >
         {isPickPending ? "PICKING…" : spinning ? "SPINNING…" : "SPIN"}
@@ -362,7 +362,7 @@ export function SpinWheel({
             onKeyDown={(e) => e.key === "Enter" && handleManualAssign()}
             placeholder="Lucky #"
             disabled={spinning || isPending || isManualPending}
-            className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+            className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
           />
           <button
             onClick={handleManualAssign}
