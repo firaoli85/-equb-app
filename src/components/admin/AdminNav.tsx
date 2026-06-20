@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/audit", label: "Audit" },
   { href: "/admin/archive", label: "Archive" },
+  { href: "/admin/new-cycle", label: "New Cycle" },
 ];
 
 export function AdminNav({ pendingReviews = 0 }: { pendingReviews?: number }) {
@@ -58,6 +59,8 @@ export function AdminNav({ pendingReviews = 0 }: { pendingReviews?: number }) {
                 className={`relative px-3 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                   isActive
                     ? "text-emerald-600 dark:text-emerald-400"
+                    : link.href === "/admin/new-cycle"
+                    ? "text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800/60"
                 }`}
               >

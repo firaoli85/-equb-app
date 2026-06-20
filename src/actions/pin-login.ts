@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import { headers } from "next/headers";
-import { verifyPin } from "@/lib/pin";
+import { hashPin, verifyPin } from "@/lib/pin";
 import { computeFingerprint, createMemberSession, setSessionCookies } from "@/lib/member-session";
 import { redirect } from "next/navigation";
 
@@ -124,4 +124,49 @@ export async function verifyMemberPin(
 
   if (redirectPath) redirect(redirectPath);
   return {};
+}
+
+/**
+ * Set a PIN for a cycle-reset member who arrives via the /login phone+PIN path
+ * and gets { noPin: true } because their pin is null.
+ *
+ * Identity proved by phone number (same level as the rest of the PIN login flow).
+ * Guard: refuses if member.pin is already set — cannot hijack an existing PIN.
+ * On success: hashes pin, resets attempt counters, creates session, redirects to member home.
+ */
+export async function setInitialPinByPhone(
+  phone: string,
+  newPin: string,
+  confirmPin: string,
+  screen: string,
+  language: string,
+): Promise<{ error: string }> {
+  if (!/^\d{4}$/.test(newPin)) return { error: "PIN must be exactly 4 digits." };
+  if (newPin !== confirmPin)    return { error: "PINs do not match. Please try again." };
+
+  const member = await findMemberByPhone(phone);
+  if (!member) return { error: "Phone number not found." };
+
+  // Core guard — only callable when pin is null
+  if (member.pin !== null) return { error: "A PIN is already set for this account. Use the login page." };
+
+  const hash = await hashPin(newPin);
+
+  // Fetch token (findMemberByPhone select doesn't include it)
+  const full = await db.member.update({
+    where: { id: member.id },
+    data: {
+      pin:            hash,
+      pinAttempts:    0,
+      pinLockedUntil: null,
+    },
+    select: { token: true },
+  });
+
+  const ua = (await headers()).get("user-agent") ?? "";
+  const fingerprint = await computeFingerprint(ua, screen, language);
+  const { sessionToken } = await createMemberSession(member.id, fingerprint);
+  await setSessionCookies(sessionToken, screen, language);
+
+  redirect(`/m/${full.token}`);
 }

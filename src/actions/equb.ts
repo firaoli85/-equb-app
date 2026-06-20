@@ -47,6 +47,10 @@ export async function endEqub(
   const week1 = weeks.find((w) => w.weekNumber === 1);
   const week20 = weeks.find((w) => w.weekNumber === TOTAL_WEEKS);
 
+  if (!week1 || !week20) {
+    return { error: "Cannot archive: no week data found. Run the new-cycle rebuild first." };
+  }
+
   const snapshot = {
     summary: {
       memberCount: members.length,
@@ -82,8 +86,8 @@ export async function endEqub(
   await db.equbArchive.create({
     data: {
       cycleNumber: cycleCount + 1,
-      startDate: week1!.date,
-      endDate: week20!.date,
+      startDate: week1.date,
+      endDate: week20.date,
       snapshot: JSON.parse(JSON.stringify(snapshot)),
     },
   });

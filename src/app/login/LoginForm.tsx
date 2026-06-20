@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState, useTransition, useEffect } from "react";
-import { lookupPhone, verifyMemberPin } from "@/actions/pin-login";
+import { lookupPhone, verifyMemberPin, setInitialPinByPhone } from "@/actions/pin-login";
+import { SetPinPad } from "@/components/member/SetPinPad";
 import { auth } from "@/lib/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth";
 
@@ -33,6 +34,7 @@ export function LoginForm() {
   const [locked, setLocked]               = useState(false);
   const [lockedMinutes, setLockedMinutes] = useState(0);
   const [isVerifying, startVerify]        = useTransition();
+  const [needsSetPin, setNeedsSetPin]     = useState(false);
 
   // WhatsApp OTP state
   const [waStep, setWaStep]   = useState<"idle" | "sending" | "code-sent" | "verifying">("idle");
@@ -63,6 +65,7 @@ export function LoginForm() {
   function resetToPhone() {
     setOverridePhone(true);
     setAuthChoice("none");
+    setNeedsSetPin(false);
     setPin(""); setPinError(null); setAttemptsLeft(null); setLocked(false);
     setSmsStep("idle"); setSmsCode(""); setSmsError(null); setConfirmationResult(null);
     setWaStep("idle"); setWaCode(""); setWaError(null);
@@ -71,6 +74,7 @@ export function LoginForm() {
   function handlePhoneAction(formData: FormData) {
     setOverridePhone(false);
     setAuthChoice("none");
+    setNeedsSetPin(false);
     setPin(""); setPinError(null); setAttemptsLeft(null); setLocked(false);
     setSmsStep("idle"); setSmsCode(""); setSmsError(null); setConfirmationResult(null);
     setWaStep("idle"); setWaCode(""); setWaError(null);
@@ -79,6 +83,7 @@ export function LoginForm() {
 
   function backToOptions() {
     setAuthChoice("none");
+    setNeedsSetPin(false);
     setPin(""); setPinError(null);
     setSmsStep("idle"); setSmsCode(""); setSmsError(null); setConfirmationResult(null);
     setWaStep("idle"); setWaCode(""); setWaError(null);
@@ -107,6 +112,10 @@ export function LoginForm() {
         setLocked(true); setLockedMinutes(result.lockedMinutes ?? 30); setPin("");
       } else if (result?.error) {
         setPinError(result.error); setAttemptsLeft(result.attemptsLeft ?? null); setPin("");
+      } else if (result?.noPin) {
+        // Cycle-reset member: no PIN set yet. Route to create-PIN flow.
+        setPin(""); setPinError(null); setAttemptsLeft(null);
+        setNeedsSetPin(true);
       }
     });
   }
@@ -355,8 +364,33 @@ export function LoginForm() {
         </div>
       )}
 
+      {/* ── STEP 3a-ii — Create PIN (cycle-reset member) ── */}
+      {phoneFound && authChoice === "pin" && needsSetPin && (
+        <div>
+          <PhoneChip />
+          <div className="text-center mb-4 space-y-1">
+            <div className="inline-flex items-center justify-center w-10 h-10 bg-indigo-900/40 rounded-2xl mb-2">
+              <svg className="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-white">Create your PIN</p>
+            <p className="text-xs text-gray-500">A new Equb cycle has started. Choose a 4-digit PIN to continue.</p>
+          </div>
+          <SetPinPad
+            theme="dark"
+            onSubmit={async (pin) => {
+              const result = await setInitialPinByPhone(phone, pin, pin, deviceScreen, deviceLang);
+              return result;
+            }}
+          />
+          <BackLink label="← Back to sign-in options" onClick={backToOptions} />
+        </div>
+      )}
+
       {/* ── STEP 3a — PIN pad ── */}
-      {phoneFound && authChoice === "pin" && (
+      {phoneFound && authChoice === "pin" && !needsSetPin && (
         <div>
           <PhoneChip />
 

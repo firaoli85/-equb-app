@@ -17,6 +17,7 @@ import {
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ConfirmAgreement } from "@/components/member/ConfirmAgreement";
+import { SetPinScreen } from "@/components/member/SetPinScreen";
 import { ConfirmCollectionReceipt } from "@/components/member/ConfirmCollectionReceipt";
 import { AutoRefresh } from "@/components/member/AutoRefresh";
 import { WeekStampList, type StampWeek } from "@/components/member/WeekStampList";
@@ -50,6 +51,17 @@ export default async function MemberView({
         memberNameEnglish={memberNameEnglish}
         memberNameAmharic={member.nameAmharic}
         weeklyAmountFormatted={formatCurrency(member.weeklyAmount)}
+      />
+    );
+  }
+
+  // Gate 2: members with no PIN (new or cycle-reset) must create one before accessing data.
+  // Runs after agreement confirmation so identity (token URL) is already established.
+  if (member.pin === null) {
+    return (
+      <SetPinScreen
+        token={member.token}
+        memberNameEnglish={memberNameEnglish || member.nameAmharic}
       />
     );
   }
