@@ -141,7 +141,8 @@ export function WheelSetup({
     // Collect: all numbers from unlocked slots + all unassigned numbers
     const lockedSlots = slots.filter((s) => isLocked(s.position));
     const pool: number[] = [
-      ...slots.filter((s) => !isLocked(s.position)).flatMap((s) => s.numbers),
+      // Drawn numbers must never re-enter the pool — filter them even from unlocked slots.
+      ...slots.filter((s) => !isLocked(s.position)).flatMap((s) => s.numbers.filter((n) => !drawnSet.has(n))),
       ...unassigned,
     ];
 
@@ -203,7 +204,8 @@ export function WheelSetup({
   // ── Derived ────────────────────────────────────────────────────────────────
   const drawnSet = new Set(drawnNumbers);
   const allSlotNums = new Set(slots.flatMap((s) => s.numbers));
-  const unassigned = allMemberNumbers.filter((n) => !allSlotNums.has(n));
+  // Drawn numbers are never drawable again — exclude from unassigned tray and all pool operations.
+  const unassigned = allMemberNumbers.filter((n) => !allSlotNums.has(n) && !drawnSet.has(n));
 
   function isLocked(position: number): boolean {
     return (
@@ -261,6 +263,17 @@ export function WheelSetup({
     const slot = slots.find((s) => s.position === position);
     if (!slot || slot.numbers.length > 0 || isLocked(position)) return;
     setSlots((prev) => prev.filter((s) => s.position !== position));
+  }
+
+  function handleRemoveChip(slotPosition: number, num: number) {
+    // Drawn numbers disappear (already won, not drawable again).
+    // Undrawn numbers return to the unassigned tray automatically via the `unassigned` derived value.
+    setSlots((prev) =>
+      prev.map((s) =>
+        s.position === slotPosition ? { ...s, numbers: s.numbers.filter((n) => n !== num) } : s
+      )
+    );
+    setSlotStatus(null);
   }
 
   // ── Save slots ─────────────────────────────────────────────────────────────
@@ -534,7 +547,7 @@ export function WheelSetup({
                       return (
                         <div
                           key={n}
-                          draggable={!locked}
+                          draggable={!locked && !isDrawn}
                           onDragStart={(e) => {
                             e.dataTransfer.effectAllowed = "move";
                             setDragSrc({ kind: "slot", position: slot.position, num: n });
@@ -549,12 +562,18 @@ export function WheelSetup({
                                 : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 cursor-grab active:cursor-grabbing hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-sm",
                           ].join(" ")}
                         >
-                          {!locked && (
+                          {!locked && !isDrawn && (
                             <span className="text-gray-300 dark:text-gray-600">
                               <DragHandleIcon />
                             </span>
                           )}
                           <span className="font-bold">#{n}</span>
+                          {isDrawn && (
+                            <>
+                              <span className="text-gray-300 dark:text-gray-600">·</span>
+                              <span className="text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-1 py-0.5 rounded">won</span>
+                            </>
+                          )}
                           {isGhost ? (
                             <>
                               <span className="text-gray-300 dark:text-gray-600">·</span>
@@ -562,7 +581,7 @@ export function WheelSetup({
                             </>
                           ) : (
                             <>
-                              {info && (
+                              {info && !isDrawn && (
                                 <>
                                   <span className="text-gray-300 dark:text-gray-600">·</span>
                                   <span className="text-gray-400 dark:text-gray-500">{fmt(info.amountCents)}</span>
@@ -576,6 +595,19 @@ export function WheelSetup({
                               )}
                             </>
                           )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveChip(slot.position, n);
+                            }}
+                            title={isDrawn ? "Remove from slot (already won — will not return to pool)" : "Remove from slot"}
+                            className="ml-0.5 text-gray-300 dark:text-gray-600 hover:text-red-400 dark:hover:text-red-500 transition-colors shrink-0"
+                          >
+                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
                         </div>
                       );
                     })}

@@ -86,6 +86,19 @@ export async function saveWheelSlots(
     }
   }
 
+  // 2b. No unlocked slot may pair a drawn winner with an undrawn number.
+  // Locked positions are exempt — check #2 already validates them as unchanged.
+  for (const s of newSlots) {
+    if (lockedPositions.has(s.position)) continue;
+    const drawnInSlot   = s.numbers.filter((n) => drawnNumbers.has(n));
+    const undrawnInSlot = s.numbers.filter((n) => !drawnNumbers.has(n));
+    if (drawnInSlot.length > 0 && undrawnInSlot.length > 0) {
+      return {
+        error: `Slot pos ${s.position} pairs drawn winner${drawnInSlot.length > 1 ? "s" : ""} [${drawnInSlot.map((n) => `#${n}`).join(", ")}] with undrawn number${undrawnInSlot.length > 1 ? "s" : ""} [${undrawnInSlot.map((n) => `#${n}`).join(", ")}]. Move the drawn winner out before saving.`,
+      };
+    }
+  }
+
   // 3. No ghost numbers (in a slot but not on any member)
   for (const s of newSlots) {
     for (const n of s.numbers) {
