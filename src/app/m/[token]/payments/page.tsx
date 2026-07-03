@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/db";
-import { getCurrentWeekNumber, TOTAL_WEEKS, formatDate } from "@/lib/equb";
+import { getCurrentWeekNumber, TOTAL_WEEKS, formatDate, getDisplayName } from "@/lib/equb";
 import { notFound, redirect } from "next/navigation";
 import { MemberStandingList } from "@/components/member/MemberStandingList";
 
@@ -12,18 +12,31 @@ export default async function MemberPaymentsPage({
 }) {
   const { token } = await params;
 
-  // Viewer lookup — id added so we can exclude them from the peer list
+  const currentWeekNum = getCurrentWeekNumber();
+
+  // Viewer lookup — include name + payment history for the pinned "your row"
   const viewer = await db.member.findUnique({
     where: { token },
-    select: { id: true, confirmedAt: true },
+    select: {
+      id: true,
+      confirmedAt: true,
+      nameAmharic: true,
+      nameEnglishFirst: true,
+      displayPreference: true,
+      payments: {
+        select: {
+          status: true,
+          week: { select: { weekNumber: true } },
+        },
+      },
+    },
   });
   if (!viewer) notFound();
   if (!viewer.confirmedAt) redirect(`/m/${token}`);
 
-  const currentWeekNum = getCurrentWeekNumber();
-
-  // Fetch in parallel: all other confirmed members + the shared week list
-  const [members, allWeeks] = await Promise.all([
+  // Fetch in parallel: all other confirmed members, shared weeks, and
+  // authoritative total count (includes viewer — single source of truth)
+  const [members, allWeeks, totalMemberCount] = await Promise.all([
     db.member.findMany({
       where: {
         isArchived: false,
@@ -36,7 +49,7 @@ export default async function MemberPaymentsPage({
         nameAmharic: true,
         nameEnglishFirst: true,
         nameEnglishLast: true,
-        // weeklyAmount, wheelNumber, extraWheelNumber intentionally absent
+        // weeklyAmount, wheelNumber, extraWheelNumber intentionally absent — privacy
         payments: {
           select: {
             status: true,
@@ -49,27 +62,28 @@ export default async function MemberPaymentsPage({
       orderBy: { weekNumber: "asc" },
       select: { id: true, weekNumber: true, date: true },
     }),
+    db.member.count({
+      where: { isArchived: false, confirmedAt: { not: null } },
+    }),
   ]);
 
-  // Format dates server-side — no Date objects cross the serialization boundary
   const sharedWeeks = allWeeks.map((w) => ({
     id: w.id,
     weekNumber: w.weekNumber,
     date: formatDate(w.date),
   }));
 
-  // Compute per-member standing — weeks only, no dollar math
+  // Compute per-member standing — weeks only, no dollar math.
+  // Bug 2 fix: behindCount = max(0, elapsed − paid − deferred).
+  // DEFERRED weeks are excused and must NOT count as behind.
+  // Any elapsed week that is not PAID and not DEFERRED counts against the member,
+  // whether it is LATE, PARTIAL, or simply absent from payment records.
   const standings = members.map((m) => {
     const paidCount = m.payments.filter((p) => p.status === "PAID").length;
-    const behindCount =
-      // LATE / DEFERRED only count for weeks that have already passed
-      m.payments.filter(
-        (p) =>
-          (p.status === "LATE" || p.status === "DEFERRED") &&
-          p.week.weekNumber <= currentWeekNum
-      ).length +
-      // PARTIAL always counts as behind regardless of week position
-      m.payments.filter((p) => p.status === "PARTIAL").length;
+    const deferredCount = m.payments.filter(
+      (p) => p.status === "DEFERRED" && p.week.weekNumber <= currentWeekNum
+    ).length;
+    const behindCount = Math.max(0, currentWeekNum - paidCount - deferredCount);
 
     return {
       id: m.id,
@@ -78,13 +92,39 @@ export default async function MemberPaymentsPage({
       nameEnglishLast: m.nameEnglishLast,
       paidCount,
       behindCount,
-      // Per-week statuses for the detail sheet — status + weekNumber only
       weekPayments: m.payments.map((p) => ({
         weekNumber: p.week.weekNumber,
         status: p.status as string,
       })),
     };
   });
+
+  // Viewer's own payment stats (same formula)
+  const viewerPaidCount = viewer.payments.filter((p) => p.status === "PAID").length;
+  const viewerDeferredCount = viewer.payments.filter(
+    (p) => p.status === "DEFERRED" && p.week.weekNumber <= currentWeekNum
+  ).length;
+  const viewerBehindCount = Math.max(
+    0,
+    currentWeekNum - viewerPaidCount - viewerDeferredCount
+  );
+
+  // Display name honouring language preference
+  const viewerDisplayName = getDisplayName({
+    nameAmharic: viewer.nameAmharic,
+    nameEnglishFirst: viewer.nameEnglishFirst,
+    displayPreference: viewer.displayPreference,
+  });
+
+  // How many members (including viewer) are fully current this week
+  const currentCount =
+    standings.filter((m) => m.behindCount === 0).length +
+    (viewerBehindCount === 0 ? 1 : 0);
+
+  // Bug 1 fix: use authoritative DB count as the canonical total.
+  // standings.length + 1 was wrong whenever the viewer was already counted
+  // in a cached or stale count elsewhere in the app.
+  const totalCount = totalMemberCount;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
@@ -93,6 +133,12 @@ export default async function MemberPaymentsPage({
         weeks={sharedWeeks}
         totalWeeks={TOTAL_WEEKS}
         token={token}
+        currentCount={currentCount}
+        totalCount={totalCount}
+        viewerDisplayName={viewerDisplayName}
+        viewerPaidCount={viewerPaidCount}
+        viewerBehindCount={viewerBehindCount}
+        currentWeekNum={currentWeekNum}
       />
     </div>
   );
