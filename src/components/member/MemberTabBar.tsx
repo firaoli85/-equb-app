@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,34 +50,6 @@ export function MemberTabBar({ token }: { token: string }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  const navRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const nav = navRef.current;
-    const vv  = window.visualViewport;
-    if (!nav || !vv) return;
-
-    let rafId = 0;
-
-    function update() {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const offset = document.documentElement.clientHeight - (vv!.height + vv!.offsetTop);
-        nav!.style.bottom = `${Math.max(0, offset)}px`;
-      });
-    }
-
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    update();
-
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-      cancelAnimationFrame(rafId);
-    };
-  }, []);
-
   function isActive(suffix: string) {
     const href = `${base}${suffix}`;
     return suffix === "" ? pathname === base : pathname.startsWith(href);
@@ -87,7 +59,6 @@ export function MemberTabBar({ token }: { token: string }) {
 
   return createPortal(
     <nav
-        ref={navRef}
         className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#0a0a0b]/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800/60"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Primary navigation"
@@ -99,8 +70,8 @@ export function MemberTabBar({ token }: { token: string }) {
               <Link
                 key={tab.suffix}
                 href={`${base}${tab.suffix}`}
-                className="flex flex-col items-center justify-center gap-0.5 select-none"
-                style={{ touchAction: "manipulation", minHeight: "44px" }}
+                className="flex flex-col items-center justify-center gap-0.5 select-none active:scale-95"
+                style={{ touchAction: "manipulation", minHeight: "44px", transition: "transform 100ms ease-out" }}
                 aria-label={tab.label}
                 aria-current={active ? "page" : undefined}
               >

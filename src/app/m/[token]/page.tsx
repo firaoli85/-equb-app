@@ -22,6 +22,8 @@ import { ConfirmCollectionReceipt } from "@/components/member/ConfirmCollectionR
 import { AutoRefresh } from "@/components/member/AutoRefresh";
 import { WeekStampList, type StampWeek } from "@/components/member/WeekStampList";
 import { EqubCalendar, type CalendarWeek } from "@/components/member/EqubCalendar";
+import { MemberPersonalSummary } from "@/components/member/MemberPersonalSummary";
+import { MemberPayoutCard } from "@/components/member/MemberPayoutCard";
 
 export default async function MemberView({
   params,
@@ -118,6 +120,11 @@ export default async function MemberView({
     isExtraPayoutWeek: extraPayout?.week.weekNumber === p.week.weekNumber,
   }));
 
+  // ── Personal summary extras ───────────────────────────────────────────
+  const amountPaidFormatted  = formatCurrency(member.weeklyAmount * paidCount);
+  const totalAmountFormatted = formatCurrency(member.weeklyAmount * TOTAL_WEEKS);
+  const nextDueDateFormatted = stampWeeks.find((w) => w.status === "PENDING")?.date ?? null;
+
   // ── Hero card state ───────────────────────────────────────────────────
   const heroAmount =
     mainPayout?.amount
@@ -165,6 +172,30 @@ export default async function MemberView({
   return (
     <div className="max-w-lg mx-auto px-4 pt-6 pb-10 space-y-4">
 
+      {/* ── Card 1: You (identity + progress ring) ───────────────────────── */}
+      <MemberPersonalSummary
+        displayName={getDisplayName(member)}
+        paidCount={paidCount}
+        lateCount={lateCount}
+        totalWeeks={TOTAL_WEEKS}
+      />
+
+      {/* ── Card 2: Your payout ──────────────────────────────────────────── */}
+      <MemberPayoutCard
+        wheelNumber={member.wheelNumber}
+        extraWheelNumber={member.extraWheelNumber}
+        heroAmountFormatted={heroAmount}
+        heroLabel={heroLabel}
+        mainPayoutDrawn={mainPayout !== null}
+        collectionConfirmed={!!member.collectionConfirmedAt}
+        amountPaidFormatted={amountPaidFormatted}
+        totalAmountFormatted={totalAmountFormatted}
+        nextDueDateFormatted={nextDueDateFormatted}
+        hasExtra={hasExtra}
+        extraNetFormatted={hasExtra ? formatCurrency(extraNet) : null}
+        combinedNetFormatted={hasExtra ? formatCurrency(mainNet + extraNet) : null}
+      />
+
       {/* ── Collection receipt confirmations ──────────────────────────────── */}
       {mainPayout && !member.collectionConfirmedAt && (
         <ConfirmCollectionReceipt
@@ -203,137 +234,24 @@ export default async function MemberView({
         />
       )}
 
-      {/* ── Hero card ────────────────────────────────────────────────────── */}
-      <div
-        className="rounded-2xl p-6 animate-fade-in-up"
-        style={{ background: "var(--hero-bg)", boxShadow: "var(--hero-shadow)" }}
-      >
-        {/* Member name — always visible, respects language preference */}
-        <h2 className="text-lg font-bold text-blue-900 dark:text-white mb-4 truncate">
-          {getDisplayName(member)}
-        </h2>
-
-        {/* Lucky number badge + draw state */}
-        <div className="flex items-center justify-between mb-5">
-          <span
-            className="text-xs font-bold px-3 py-1.5 rounded-full"
-            style={{
-              background: "var(--gold-badge-bg)",
-              border: "1px solid var(--gold-badge-border)",
-              color: "var(--gold-badge-text)",
-              letterSpacing: "0.02em",
-            }}
-          >
-            Lucky #{member.wheelNumber}
-          </span>
-
-          {mainPayout && member.collectionConfirmedAt ? (
-            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-white/50 dark:bg-white/10 px-2.5 py-1 rounded-full">
-              <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 12 12" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2 6l3 3 5-5" />
-              </svg>
-              Received
-            </span>
-          ) : mainPayout ? (
-            <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 bg-white/50 dark:bg-white/10 px-2.5 py-1 rounded-full">
-              Pending Signature
-            </span>
-          ) : (
-            <span className="text-[11px] font-bold text-blue-900 dark:text-indigo-300 bg-white/50 dark:bg-white/10 px-2.5 py-1 rounded-full">
-              In the draw
-            </span>
-          )}
-        </div>
-
-        {/* Label + big Fraunces amount */}
-        <div>
-          <p className="text-[11px] font-semibold text-blue-900/60 dark:text-white/50 uppercase tracking-widest mb-1">
-            {heroLabel}
-          </p>
-          <p
-            className="font-fraunces tabular-nums leading-none"
-            style={{
-              fontSize: "clamp(2.5rem, 10vw, 3.25rem)",
-              fontWeight: 900,
-              color: "var(--hero-amount-accent)",
-            }}
-          >
-            {heroAmount}
-          </p>
-          {!mainPayout && (
-            <p className="text-xs text-blue-900/50 dark:text-white/40 mt-1">
-              Yours when #{member.wheelNumber} is drawn · after {formatCurrency(mainFee)} fee
-            </p>
-          )}
-          {mainPayout && !member.collectionConfirmedAt && (
-            <p className="text-xs text-blue-900/50 dark:text-white/40 mt-1">
-              Confirm receipt above ↑ to complete collection
-            </p>
-          )}
-        </div>
-
-        {/* Extra wheel sub-card */}
-        {hasExtra && (
-          <div className="mt-4 pt-4 border-t border-blue-300/30 dark:border-indigo-400/20">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-semibold text-blue-900/60 dark:text-white/50 uppercase tracking-widest mb-1">
-                  Extra Wheel Net
-                </p>
-                <p
-                  className="font-fraunces text-2xl tabular-nums leading-none"
-                  style={{ fontWeight: 700, color: "var(--hero-amount-accent)" }}
-                >
-                  {extraPayout?.amount
-                    ? formatCurrency(Math.round(Number(extraPayout.amount) * 100))
-                    : formatCurrency(extraNet)}
-                </p>
-                {member.extraWheelNumber != null && (
-                  <span
-                    className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-2"
-                    style={{
-                      background: "var(--gold-badge-bg)",
-                      border: "1px solid var(--gold-badge-border)",
-                      color: "var(--gold-badge-text)",
-                    }}
-                  >
-                    Lucky #{member.extraWheelNumber}
-                  </span>
-                )}
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[11px] font-semibold text-blue-900/60 dark:text-white/50 uppercase tracking-widest mb-1">
-                  Combined Total
-                </p>
-                <p
-                  className="font-fraunces text-3xl tabular-nums leading-none"
-                  style={{ fontWeight: 900, color: "var(--hero-amount-accent)" }}
-                >
-                  {formatCurrency(mainNet + extraNet)}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* ── Payment Standing ──────────────────────────────────────────────── */}
       <div className="bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm animate-fade-in-up-1">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+          <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
             Payment Standing
           </p>
-          <p className="text-xs font-semibold tabular-nums" style={{ color: "var(--accent)" }}>
+          <p className="text-[10px] font-semibold tabular-nums text-indigo-500 dark:text-indigo-400">
             Week {currentWeekNum} of {TOTAL_WEEKS}
           </p>
         </div>
 
         <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-4">
           <div
-            className="h-full rounded-full transition-all duration-700"
+            className="h-full rounded-full bg-indigo-500 dark:bg-indigo-400"
             style={{
               width: `${Math.round((Math.min(currentWeekNum, TOTAL_WEEKS) / TOTAL_WEEKS) * 100)}%`,
-              background: "var(--accent)",
+              transition: "width 500ms ease-out",
             }}
           />
         </div>
@@ -356,15 +274,13 @@ export default async function MemberView({
           {member.payments.map((p) => (
             <div
               key={p.id}
-              className={`flex-1 ${p.status === "PENDING" ? "bg-gray-200 dark:bg-gray-700" : ""}`}
-              style={{
-                background:
-                  p.status === "PAID"     ? "#10b981" :
-                  p.status === "LATE"     ? "#ef4444" :
-                  p.status === "DEFERRED" ? "#f97316" :
-                  p.status === "PARTIAL"  ? "#f59e0b" :
-                  undefined,
-              }}
+              className={`flex-1 ${
+                p.status === "PAID"     ? "bg-emerald-500" :
+                p.status === "LATE"     ? "bg-red-500" :
+                p.status === "DEFERRED" ? "bg-orange-500" :
+                p.status === "PARTIAL"  ? "bg-amber-500" :
+                "bg-gray-200 dark:bg-gray-700"
+              }`}
             />
           ))}
         </div>
@@ -379,7 +295,8 @@ export default async function MemberView({
       <div className="space-y-2 animate-fade-in-up-3">
         <Link
           href={`/m/${member.token}/weeks`}
-          className="group flex items-center gap-3 px-4 py-4 bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition-all"
+          className="group flex items-center gap-3 px-4 py-4 bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md active:scale-[0.99]"
+          style={{ transition: "box-shadow 200ms ease-out, border-color 200ms ease-out, transform 120ms ease-out" }}
         >
           <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 transition-colors">
             <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -402,7 +319,8 @@ export default async function MemberView({
 
         <Link
           href={`/m/${member.token}/documents`}
-          className="group flex items-center gap-3 px-4 py-4 bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition-all"
+          className="group flex items-center gap-3 px-4 py-4 bg-white dark:bg-[#141414] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md active:scale-[0.99]"
+          style={{ transition: "box-shadow 200ms ease-out, border-color 200ms ease-out, transform 120ms ease-out" }}
         >
           <div className="w-9 h-9 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 transition-colors">
             <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -1,0 +1,19 @@
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://10.0.0.139:3002
+- Environments: .env.local, .env
+✓ Ready in 861ms
+
+ GET /login 200 in 1176ms (next.js: 628ms, application-code: 548ms)
+ GET /login 200 in 66ms (next.js: 7ms, application-code: 60ms)
+ GET /login 200 in 47ms (next.js: 5ms, application-code: 42ms)
+ GET /login 200 in 61ms (next.js: 4ms, application-code: 57ms)
+ GET /login 200 in 50ms (next.js: 4ms, application-code: 46ms)
+ GET /m/15014539-eb23-4b43-884f-8d4caf34dd84 200 in 1851ms (next.js: 942ms, application-code: 909ms)
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+✓ Finished writing to filesystem cache in 25.2s
+ GET /m/15014539-eb23-4b43-884f-8d4caf34dd84 200 in 2.5s (next.js: 203ms, application-code: 2.3s)
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+[?25h

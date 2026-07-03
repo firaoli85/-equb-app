@@ -84,7 +84,8 @@ export function EqubCalendar({
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => shiftMonth(-1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-95"
+          style={{ transitionProperty: "color, background-color, transform", transitionDuration: "150ms, 150ms, 100ms", transitionTimingFunction: "ease-out" }}
           aria-label="Previous month"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -96,7 +97,8 @@ export function EqubCalendar({
         </p>
         <button
           onClick={() => shiftMonth(1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors active:scale-95"
+          style={{ transitionProperty: "color, background-color, transform", transitionDuration: "150ms, 150ms, 100ms", transitionTimingFunction: "ease-out" }}
           aria-label="Next month"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

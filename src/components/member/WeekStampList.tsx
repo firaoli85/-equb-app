@@ -61,7 +61,9 @@ export function WeekStampList({
   // ── Render state ─────────────────────────────────────────────────────────
   const [activeIdx,     setActiveIdx]     = useState<number | null>(null);
   const [filled,        setFilled]        = useState<Set<number>>(new Set());
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
   // ── startNext ─────────────────────────────────────────────────────────────
   // Stored in a ref so that the setTimeout callback always calls the latest
@@ -178,7 +180,15 @@ export function WeekStampList({
         const paid     = w.status === "PAID";
         const notPaid  = w.status === "LATE" || w.status === "DEFERRED" || w.status === "PARTIAL";
         const hasFill  = paid || notPaid;
-        const emoji    = paid ? "⭐" : notPaid ? "😔" : null;
+        const emoji    = paid ? (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-emerald-500 dark:text-emerald-400">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        ) : notPaid ? (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" className="text-gray-400 dark:text-gray-600">
+            <path d="M5 12h14"/>
+          </svg>
+        ) : null;
 
         return (
           <div
@@ -205,7 +215,7 @@ export function WeekStampList({
                   width: showFill ? "100%" : "0%",
                   // Transition only fires on the active slot; done rows stay put.
                   transition: isActive && !reducedMotion
-                    ? `width ${FILL_MS}ms ease`
+                    ? `width ${FILL_MS}ms cubic-bezier(0.23,1,0.32,1)`
                     : "none",
                 }}
                 aria-hidden="true"

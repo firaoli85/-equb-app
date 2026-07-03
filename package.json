@@ -16,6 +16,7 @@
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.3",
     "firebase": "^12.13.0",
+    "motion": "^12.42.2",
     "next": "16.2.6",
     "pdfkit": "^0.18.0",
     "prisma": "^5.22.0",
@@ -25,6 +26,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pdfkit": "^0.17.6",

@@ -1,0 +1,693 @@
+
+> equb-app@0.1.0 dev
+> next dev --port 3002
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3002
+- Network:       http://10.0.0.139:3002
+- Environments: .env.local, .env
+✓ Ready in 824ms
+
+ GET / 307 in 539ms (next.js: 304ms, application-code: 234ms)
+ GET /m/15014539-eb23-4b43-884f-8d4caf34dd84 200 in 2.3s (next.js: 1228ms, application-code: 1062ms)
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+✓ Compiled in 482ms
+✓ Compiled in 385ms
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:5:1
+Module not found: Can't resolve 'motion/react'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36minterface[0m [33mProps[0m {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:5:1
+Module not found: Can't resolve 'motion/react'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36minterface[0m [33mProps[0m {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:5:1
+Module not found: Can't resolve 'motion/react'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36minterface[0m [33mProps[0m {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:5:1
+Module not found: Can't resolve 'motion/react'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36minterface[0m [33mProps[0m {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:4:1
+Module not found: Can't resolve 'motion/react'
+  [90m2 |[0m
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:5:1
+Module not found: Can't resolve 'motion/react'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36minterface[0m [33mProps[0m {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:5:1
+Module not found: Can't resolve 'motion/react'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36minterface[0m [33mProps[0m {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:5:1
+Module not found: Can't resolve 'motion/react'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36minterface[0m [33mProps[0m {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/components/member/MemberPersonalSummary.tsx:5:1
+Module not found: Can't resolve 'motion/react'
+  [90m3 |[0m [36mimport[0m { useState, useEffect } [36mfrom[0m [32m"react"[0m;
+  [90m4 |[0m [36mimport[0m { motion, useReducedMotion } [36mfrom[0m [32m"motion/react"[0m;
+[31m[1m>[0m [90m5 |[0m [36mimport[0m { animate } [36mfrom[0m [32m"motion/react"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m6 |[0m [36mimport[0m { springs } [36mfrom[0m [32m"@/lib/motion-tokens"[0m;
+  [90m7 |[0m
+  [90m8 |[0m [36minterface[0m [33mProps[0m {
+
+
+
+Import trace:
+  Server Component:
+    ./src/components/member/MemberPersonalSummary.tsx
+    ./src/app/m/[token]/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:1:1
+Module not found: Can't resolve 'framer-motion'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:1:1
+Module not found: Can't resolve 'framer-motion'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:1:1
+Module not found: Can't resolve 'framer-motion'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:1:1
+Module not found: Can't resolve 'framer-motion'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:1:1
+Module not found: Can't resolve 'framer-motion'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:1:1
+Module not found: Can't resolve 'framer-motion'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:2:1
+Module not found: Can't resolve 'framer-motion'
+  [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+[31m[1m>[0m [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+  [90m5 |[0m [90m//[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:2:1
+Module not found: Can't resolve 'framer-motion'
+  [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+[31m[1m>[0m [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+  [90m5 |[0m [90m//[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:2:1
+Module not found: Can't resolve 'framer-motion'
+  [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+[31m[1m>[0m [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+  [90m5 |[0m [90m//[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./node_modules/motion/dist/es/react.mjs:2:1
+Module not found: Can't resolve 'framer-motion'
+  [90m1 |[0m [36mimport[0m * [36mas[0m fm [36mfrom[0m [32m'framer-motion'[0m;
+[31m[1m>[0m [90m2 |[0m [36mexport[0m * [36mfrom[0m [32m'framer-motion'[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [90m// Re-export everything from framer-motion.[0m
+  [90m5 |[0m [90m//[0m
+
+
+
+Import traces:
+  Client Component Browser:
+    ./node_modules/motion/dist/es/react.mjs [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component Browser]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./node_modules/motion/dist/es/react.mjs [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Client Component SSR]
+    ./src/components/member/MemberPersonalSummary.tsx [Server Component]
+    ./src/app/m/[token]/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+✓ Compiled in 2.9s
+ GET / 307 in 208ms (next.js: 114ms, application-code: 94ms)
+ GET /admin/login 200 in 136ms (next.js: 60ms, proxy.ts: 6ms, application-code: 70ms)
+ GET /m/15014539-eb23-4b43-884f-8d4caf34dd84 200 in 824ms (next.js: 142ms, application-code: 682ms)
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+✓ Finished writing to filesystem cache in 14.8s
+✓ Compiled in 419ms
+✓ Compiled in 559ms
+ GET /m/15014539-eb23-4b43-884f-8d4caf34dd84 200 in 875ms (next.js: 142ms, application-code: 733ms)
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+ GET /m/15014539-eb23-4b43-884f-8d4caf34dd84 200 in 1079ms (next.js: 125ms, application-code: 954ms)
