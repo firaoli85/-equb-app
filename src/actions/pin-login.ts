@@ -27,6 +27,7 @@ async function findMemberByPhone(entered: string) {
     select: {
       id: true, token: true, phone: true,
       pin: true, pinAttempts: true, pinLockedUntil: true,
+      nameEnglishFirst: true, nameAmharic: true,
     },
   });
 
@@ -42,6 +43,8 @@ export async function lookupPhone(
   phone?: string;
   hasPin?: boolean;
   displayPhone?: string;
+  nameEnglishFirst?: string | null;
+  nameAmharic?: string | null;
 }> {
   const raw = (formData.get("phone") as string)?.trim();
   if (!raw) return { error: "Please enter your phone number." };
@@ -57,6 +60,8 @@ export async function lookupPhone(
     phone: e164,
     hasPin: !!member.pin,
     displayPhone: friendlyPhone(e164),
+    nameEnglishFirst: member.nameEnglishFirst,
+    nameAmharic: member.nameAmharic,
   };
 }
 
