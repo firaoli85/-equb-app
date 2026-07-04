@@ -2,9 +2,9 @@
 
 import { db } from "@/lib/db";
 import { sendVerification, checkVerification } from "@/lib/twilio";
-import { computeFingerprint, createMemberSession, setSessionCookies } from "@/lib/member-session";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { createSessionForMember, setNewSessionCookie, memberSessionMaxAge } from "@/lib/sessions";
 
 function digitsOnly(s: string): string {
   return s.replace(/\D/g, "");
@@ -72,13 +72,10 @@ export async function verifyOtp(
     if (!member) return { error: "Phone number not found." };
 
     const ua = (await headers()).get("user-agent") ?? "";
-    const fingerprint = await computeFingerprint(ua, screen, language);
-    const { sessionToken, hadPreviousDevice } = await createMemberSession(member.id, fingerprint);
-    await setSessionCookies(sessionToken, screen, language);
+    const newSid = await createSessionForMember(member.id, ua);
+    await setNewSessionCookie(newSid, memberSessionMaxAge());
 
-    redirectPath = hadPreviousDevice
-      ? `/m/${member.token}?notice=new_device`
-      : `/m/${member.token}`;
+    redirectPath = `/m/${member.token}`;
   } catch (err) {
     console.error("[verifyOtp] unexpected error:", err);
     return { error: "An unexpected error occurred. Please try again." };

@@ -2,9 +2,9 @@
 
 import { db } from "@/lib/db";
 import { hashPin } from "@/lib/pin";
-import { computeFingerprint, createMemberSession, setSessionCookies } from "@/lib/member-session";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { createSessionForMember, setNewSessionCookie, memberSessionMaxAge } from "@/lib/sessions";
 
 /**
  * Set a PIN for a member who has no PIN yet (pin === null after cycle reset).
@@ -46,9 +46,8 @@ export async function setInitialPin(
   });
 
   const ua = (await headers()).get("user-agent") ?? "";
-  const fingerprint = await computeFingerprint(ua, screen, language);
-  const { sessionToken } = await createMemberSession(member.id, fingerprint);
-  await setSessionCookies(sessionToken, screen, language);
+  const newSid = await createSessionForMember(member.id, ua);
+  await setNewSessionCookie(newSid, memberSessionMaxAge());
 
   redirect(`/m/${member.token}`);
 }

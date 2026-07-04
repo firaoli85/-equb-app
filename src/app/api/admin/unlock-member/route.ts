@@ -1,13 +1,13 @@
 import { cookies } from "next/headers";
-import { validateSessionToken, SESSION_COOKIE } from "@/lib/auth";
+import { NEW_SESSION_COOKIE, validateNewAdminSession } from "@/lib/sessions";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token || !(await validateSessionToken(token))) {
+  const sid = cookieStore.get(NEW_SESSION_COOKIE)?.value;
+  if (!sid || !(await validateNewAdminSession(sid))) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

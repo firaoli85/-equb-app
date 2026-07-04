@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { validateSessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { NEW_SESSION_COOKIE, validateNewAdminSession } from "@/lib/sessions";
 import { ensureWeeksExist } from "@/lib/equb";
 import { AdminNav } from "@/components/admin/AdminNav";
@@ -15,18 +14,8 @@ export default async function ProtectedAdminLayout({
 }) {
   const cookieStore = await cookies();
 
-  // Try new DB-backed session first (equb_sid)
-  let adminAuthed = false;
   const newSid = cookieStore.get(NEW_SESSION_COOKIE)?.value;
-  if (newSid) adminAuthed = await validateNewAdminSession(newSid);
-
-  // Fall back to old HMAC token (equb_session)
-  if (!adminAuthed) {
-    const token = cookieStore.get(SESSION_COOKIE)?.value;
-    if (token && (await validateSessionToken(token))) adminAuthed = true;
-  }
-
-  if (!adminAuthed) redirect("/admin/login");
+  if (!newSid || !(await validateNewAdminSession(newSid))) redirect("/admin/login");
 
   await ensureWeeksExist();
 

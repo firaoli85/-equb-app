@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import * as XLSX from "xlsx";
-import { validateSessionToken, SESSION_COOKIE } from "@/lib/auth";
+import { NEW_SESSION_COOKIE, validateNewAdminSession } from "@/lib/sessions";
 import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -26,8 +26,8 @@ function decimalDollars(val: unknown): string {
 export async function GET() {
   // ── Auth ──────────────────────────────────────────────────────────────────
   const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token || !(await validateSessionToken(token))) {
+  const sid = cookieStore.get(NEW_SESSION_COOKIE)?.value;
+  if (!sid || !(await validateNewAdminSession(sid))) {
     return new Response("Unauthorized", { status: 401 });
   }
 

@@ -1,11 +1,6 @@
-import { headers, cookies } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import {
-  getSessionFromCookies,
-  computeFingerprint,
-  validateSession,
-} from "@/lib/member-session";
 import { NEW_SESSION_COOKIE, validateNewMemberSession } from "@/lib/sessions";
 import { getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
@@ -24,23 +19,10 @@ export default async function MemberLayout({
 }) {
   const { token } = await params;
 
-  // 1. Authenticate — try new DB session first, fall back to old session
-  const ua = (await headers()).get("user-agent") ?? "";
+  // 1. Authenticate via new DB session (equb_sid)
   const jar = await cookies();
-  let authenticatedMemberId: string | null = null;
-
   const newSid = jar.get(NEW_SESSION_COOKIE)?.value;
-  if (newSid) authenticatedMemberId = await validateNewMemberSession(newSid);
-
-  if (!authenticatedMemberId) {
-    const sessionData = await getSessionFromCookies();
-    if (sessionData) {
-      const fingerprint = await computeFingerprint(ua, sessionData.screen, sessionData.language);
-      const sessionResult = await validateSession(sessionData.sessionToken, fingerprint);
-      if (sessionResult.valid) authenticatedMemberId = sessionResult.memberId;
-    }
-  }
-
+  const authenticatedMemberId = newSid ? await validateNewMemberSession(newSid) : null;
   if (!authenticatedMemberId) redirect("/login");
 
   // 2. Find member by URL token

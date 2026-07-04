@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import twilio from "twilio";
-import { computeFingerprint, createMemberSession, setSessionCookies } from "@/lib/member-session";
 import { createSessionForMember, setNewSessionCookie, memberSessionMaxAge } from "@/lib/sessions";
 
 export const runtime = "nodejs";
@@ -60,15 +59,10 @@ export async function POST(req: Request) {
   }
 
   const ua = (await headers()).get("user-agent") ?? "";
-  const fingerprint = await computeFingerprint(ua, screen ?? "", language ?? "");
-  const { sessionToken, hadPreviousDevice } = await createMemberSession(member.id, fingerprint);
-  await setSessionCookies(sessionToken, screen ?? "", language ?? "");
   const newSid = await createSessionForMember(member.id, ua);
   await setNewSessionCookie(newSid, memberSessionMaxAge());
 
-  const redirectTo = hadPreviousDevice
-    ? `/m/${member.token}?notice=new_device`
-    : `/m/${member.token}`;
+  const redirectTo = `/m/${member.token}`;
 
   return Response.json({ success: true, redirectTo });
 }

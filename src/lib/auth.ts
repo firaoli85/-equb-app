@@ -1,85 +1,12 @@
 import { cookies } from "next/headers";
+import { NEW_SESSION_COOKIE, validateNewAdminSession } from "@/lib/sessions";
 
-const SESSION_COOKIE = "equb_session";
-const SESSION_DATA_PREFIX = "equb-admin-v1:";
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+// Kept only to clear the stale old cookie on logout; no longer used for validation.
+export const SESSION_COOKIE = "equb_session";
 
-async function getKey(): Promise<CryptoKey> {
-  const secret = process.env.ADMIN_SESSION_SECRET!;
-  const enc = new TextEncoder();
-  return crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"]
-  );
-}
-
-function toHex(buf: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function fromHex(hex: string): Uint8Array<ArrayBuffer> {
-  const buf = new ArrayBuffer(Math.floor(hex.length / 2));
-  const bytes = new Uint8Array(buf);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
-
-// Token format: "<hmac-hex>.<issuedAt-ms>"
-// HMAC is computed over "equb-admin-v1:<issuedAt-ms>"
-export async function createSessionToken(): Promise<string> {
-  const issuedAt = Date.now();
-  const payload = `${SESSION_DATA_PREFIX}${issuedAt}`;
-  const key = await getKey();
-  const enc = new TextEncoder();
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
-  return `${toHex(sig)}.${issuedAt}`;
-}
-
-export async function validateSessionToken(token: string): Promise<boolean> {
-  try {
-    const dotIdx = token.indexOf(".");
-    if (dotIdx === -1) return false;
-    const hmacHex = token.slice(0, dotIdx);
-    const issuedAt = parseInt(token.slice(dotIdx + 1), 10);
-    if (isNaN(issuedAt)) return false;
-
-    if (Date.now() - issuedAt > IDLE_TIMEOUT_MS) return false;
-
-    const payload = `${SESSION_DATA_PREFIX}${issuedAt}`;
-    const key = await getKey();
-    const enc = new TextEncoder();
-    return await crypto.subtle.verify("HMAC", key, fromHex(hmacHex), enc.encode(payload));
-  } catch {
-    return false;
-  }
-}
-
-// Reusable admin session guard for server actions.
-// Tries the new DB-backed session (equb_sid) first; falls back to the old HMAC token.
-// Returns { ok: true } for authenticated admins; { ok: false, error } otherwise.
 export async function requireAdmin(): Promise<{ ok: true } | { ok: false; error: string }> {
   const cookieStore = await cookies();
-
-  // Try new DB session first
-  const { NEW_SESSION_COOKIE, validateNewAdminSession } = await import("@/lib/sessions");
-  const newSid = cookieStore.get(NEW_SESSION_COOKIE)?.value;
-  if (newSid && (await validateNewAdminSession(newSid))) {
-    return { ok: true };
-  }
-
-  // Fall back to old HMAC token
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token || !(await validateSessionToken(token))) {
-    return { ok: false, error: "Unauthorized" };
-  }
-  return { ok: true };
+  const sid = cookieStore.get(NEW_SESSION_COOKIE)?.value;
+  if (sid && (await validateNewAdminSession(sid))) return { ok: true };
+  return { ok: false, error: "Unauthorized" };
 }
-
-export { SESSION_COOKIE };
