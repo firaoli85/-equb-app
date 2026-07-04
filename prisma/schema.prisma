@@ -136,6 +136,18 @@ model Session {
   @@map("sessions")
 }
 
+model OtpRateLimit {
+  phone           String    @id       // last-10 normalized digits
+  sendCount       Int       @default(0)
+  windowStart     DateTime  @default(now())
+  lastSentAt      DateTime?
+  failCount       Int       @default(0)
+  failWindowStart DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("otp_rate_limits")
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   action     String

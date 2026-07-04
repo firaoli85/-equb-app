@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import twilio from "twilio";
+import { checkAndRecordSend } from "@/lib/otp-rate-limit";
 
 export const runtime = "nodejs";
 
@@ -34,6 +35,11 @@ export async function POST(req: Request) {
   const member = members.find((m) => last10(m.phone!) === enteredLast10) ?? null;
   if (!member) {
     return Response.json({ error: "Phone number not found." }, { status: 404 });
+  }
+
+  const rateCheck = await checkAndRecordSend(member.phone!);
+  if (!rateCheck.allowed) {
+    return Response.json({ error: rateCheck.error }, { status: 429 });
   }
 
   const client = twilio(

@@ -5,6 +5,7 @@ import { sendVerification, checkVerification } from "@/lib/twilio";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSessionForMember, setNewSessionCookie, memberSessionMaxAge } from "@/lib/sessions";
+import { checkAndRecordSend, checkVerifyLimit, recordVerifyFailure, recordVerifySuccess } from "@/lib/otp-rate-limit";
 
 function digitsOnly(s: string): string {
   return s.replace(/\D/g, "");
@@ -33,6 +34,9 @@ export async function sendOtp(
 ): Promise<{ error?: string; sent?: boolean }> {
   if (!phone) return { error: "Phone number missing." };
 
+  const rateCheck = await checkAndRecordSend(phone);
+  if (!rateCheck.allowed) return { error: rateCheck.error };
+
   try {
     await sendVerification(phone, channel);
     return { sent: true };
@@ -57,6 +61,9 @@ export async function verifyOtp(
     if (!code)  return { error: "Please enter the 6-digit code." };
     if (!/^\d{6}$/.test(code)) return { error: "Code must be exactly 6 digits." };
 
+    const verifyCheck = await checkVerifyLimit(phone);
+    if (!verifyCheck.allowed) return { error: verifyCheck.error };
+
     const result = await checkVerification(phone, code);
     console.log("[verifyOtp] Twilio result:", result);
 
@@ -64,8 +71,11 @@ export async function verifyOtp(
       return { error: "This code has expired or was already used. Request a new one.", expired: true };
     }
     if (result === "invalid") {
+      await recordVerifyFailure(phone);
       return { error: "Incorrect code. Please check and try again." };
     }
+
+    await recordVerifySuccess(phone);
 
     // approved — find member and create session
     const member = await findMemberByPhone(phone);
@@ -100,6 +110,9 @@ export async function requestOtp(
 
   const e164 = `+1${last10(raw)}`;
   const channel = (formData.get("channel") as "sms" | "whatsapp") ?? "sms";
+
+  const rateCheck = await checkAndRecordSend(e164);
+  if (!rateCheck.allowed) return { error: rateCheck.error };
 
   try {
     await sendVerification(e164, channel);

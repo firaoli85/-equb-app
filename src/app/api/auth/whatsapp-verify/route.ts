@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import twilio from "twilio";
 import { createSessionForMember, setNewSessionCookie, memberSessionMaxAge } from "@/lib/sessions";
+import { checkVerifyLimit, recordVerifyFailure, recordVerifySuccess } from "@/lib/otp-rate-limit";
 
 export const runtime = "nodejs";
 
@@ -38,6 +39,11 @@ export async function POST(req: Request) {
     return Response.json({ error: "Phone number not found." }, { status: 404 });
   }
 
+  const verifyCheck = await checkVerifyLimit(phone);
+  if (!verifyCheck.allowed) {
+    return Response.json({ error: verifyCheck.error }, { status: 429 });
+  }
+
   const client = twilio(
     process.env.TWILIO_ACCOUNT_SID!,
     process.env.TWILIO_AUTH_TOKEN!
@@ -52,11 +58,15 @@ export async function POST(req: Request) {
       });
 
     if (check.status !== "approved") {
+      await recordVerifyFailure(phone);
       return Response.json({ error: "Invalid code." }, { status: 400 });
     }
   } catch {
+    await recordVerifyFailure(phone);
     return Response.json({ error: "Invalid code." }, { status: 400 });
   }
+
+  await recordVerifySuccess(phone);
 
   const ua = (await headers()).get("user-agent") ?? "";
   const newSid = await createSessionForMember(member.id, ua);
