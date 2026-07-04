@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { motionTokens } from "@/lib/motion-tokens";
 
 export type CalendarWeek = {
   weekNumber: number;
@@ -47,6 +49,8 @@ export function EqubCalendar({
   defaultMonth: string; // "YYYY-MM"
 }) {
   const [displayMonth, setDisplayMonth] = useState(defaultMonth);
+  const [direction, setDirection] = useState(0);
+  const reduce = useReducedMotion();
 
   const [yearStr, monthStr] = displayMonth.split("-");
   const year     = parseInt(yearStr,  10);
@@ -72,6 +76,7 @@ export function EqubCalendar({
   const todayStr = new Date().toISOString().slice(0, 10);
 
   function shiftMonth(delta: number) {
+    setDirection(delta);
     const d = new Date(Date.UTC(year, monthIdx + delta, 1));
     setDisplayMonth(
       `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`
@@ -107,7 +112,7 @@ export function EqubCalendar({
         </button>
       </div>
 
-      {/* Day-of-week headers */}
+      {/* Day-of-week headers (static — don't cross-fade) */}
       <div className="grid grid-cols-7 mb-1">
         {DAY_HEADS.map((d) => (
           <div key={d} className="text-center text-[10px] font-bold text-gray-400 dark:text-gray-600 py-1">
@@ -116,47 +121,57 @@ export function EqubCalendar({
         ))}
       </div>
 
-      {/* Date cells */}
-      <div className="grid grid-cols-7 gap-y-0.5">
-        {cells.map((day, i) => {
-          if (day === null) return <div key={`e${i}`} />;
+      {/* Date cells + Legend — cross-fade on month change */}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={displayMonth}
+          initial={{ opacity: 0, x: reduce ? 0 : direction * motionTokens.distance.sm }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: reduce ? 0 : -direction * motionTokens.distance.sm }}
+          transition={{ duration: motionTokens.duration.fast, ease: motionTokens.easing.smooth }}
+        >
+          <div className="grid grid-cols-7 gap-y-0.5">
+            {cells.map((day, i) => {
+              if (day === null) return <div key={`e${i}`} />;
 
-          const dateStr = `${year}-${String(month1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const status  = dateStatus.get(dateStr);
-          const weekNum = dateWeekNum.get(dateStr);
-          const isEqub  = status !== undefined;
-          const isToday = dateStr === todayStr;
+              const dateStr = `${year}-${String(month1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+              const status  = dateStatus.get(dateStr);
+              const weekNum = dateWeekNum.get(dateStr);
+              const isEqub  = status !== undefined;
+              const isToday = dateStr === todayStr;
 
-          const cellCls = isEqub
-            ? STATUS_CELL[status]
-            : isToday
-            ? "ring-1 ring-inset ring-gray-300 dark:ring-gray-600 text-gray-700 dark:text-gray-300"
-            : "text-gray-400 dark:text-gray-600";
+              const cellCls = isEqub
+                ? STATUS_CELL[status]
+                : isToday
+                ? "ring-1 ring-inset ring-gray-300 dark:ring-gray-600 text-gray-700 dark:text-gray-300"
+                : "text-gray-400 dark:text-gray-600";
 
-          const statusLabel = status === "PAID" ? "Paid" : status === "LATE" ? "Late" : status === "DEFERRED" ? "Deferred" : status === "PARTIAL" ? "Partial" : "Upcoming";
+              const statusLabel = status === "PAID" ? "Paid" : status === "LATE" ? "Late" : status === "DEFERRED" ? "Deferred" : status === "PARTIAL" ? "Partial" : "Upcoming";
 
-          return (
-            <div key={day} className="flex items-center justify-center py-0.5">
-              <div
-                className={`w-8 h-8 flex items-center justify-center rounded-full text-[12px] font-bold select-none ${cellCls}`}
-                title={isEqub && weekNum != null ? `Week ${weekNum} — ${statusLabel}` : undefined}
-              >
-                {day}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-x-4 gap-y-1 mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex-wrap">
-        {LEGEND.map(({ key, label }) => (
-          <div key={key} className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[key]}`} />
-            <span className="text-[10px] text-gray-400 dark:text-gray-500">{label}</span>
+              return (
+                <div key={day} className="flex items-center justify-center py-0.5">
+                  <div
+                    className={`w-8 h-8 flex items-center justify-center rounded-full text-[12px] font-bold select-none ${cellCls}`}
+                    title={isEqub && weekNum != null ? `Week ${weekNum} — ${statusLabel}` : undefined}
+                  >
+                    {day}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+
+          {/* Legend */}
+          <div className="flex items-center gap-x-4 gap-y-1 mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex-wrap">
+            {LEGEND.map(({ key, label }) => (
+              <div key={key} className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[key]}`} />
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">{label}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

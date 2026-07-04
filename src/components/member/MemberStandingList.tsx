@@ -178,37 +178,44 @@ export function MemberStandingList({
         </div>
 
         {/* ── Everyone else — single card, divide-y ─────────────────── */}
-        {members.length > 0 && (
-          <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#141414] border border-gray-100 dark:border-gray-800 shadow-sm">
-            {groups.map((group, gi) => (
-              <div key={group.letter}>
-                {/* Letter divider — quiet, inside the card */}
-                <div
-                  className={[
-                    "px-4 py-2 bg-gray-50/70 dark:bg-white/[0.02]",
-                    gi > 0 ? "border-t border-gray-100 dark:border-gray-800" : "",
-                  ].join(" ")}
-                >
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 dark:text-indigo-500">
-                    {group.letter}
-                  </span>
-                </div>
+        {members.length > 0 && (() => {
+          let globalIdx = 0;
+          return (
+            <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#141414] border border-gray-100 dark:border-gray-800 shadow-sm">
+              {groups.map((group, gi) => (
+                <div key={group.letter}>
+                  {/* Letter divider — quiet, inside the card */}
+                  <div
+                    className={[
+                      "px-4 py-2 bg-gray-50/70 dark:bg-white/[0.02]",
+                      gi > 0 ? "border-t border-gray-100 dark:border-gray-800" : "",
+                    ].join(" ")}
+                  >
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 dark:text-indigo-500">
+                      {group.letter}
+                    </span>
+                  </div>
 
-                {/* Member rows */}
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {group.members.map((m) => (
-                    <MemberRow
-                      key={m.id}
-                      member={m}
-                      totalWeeks={totalWeeks}
-                      onTap={handleTap}
-                    />
-                  ))}
+                  {/* Member rows */}
+                  <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {group.members.map((m) => {
+                      const idx = globalIdx++;
+                      return (
+                        <MemberRow
+                          key={m.id}
+                          member={m}
+                          totalWeeks={totalWeeks}
+                          onTap={handleTap}
+                          animDelay={idx < 9 ? idx * 0.07 : undefined}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          );
+        })()}
 
         {members.length === 0 && (
           <p className="text-center py-10 text-sm text-gray-400 dark:text-gray-600">
@@ -240,10 +247,12 @@ function MemberRow({
   member,
   totalWeeks,
   onTap,
+  animDelay,
 }: {
   member: MemberStanding;
   totalWeeks: number;
   onTap: (m: MemberStanding) => void;
+  animDelay?: number;
 }) {
   const onTrack = member.behindCount === 0;
   const initial = (
@@ -256,8 +265,8 @@ function MemberRow({
   return (
     <button
       type="button"
-      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 active:bg-indigo-100/60 dark:active:bg-indigo-950/30 transition-colors text-left"
-      style={{ minHeight: "56px", touchAction: "manipulation" }}
+      className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 active:bg-indigo-100/60 dark:active:bg-indigo-950/30 transition-colors text-left${animDelay !== undefined ? " animate-fade-in-up" : ""}`}
+      style={animDelay !== undefined ? { minHeight: "56px", touchAction: "manipulation", animationDelay: `${animDelay}s` } : { minHeight: "56px", touchAction: "manipulation" }}
       onClick={() => onTap(member)}
     >
       {/* Avatar */}

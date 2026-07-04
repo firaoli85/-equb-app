@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
+import { springs } from "@/lib/motion-tokens";
 
 const TABS = [
   { label: "Home",        suffix: ""               },
@@ -46,6 +48,7 @@ function TabIcon({ suffix, active }: { suffix: string; active: boolean }) {
 export function MemberTabBar({ token }: { token: string }) {
   const pathname = usePathname();
   const base = `/m/${token}`;
+  const reduce = useReducedMotion();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -75,11 +78,15 @@ export function MemberTabBar({ token }: { token: string }) {
                 aria-label={tab.label}
                 aria-current={active ? "page" : undefined}
               >
-                <span
-                  className={`flex items-center justify-center w-10 h-[26px] rounded-full transition-colors ${
-                    active ? "bg-indigo-50 dark:bg-indigo-950/60" : ""
-                  }`}
-                >
+                <span className="relative flex items-center justify-center w-10 h-[26px] rounded-full">
+                  {active && (
+                    <motion.span
+                      layoutId="tab-active-bg"
+                      className="absolute inset-0 rounded-full bg-indigo-50 dark:bg-indigo-950/60"
+                      transition={reduce ? { duration: 0 } : springs.snappy}
+                      aria-hidden="true"
+                    />
+                  )}
                   <TabIcon suffix={tab.suffix} active={active} />
                 </span>
                 <span

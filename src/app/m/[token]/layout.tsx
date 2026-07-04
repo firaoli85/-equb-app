@@ -10,6 +10,7 @@ import { getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
 import { MemberSidebar } from "@/components/member/MemberSidebar";
 import { MemberTabBar } from "@/components/member/MemberTabBar";
+import { MemberPageTransition } from "@/components/member/MemberPageTransition";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NameToggle } from "@/components/member/NameToggle";
 
@@ -101,7 +102,7 @@ export default async function MemberLayout({
         md:pl-60= offset past the 240px sidebar on desktop
       */}
       <main className="pt-16 pb-24 md:pb-0 md:pl-60">
-        {children}
+        <MemberPageTransition>{children}</MemberPageTransition>
       </main>
 
       {/* Mobile-only bottom tab bar — md:hidden inside the component */}

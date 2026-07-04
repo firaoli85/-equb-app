@@ -295,15 +295,18 @@ export default async function MemberCollectionsPage({
       {drawnWeeks.length > 0 ? (
         <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#141414] border border-gray-100 dark:border-gray-800 shadow-sm mb-3 animate-fade-in-up-3">
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {drawnWeeks.map((week) => {
+            {drawnWeeks.map((week, i) => {
               const isShared = week.winnerNumbers.length > 1;
               const numbersStr = week.winnerNumbers
                 .map((n) => `#${n}`)
                 .join(" & ");
+              // Stagger first 8 rows; rows beyond that appear with the card
+              const stagger = i < 8;
               return (
                 <div
                   key={week.weekNumber}
-                  className="flex items-center justify-between gap-3 px-4 py-3.5"
+                  className={`flex items-center justify-between gap-3 px-4 py-3.5${stagger ? " animate-fade-in-up" : ""}`}
+                  style={stagger ? { animationDelay: `${0.30 + i * 0.06}s` } : undefined}
                 >
                   <div className="flex items-start gap-3 min-w-0">
                     {/* WK stamp */}
