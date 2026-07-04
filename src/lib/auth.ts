@@ -62,10 +62,19 @@ export async function validateSessionToken(token: string): Promise<boolean> {
 }
 
 // Reusable admin session guard for server actions.
-// Reads the same session cookie the (protected) layout validates.
+// Tries the new DB-backed session (equb_sid) first; falls back to the old HMAC token.
 // Returns { ok: true } for authenticated admins; { ok: false, error } otherwise.
 export async function requireAdmin(): Promise<{ ok: true } | { ok: false; error: string }> {
   const cookieStore = await cookies();
+
+  // Try new DB session first
+  const { NEW_SESSION_COOKIE, validateNewAdminSession } = await import("@/lib/sessions");
+  const newSid = cookieStore.get(NEW_SESSION_COOKIE)?.value;
+  if (newSid && (await validateNewAdminSession(newSid))) {
+    return { ok: true };
+  }
+
+  // Fall back to old HMAC token
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token || !(await validateSessionToken(token))) {
     return { ok: false, error: "Unauthorized" };

@@ -39,6 +39,7 @@ model Member {
   payments              Payment[]
   reviewRequests        PaymentReviewRequest[]
   sessions              MemberSession[]
+  newSessions           Session[]
   weekPayouts           WeekPayout[]
 
   @@map("members")
@@ -119,6 +120,20 @@ model MemberSession {
   member            Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
 
   @@map("member_sessions")
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  memberId   String?
+  isAdmin    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  lastUsedAt DateTime @default(now())
+  userAgent  String?
+  member     Member?  @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@map("sessions")
 }
 
 model AuditLog {

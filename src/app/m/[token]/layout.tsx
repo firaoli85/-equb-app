@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import {
@@ -6,6 +6,7 @@ import {
   computeFingerprint,
   validateSession,
 } from "@/lib/member-session";
+import { NEW_SESSION_COOKIE, validateNewMemberSession } from "@/lib/sessions";
 import { getCurrentWeekNumber, TOTAL_WEEKS, EQUB_START } from "@/lib/equb";
 import { MemberDrawer } from "@/components/member/MemberDrawer";
 import { MemberSidebar } from "@/components/member/MemberSidebar";
@@ -23,17 +24,26 @@ export default async function MemberLayout({
 }) {
   const { token } = await params;
 
-  // 1. Require session cookie
-  const sessionData = await getSessionFromCookies();
-  if (!sessionData) redirect("/login");
-
-  // 2. Validate session in DB (inactivity, expiry, device fingerprint)
+  // 1. Authenticate — try new DB session first, fall back to old session
   const ua = (await headers()).get("user-agent") ?? "";
-  const fingerprint = await computeFingerprint(ua, sessionData.screen, sessionData.language);
-  const sessionResult = await validateSession(sessionData.sessionToken, fingerprint);
-  if (!sessionResult.valid) redirect("/login?expired=1");
+  const jar = await cookies();
+  let authenticatedMemberId: string | null = null;
 
-  // 3. Find member by URL token
+  const newSid = jar.get(NEW_SESSION_COOKIE)?.value;
+  if (newSid) authenticatedMemberId = await validateNewMemberSession(newSid);
+
+  if (!authenticatedMemberId) {
+    const sessionData = await getSessionFromCookies();
+    if (sessionData) {
+      const fingerprint = await computeFingerprint(ua, sessionData.screen, sessionData.language);
+      const sessionResult = await validateSession(sessionData.sessionToken, fingerprint);
+      if (sessionResult.valid) authenticatedMemberId = sessionResult.memberId;
+    }
+  }
+
+  if (!authenticatedMemberId) redirect("/login");
+
+  // 2. Find member by URL token
   const member = await db.member.findUnique({
     where: { token },
     select: {
@@ -50,8 +60,8 @@ export default async function MemberLayout({
   });
   if (!member || member.isArchived) notFound();
 
-  // 4. Prevent cross-member access
-  if (sessionResult.memberId !== member.id) redirect("/login");
+  // 3. Prevent cross-member access
+  if (authenticatedMemberId !== member.id) redirect("/login");
 
   if (!member.confirmedAt) {
     return <>{children}</>;

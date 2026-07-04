@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { headers } from "next/headers";
 import { hashPin, verifyPin } from "@/lib/pin";
 import { computeFingerprint, createMemberSession, setSessionCookies } from "@/lib/member-session";
+import { createSessionForMember, setNewSessionCookie, memberSessionMaxAge } from "@/lib/sessions";
 import { redirect } from "next/navigation";
 
 const MAX_ATTEMPTS  = 5;
@@ -118,6 +119,8 @@ export async function verifyMemberPin(
     const fingerprint = await computeFingerprint(ua, screen, language);
     const { sessionToken, hadPreviousDevice } = await createMemberSession(member.id, fingerprint);
     await setSessionCookies(sessionToken, screen, language);
+    const newSid = await createSessionForMember(member.id, ua);
+    await setNewSessionCookie(newSid, memberSessionMaxAge());
 
     redirectPath = hadPreviousDevice
       ? `/m/${member.token}?notice=new_device`
@@ -172,6 +175,8 @@ export async function setInitialPinByPhone(
   const fingerprint = await computeFingerprint(ua, screen, language);
   const { sessionToken } = await createMemberSession(member.id, fingerprint);
   await setSessionCookies(sessionToken, screen, language);
+  const newSid = await createSessionForMember(member.id, ua);
+  await setNewSessionCookie(newSid, memberSessionMaxAge());
 
   redirect(`/m/${full.token}`);
 }
