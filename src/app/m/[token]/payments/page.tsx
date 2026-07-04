@@ -73,12 +73,26 @@ export default async function MemberPaymentsPage({
     date: formatDate(w.date),
   }));
 
+  // Strict server-side type — only these fields cross the server/client boundary.
+  // phone, pin, token, weeklyAmount, wheelNumber, extraWheelNumber, payoutMethod
+  // are never selected from the DB above and must never appear here.
+  // Name fields are coalesced to "" so the client always receives plain strings.
+  type SanitizedPeer = {
+    id: string;
+    nameAmharic: string;
+    nameEnglishFirst: string;
+    nameEnglishLast: string;
+    paidCount: number;
+    behindCount: number;
+    weekPayments: { weekNumber: number; status: string }[];
+  };
+
   // Compute per-member standing — weeks only, no dollar math.
   // Bug 2 fix: behindCount = max(0, elapsed − paid − deferred).
   // DEFERRED weeks are excused and must NOT count as behind.
   // Any elapsed week that is not PAID and not DEFERRED counts against the member,
   // whether it is LATE, PARTIAL, or simply absent from payment records.
-  const standings = members.map((m) => {
+  const standings: SanitizedPeer[] = members.map((m) => {
     const paidCount = m.payments.filter((p) => p.status === "PAID").length;
     const deferredCount = m.payments.filter(
       (p) => p.status === "DEFERRED" && p.week.weekNumber <= currentWeekNum
@@ -87,9 +101,9 @@ export default async function MemberPaymentsPage({
 
     return {
       id: m.id,
-      nameAmharic: m.nameAmharic,
-      nameEnglishFirst: m.nameEnglishFirst,
-      nameEnglishLast: m.nameEnglishLast,
+      nameAmharic: m.nameAmharic ?? "",
+      nameEnglishFirst: m.nameEnglishFirst ?? "",
+      nameEnglishLast: m.nameEnglishLast ?? "",
       paidCount,
       behindCount,
       weekPayments: m.payments.map((p) => ({

@@ -34,10 +34,30 @@ export default async function MemberView({
 
   const member = await db.member.findUnique({
     where: { token },
-    include: {
+    select: {
+      id: true,
+      token: true,
+      nameAmharic: true,
+      nameEnglishFirst: true,
+      nameEnglishLast: true,
+      displayPreference: true,
+      pin: true,                     // null check only — never passed to client
+      confirmedAt: true,
+      collectionConfirmedAt: true,
+      collectionConfirmedAtExtra: true,
+      weeklyAmount: true,
+      wheelNumber: true,
+      extraWheelNumber: true,
+      // phone, confirmedFingerprint, collectionConfirmedFingerprint,
+      // pinAttempts, pinLockedUntil intentionally absent — never needed here
       payments: {
-        include: { week: true },
         orderBy: { week: { weekNumber: "asc" } },
+        select: {
+          id: true,
+          status: true,
+          paidAmount: true,
+          week: { select: { weekNumber: true, date: true } },
+        },
       },
     },
   });
