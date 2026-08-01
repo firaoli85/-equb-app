@@ -276,6 +276,64 @@ structural decisions — the data model and the money principles — must be rig
 building, because everything sits on them and they are expensive to change later.
 Everything above that line (screens, polish, features) is fixed as it comes up.
 
+### 2.18 THE CARRIED BALANCE — PEOPLE, NOT CYCLES, OWE
+
+Real life interrupts. A member may stop paying because of a death in the family, a job
+loss, a move. **The organizer absorbs the gap so no other member is ever short.** That is
+his responsibility and it is not negotiable. The software's job is to **remember, never
+to enforce**.
+
+**The balance belongs to the person and survives cycle deletion.** People are permanent
+(2.5); so is what they carry.
+
+**A balance is created two ways:**
+1. **Early close (manual)** — the organizer knows at week 12 that someone will not
+   continue. He marks them as no longer contributing in their profile; the system
+   calculates the remaining weeks at their rate and closes their participation.
+2. **Automatic at cycle end** — if nothing is done, at the final week the system computes
+   every member's balance itself. Paid in full → $0. Behind → the amount.
+
+**Rules:**
+- **Unpaid means owed.** A week stops being owed only when it is marked paid. Nothing
+  else clears it.
+- **Winning while owing NEVER auto-deducts.** If someone wins $20,000 while owing $5,000,
+  the organizer may still hand over the full $20,000. The system shows the balance and
+  *offers* to deduct. The decision is human, always.
+- **Paying a balance does not require being in a cycle.** Someone may settle two years
+  later while participating in nothing. Recorded on the profile; balance drops.
+- **Closed members stay visible** — not removed from the cycle. They keep access to their
+  own record and can see where they stopped. Dignity, and a useful record for them.
+- **The record of where they stopped is preserved** in the archive — last payment week,
+  amount, and the resulting balance.
+
+**Stored as a LEDGER, not a single number.** Each entry records its origin ("Cycle 1,
+2026 — 8 weeks unpaid, $2,000") and each payment against it ("paid $1,000, March 2027"),
+with a running total. Two years later the organizer needs to know *why* a balance exists,
+not only that it does. A bare number loses the story; the ledger keeps it.
+
+**Closing statement for every member at cycle end** — factual, no pressure, same tone as
+the late messages:
+- "You completed all 20 weeks. Balance $0."
+- "You paid 12 of 20. Last payment week 12. Outstanding $2,000."
+
+### 2.19 ONE ALLOCATION ENGINE, TWO ENTRY POINTS
+
+Money can be recorded from the **week view** (during the cycle) or from the **member
+profile** (any time). Both run the identical oldest-first allocation (2.15). The profile
+is not a second system — it is the same engine reached from the person rather than the
+week.
+
+**While the cycle is open** — allocation lands on weeks.
+Example: last paid week 7, $250/week → profile shows $1,250 behind. Enter $750 → clears
+weeks 8, 9, 10. Enter $650 → clears weeks 8 and 9, leaves $150 partial on week 10.
+
+**After the cycle closes** — the weeks are final, so money recorded on the profile
+reduces the **ledger balance** instead. Same entry, same math, different target.
+
+**The profile balance is derived, never typed.** If weeks are marked normally, the profile
+shows $0 by itself. The organizer must never count weeks by hand to learn what someone
+owes.
+
 ### 2.12 BUILD PROPERLY, AND TEACH
 
 No shortcuts. Real research before technology decisions, tradeoffs explained so the
@@ -327,7 +385,12 @@ then Claude Code implements it. Connect at the design phase, not before.
 | D-18 | Grid kept as the overview map; payment entry is a separate action with unmistakable save feedback | **SETTLED** |
 | D-19 | Remove Request Review (unused). Collapse unpaid/late into one derived status. | **SETTLED** |
 | D-20 | Mid-cycle joins cannot start before the cycle start date; organizer enters weeks committed, system calculates the finish week | **SETTLED** |
-| D-21 | Member profile: edit weeks committed and contribution mid-cycle; all figures recalculate automatically | **SETTLED (concept) — design pending** |
+| D-21 | Member profile: permanent person fields vs per-cycle participation, clearly separated; live recalculation preview before saving; history across cycles | **DESIGNED — approved** |
+| D-22 | Carried balance lives on the person as a LEDGER, survives cycle deletion; created by manual early-close or automatically at cycle end | **SETTLED** |
+| D-23 | Winning while owing never auto-deducts — the system offers, the organizer decides | **SETTLED** |
+| D-24 | Balances can be settled outside any cycle; closed members stay visible with their own record | **SETTLED** |
+| D-25 | One allocation engine, two entry points (week view + profile); target is weeks while open, ledger once closed | **SETTLED** |
+| D-26 | Closing statement to every member at cycle end — factual, no pressure | **SETTLED** |
 
 **Flexibility rule (Oli, Aug 2026):** rules are judged by their *reasons*, not applied blindly.
 Nexo's "open source first" doctrine exists for PHI, BAA, MCO review, and scale — none of
