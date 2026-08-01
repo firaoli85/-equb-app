@@ -9,7 +9,7 @@ Read this first, every session, before touching anything.
 | **Status** | Rebuild era — Phase 1 (Brain established) |
 | **Live cycle** | Cycle 1, 20 weeks planned, started May 17 2026, 25 members — **DATA IS SACRED, MUST SURVIVE THE REBUILD** |
 | **Horizon** | 2–3+ more years. Build for the long run, not for one cycle. |
-| **Version** | v2 — July 2026 |
+| **Version** | v3 — August 2026 |
 
 ---
 
@@ -42,6 +42,18 @@ present the truth clearly — not to replace the judgment.
 
 Architecture must therefore be **modular**: Equb is one module. Other financial modules
 may follow. Nothing may be built assuming Equb is the only thing here.
+
+### 1.1 THIS IS ALSO THE TEST GROUND FOR NEXO ACCESS
+
+Equb is deliberately the **proving ground and research method** for the larger Nexo
+Access platform — in particular the two apps coming there (member app and driver app).
+
+- What works here gets **promoted** to Nexo.
+- What fails here is **avoided** there.
+
+That makes this serious R&D, not a hobby project. Every pattern, tool, and design
+decision is evaluated twice: does it serve Equb, and would it survive being carried into
+Nexo? Cost is not the deciding factor — proven value is.
 
 ---
 
@@ -81,7 +93,31 @@ Equb practice, and it is why six years have run without loss.
 
 Risk management, not favoritism. The tool must make it effortless and invisible.
 
-### 2.3 ZOOM SAFETY — THE WHEEL SCREEN IS CLEAN BY DEFAULT
+### 2.3 WINNER SELECTION IS A PLANNING TOOL, AND THE PLAN IS LOCKED
+
+Selecting who wins is **not a switch — it is planning**. When the organizer designates
+numbers, the system must offer real configuration:
+
+- **Together or separate** — do these numbers win in the SAME week, or different weeks?
+- **Which week** — assign each selection to a specific week, planning several weeks ahead.
+
+Once configured, **the plan is locked and protected from the system's own automation:**
+
+- Auto-arrange and reshuffle must **never separate** numbers the organizer grouped together.
+- Auto-arrange and reshuffle must **never re-pair** a number that is committed to a week.
+- Committed numbers are treated exactly like already-drawn numbers: excluded from the
+  shuffle pool, their slot frozen.
+
+**The principle underneath:** the Brain must know **intent**, not only **state**. The
+system already knows what *has happened* (drawn numbers). It must equally know what is
+*intended to happen* (committed selections) and defend that intent.
+
+**Known defect this fixes (verified in code):** `handleReshuffleAll` filters drawn
+numbers from the pool but has no awareness of committed selections. It can silently
+re-pair a selected number with someone unintended — the exact failure that occurred
+twice in practice.
+
+### 2.4 ZOOM SAFETY — THE WHEEL SCREEN IS CLEAN BY DEFAULT
 
 Draws happen live on Zoom with the organizer screen-sharing. The design rule:
 
@@ -97,7 +133,7 @@ Draws happen live on Zoom with the organizer screen-sharing. The design rule:
 **Rejected design:** a hidden control on the wheel page itself (gear + passphrase). Any
 control living on the shared screen is a liability, however well hidden.
 
-### 2.4 PEOPLE ARE PERMANENT — PARTICIPATION IS PER-CYCLE
+### 2.5 PEOPLE ARE PERMANENT — PARTICIPATION IS PER-CYCLE
 
 Members are real people the organizer knows, not rows belonging to one cycle.
 
@@ -114,14 +150,14 @@ person may sit out cycles 1–3 and join cycle 4; the directory remembers them.
 
 Contribution changes between cycles because income changes. Normal and expected.
 
-### 2.5 EVERYTHING CONFIGURABLE — NOTHING HARDCODED
+### 2.6 EVERYTHING CONFIGURABLE — NOTHING HARDCODED
 
 Starting a new cycle asks: start date, number of weeks, which people from the directory,
 and each participant's own contribution (they are **not** equal). Weeks and dates
 generate automatically. Member count is independent of week count. Fee rules and
 contribution tiers are configuration, not code.
 
-### 2.6 PLANNED LENGTH vs ACTUAL LENGTH — TRACK BOTH
+### 2.7 PLANNED LENGTH vs ACTUAL LENGTH — TRACK BOTH
 
 A cycle is *planned* as 20 weeks. Reality may take 22 — someone joins late, a week is
 skipped, life happens. The system must:
@@ -134,7 +170,7 @@ skipped, life happens. The system must:
 
 Mid-cycle joins must never break the math or anyone else's standing.
 
-### 2.7 PRIVACY BOUNDARY (SETTLED)
+### 2.8 PRIVACY BOUNDARY (SETTLED)
 
 **Shared between members** — payment progress, for accountability and the social nature
 of an Equb. Members see who is keeping up.
@@ -145,23 +181,61 @@ phone numbers, PINs, who won which draw (numbers only, never names).
 The social layer stays. Equb is friends doing this together; minimal friendly visibility
 is part of the point.
 
-### 2.8 CLEAN DELETE, READABLE ARCHIVE
+### 2.9 CLEAN DELETE, READABLE ARCHIVE
 
 Ending a cycle means **wipe it clean** to start fresh — not soft-delete, not lingering
 state. But **before** wiping, the archive produces a readable record: who paid what, who
 was paid out, how much, when — human-readable, not a raw JSON blob. Past cycles remain
 viewable.
 
-### 2.9 SAVE FEEDBACK MUST BE UNMISTAKABLE
+### 2.10 SAVE FEEDBACK MUST BE UNMISTAKABLE
 
 Every action gives a clear result — obvious confirmation on success, visible reason on
 failure. Never leave doubt about whether something saved.
 
-### 2.10 BUILD PROPERLY, AND TEACH
+### 2.11 MESSAGING IS STATE-AWARE AND CONFIGURABLE
+
+One **Send** action. The system chooses the right message for each member from their
+actual state and fills it with real data:
+
+| Member state | Message content |
+|---|---|
+| Paid | "You paid week N. You have paid X of Y. Z weeks left." |
+| Behind | "You are behind by N weeks." — a record, never a threat |
+| Late (window closed) | "Week N was not paid." — documented, no pressure |
+| Selected to receive | "You receive this week. Amount, and what remains." |
+
+**All templates are configurable by the organizer** — wording, tone, and the data fields
+included. The organizer edits them; they are never hardcoded.
+
+**Delivery:** build on what actually works today (Telegram is live and working). Do not
+block the product waiting on WhatsApp/Meta or carrier approval. Additional channels are
+added when and if approval arrives.
+
+### 2.12 BUILD PROPERLY, AND TEACH
 
 No shortcuts. Real research before technology decisions, tradeoffs explained so the
 organizer learns *why*, not just *what*. Every significant decision gets its own
 discussion and is recorded here.
+
+### 2.13 DESIGN REFERENCE — MOBBIN MCP IS THE SANCTIONED SOURCE
+
+Design direction is sourced from **real, shipped products** — not invented from scratch
+and not guessed at from vague preference.
+
+**Mobbin MCP** (official, ~600k real app screens) is the sanctioned tool. It connects
+directly to Claude so references are pulled with the context of the actual codebase,
+rather than pasted screenshots.
+
+Connect in **both** places when the design phase begins:
+- **Claude Code** — `claude mcp add mobbin --scope user --transport http https://api.mobbin.com/mcp`,
+  then `/mcp` → select mobbin → Authenticate. This is the higher-value one: it can read
+  the real codebase and design tokens while pulling references.
+- **Claude Desktop / Web** — Customize → Connectors → Add → Browse connectors → Mobbin.
+  Used for design discussion and choosing direction before implementation.
+
+Requires a paid Mobbin plan. **Workflow:** design direction is chosen in discussion here,
+then Claude Code implements it. Connect at the design phase, not before.
 
 ---
 
@@ -177,10 +251,13 @@ discussion and is recorded here.
 | D-6 | Configurable visibility controls for screen-sharing | **SETTLED (concept) — design pending** |
 | D-7 | Planned vs actual cycle length both tracked | **SETTLED** |
 | D-8 | Privacy boundary: progress shared; amounts, numbers, payouts private | **SETTLED** |
-| D-9 | Database technology (relational vs document — Postgres / MongoDB / DynamoDB) | **OPEN — own discussion, research required** |
-| D-10 | Hosting and infrastructure (Vercel+Neon vs AWS) | **OPEN — own discussion** |
-| D-11 | Notification / messaging system (Google-based sending working; Twilio & Meta approval painful) | **OPEN — own discussion** |
-| D-12 | Financial command center design | **OPEN — next to design** |
+| D-9 | Winner selection is a planning tool (together/separate + which week); plan locked against reshuffle | **SETTLED** |
+| D-10 | Messaging is state-aware with organizer-configurable templates; build on Telegram now, don't wait for Meta | **SETTLED** |
+| D-11 | Equb is the test ground for Nexo Access (member + driver apps) | **SETTLED** |
+| D-12 | Mobbin MCP is the sanctioned design-reference source; connect at design phase | **SETTLED** |
+| D-13 | Database technology (relational vs document — Postgres / MongoDB / DynamoDB) | **OPEN — own discussion, research required** |
+| D-14 | Hosting and infrastructure (Vercel+Neon vs AWS) | **OPEN — own discussion** |
+| D-15 | Financial command center design | **IN PROGRESS — first design reviewed** |
 
 **Rule:** nothing OPEN gets decided in passing. Each gets a real discussion with
 researched options and tradeoffs, then is recorded here as SETTLED.
@@ -205,7 +282,9 @@ researched options and tradeoffs, then is recorded here as SETTLED.
 - No planned-vs-actual tracking; mid-cycle joins not properly modeled
 - Data model scars — duplicate/legacy columns and tables from incremental patching
 - **No presentation layer** — admin dashboard is the wheel, not the financial picture
-- Wheel page carries a hidden control (violates 2.3)
+- Wheel page carries a hidden control (violates 2.4)
+- Reshuffle has no awareness of committed winner selections (violates 2.3) — verified in
+  `handleReshuffleAll`, which filters drawn numbers but not committed ones
 - Zero tests on money logic
 - Repo hygiene — committed skill libraries, dev logs, screenshot scripts
 
@@ -221,9 +300,9 @@ One part at a time. Each part ends with this document updated.
 | **2** | Presentation layer / Financial Command Center | Next to design |
 | **3** | Data model rebuild — cycles, Member Directory, planned-vs-actual, retire scars | Pending (needs D-9) |
 | **4** | Configurable cycle creation | Pending |
-| **5** | Zoom-safe settings: pre-configured winner + visibility controls | Pending |
+| **5** | Winner planning + Zoom-safe settings: together/separate, week assignment, locked plan, visibility controls | Pending |
 | **6** | Tests on money logic | Pending |
-| **7** | Repo hygiene + notification system | Pending (needs D-11) |
+| **7** | Repo hygiene + state-aware messaging system | Pending |
 
 ---
 
