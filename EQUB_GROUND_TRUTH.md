@@ -212,6 +212,70 @@ included. The organizer edits them; they are never hardcoded.
 block the product waiting on WhatsApp/Meta or carrier approval. Additional channels are
 added when and if approval arrives.
 
+### 2.14 MONEY IS THE TRUTH — EVERYTHING ELSE IS DERIVED
+
+The system stores **what actually happened**, and calculates everything else. Nothing
+that can be computed is ever stored, because stored values drift and computed values
+cannot.
+
+**Stored:** the money received (amount, date, method), and `deferred` (a real decision
+the organizer made to excuse a week).
+
+**Derived — never stored:**
+
+| Derived value | How |
+|---|---|
+| Weeks credited | total money paid ÷ current weekly amount |
+| Weeks behind | weeks elapsed in their window − weeks credited |
+| Status (paid / partial / not paid) | from the amount against the weekly amount |
+| Late | unpaid **and** the payment window has closed — from the calendar, not a flag |
+| Current week | cycle start date + today — never hardcoded, never stored |
+| Finish week | their start week + weeks committed |
+| Fee | 2% of gross ($100 per $5,000) |
+| Payout | (weekly amount × their weeks) − fee |
+
+**Why this matters — it removes every special case:**
+
+- **Rate change mid-cycle:** someone paid 6 weeks at $250 ($1,500) and moves to $500 →
+  $1,500 ÷ $500 = 3 weeks credited → they are now 3 weeks behind. Automatic.
+- **Uneven amounts:** $450/week and $1,000 arrives → 2 full weeks ($900) + $100 partial
+  on the third. Pure arithmetic.
+- **No "mark late" job:** a week becomes late when its window passes. Nothing to run,
+  nothing to forget.
+
+### 2.15 PAYMENT ALLOCATION — OLDEST DEBT FIRST, THEN FORWARD
+
+Money is never assigned to a week by hand. The organizer enters the amount received;
+the system allocates it and **shows the allocation before it is committed**:
+
+1. **Oldest unpaid weeks first**, waterfalling forward.
+2. Once caught up, the **current week**.
+3. Any surplus rolls into **future weeks** (paying ahead is normal and expected).
+4. A leftover too small for a full week is recorded as **partial** on the next week.
+
+Rationale from practice: a member four weeks behind who sends money is paying down the
+oldest debt — never the current week. The old grid forced the organizer to decide the
+week manually, which is both slow and error-prone.
+
+**The grid stays.** It is genuinely good at showing everyone at once and spotting
+patterns (streaks of red, people paid ahead). Its failure was being the *recording*
+tool as well. Two jobs, two tools: the grid is the map, payment entry is the action.
+
+### 2.16 REMOVED BY REAL-WORLD EVIDENCE
+
+- **Request Review** — built, shipped, used by nobody. Members contact the organizer
+  directly. Removed.
+- **"Unpaid" vs "Late" as separate stored statuses** — collapsed. Late is derived.
+
+Rule: features with no real use are liabilities. Remove them.
+
+### 2.17 BUILD INCREMENTALLY, EXCEPT BELOW THE LINE
+
+Fix issues as they surface; do not try to perfect everything at once. **The exception:**
+structural decisions — the data model and the money principles — must be right before
+building, because everything sits on them and they are expensive to change later.
+Everything above that line (screens, polish, features) is fixed as it comes up.
+
 ### 2.12 BUILD PROPERLY, AND TEACH
 
 No shortcuts. Real research before technology decisions, tradeoffs explained so the
@@ -255,9 +319,20 @@ then Claude Code implements it. Connect at the design phase, not before.
 | D-10 | Messaging is state-aware with organizer-configurable templates; build on Telegram now, don't wait for Meta | **SETTLED** |
 | D-11 | Equb is the test ground for Nexo Access (member + driver apps) | **SETTLED** |
 | D-12 | Mobbin MCP is the sanctioned design-reference source; connect at design phase | **SETTLED** |
-| D-13 | Database technology (relational vs document — Postgres / MongoDB / DynamoDB) | **OPEN — own discussion, research required** |
+| D-13 | **Database: relational Postgres via hosted supabase.com (free tier), separate project from Nexo. Auth + RLS included. Idle-gap handled by a keep-alive scheduler + automated gap backups.** Reasoning: data is deeply relational; money needs ACID; queries must stay ad-hoc; scale irrelevant at 45 people; Supabase auth/RLS is the learning that transfers to Nexo; hosted (not self-hosted) because Equb must never share the PHI/BAA server and there is no value in operating a second server. | **SETTLED** |
 | D-14 | Hosting and infrastructure (Vercel+Neon vs AWS) | **OPEN — own discussion** |
-| D-15 | Financial command center design | **IN PROGRESS — first design reviewed** |
+| D-15 | Financial command center design | **DESIGNED — approved** |
+| D-16 | Money is truth; weeks credited, behind-count, status and late are all derived | **SETTLED** |
+| D-17 | Payment allocation: oldest debt first, then current, then forward; partial = leftover; allocation previewed before commit | **SETTLED** |
+| D-18 | Grid kept as the overview map; payment entry is a separate action with unmistakable save feedback | **SETTLED** |
+| D-19 | Remove Request Review (unused). Collapse unpaid/late into one derived status. | **SETTLED** |
+| D-20 | Mid-cycle joins cannot start before the cycle start date; organizer enters weeks committed, system calculates the finish week | **SETTLED** |
+| D-21 | Member profile: edit weeks committed and contribution mid-cycle; all figures recalculate automatically | **SETTLED (concept) — design pending** |
+
+**Flexibility rule (Oli, Aug 2026):** rules are judged by their *reasons*, not applied blindly.
+Nexo's "open source first" doctrine exists for PHI, BAA, MCO review, and scale — none of
+which apply here. Equb is low-risk, closed, max ~45 people, and **learning is the real
+product**. Be professional and rigorous; do not be rigid.
 
 **Rule:** nothing OPEN gets decided in passing. Each gets a real discussion with
 researched options and tradeoffs, then is recorded here as SETTLED.
